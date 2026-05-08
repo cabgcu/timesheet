@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Student Leader Timesheet</title>
     
     <!-- Fix for missing favicon 404 error -->
@@ -48,6 +50,8 @@
         ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #71717a; }
         .no-save-pass { -webkit-text-security: disc !important; text-security: disc !important; }
+        html, body { background-color: #09090b; }
+        body { padding-top: env(safe-area-inset-top); padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
 
         .glass-card {
             background: rgba(9, 9, 11, 0.65);
@@ -108,7 +112,7 @@
         .loader { display: none; width: 18px; height: 18px; border: 2px solid #fff; border-bottom-color: transparent; border-radius: 50%; animation: rotation 1s linear infinite; margin-left: 10px; }
         @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        #toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; padding: 16px 24px; border-radius: 100px; z-index: 2000; display: none; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
+        #toast { position: fixed; bottom: max(30px, calc(env(safe-area-inset-bottom, 0px) + 15px)); left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; padding: 16px 24px; border-radius: 100px; z-index: 2000; display: none; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
         .pdf-mode { background: #09090b !important; color: white !important; }
         
         /* Full screen loading */
@@ -116,7 +120,10 @@
         .spinner { width: 40px; height: 40px; border: 4px solid rgba(168, 85, 247, 0.3); border-radius: 50%; border-top-color: #a855f7; animation: rotation 1s linear infinite; }
     </style>
 </head>
-<body class="text-zinc-100 min-h-[100dvh] relative overflow-x-hidden selection:bg-purple-500/30 font-sans" style="background-image: url('https://i.imgur.com/J3ZEdiB.png'); background-size: cover; background-position: center; background-attachment: fixed;">
+<body class="text-zinc-100 min-h-[100dvh] relative overflow-x-hidden selection:bg-purple-500/30 font-sans bg-zinc-950">
+
+    <!-- Fixed Background (avoids iOS Safari white edges from background-attachment:fixed) -->
+    <div class="fixed inset-0 z-[-2]" style="background-image: url('https://i.imgur.com/J3ZEdiB.png'); background-size: cover; background-position: center;"></div>
 
     <!-- Initial Loader -->
     <div id="globalLoader">
@@ -204,10 +211,19 @@
                         </button>
                     </div>
 
+                    <!-- Shown when selected week is already submitted -->
+                    <div id="submittedNotice" class="hidden bg-emerald-950/40 rounded-2xl p-5 border border-emerald-500/30 mb-6 sm:mb-8 text-center">
+                        <div class="w-10 h-10 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <i data-lucide="check-circle" class="w-5 h-5 text-emerald-400"></i>
+                        </div>
+                        <div class="text-emerald-400 font-bold text-sm mb-1">Hours Submitted</div>
+                        <div class="text-zinc-400 text-xs leading-relaxed">This week's timesheet has already been submitted and recorded.</div>
+                    </div>
+
                     <div class="border-t border-zinc-800 pt-5 sm:pt-6">
-                        <p class="text-xs text-zinc-400 text-center mb-4 leading-relaxed px-2">Make sure all your hours for the selected week are logged before submitting. You can leave this page and come back; your unsubmitted hours are saved.</p>
+                        <p id="submitHint" class="text-xs text-zinc-400 text-center mb-4 leading-relaxed px-2">Make sure all your hours for the selected week are logged before submitting. You can leave this page and come back; your unsubmitted hours are saved.</p>
                         <button class="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold py-4 rounded-xl flex justify-center items-center gap-2 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] shadow-[0_0_20px_rgba(168,85,247,0.3)] hover:shadow-[0_0_30px_rgba(168,85,247,0.6)] text-lg border border-purple-500/50" id="submitBtn" onclick="submitTimesheet()">
-                            <i data-lucide="send" class="w-5 h-5"></i> <span id="submitTimesheetText">Submit Weekly Timesheet</span>
+                            <i data-lucide="send" class="w-5 h-5" id="submitBtnIcon"></i> <span id="submitTimesheetText">Submit Weekly Timesheet</span>
                             <div class="loader" id="submitLoader"></div>
                         </button>
                     </div>
@@ -393,6 +409,8 @@
     // REPLACE THIS URL WITH YOUR GOOGLE WEB APP URL
     // ==========================================
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw39uMmPhxXkerCc84MZ_23c-TkSQeFJIaNH81iJQQMNO0R9c_tpyDJ5AifuEX3o_8o/exec";
+    const CONFIG_CACHE_KEY = 'ts_config_v1';
+    const CONFIG_CACHE_TTL = 3600000; // 1 hour
 
     // Date Helpers
     const todayDate = new Date();
@@ -439,37 +457,70 @@
     };
 
     // --- INITIALIZATION (Network) ---
-    async function init() { 
+    function applyConfig(result) {
+        state.activeYear = result.activeYear;
+        state.teams = result.teams;
+        state.academicYears = result.academicYears;
+        document.getElementById('loginActiveYear').textContent = state.activeYear;
+    }
+
+    function hideLoader() {
+        const loader = document.getElementById('globalLoader');
+        loader.style.opacity = 0;
+        setTimeout(() => loader.style.display = 'none', 400);
+    }
+
+    async function init() {
         document.getElementById('year').textContent = new Date().getFullYear();
         lucide.createIcons();
-        
+
         const adminFilter = document.getElementById('adminWeekFilter');
         if (adminFilter && (todayDate.getDay() === 1 || todayDate.getDay() === 2)) adminFilter.value = 'previous';
 
-        // Fetch Public Config
+        // Show cached config instantly if available and fresh
+        let usedCache = false;
         try {
+            const cached = localStorage.getItem(CONFIG_CACHE_KEY);
+            if (cached) {
+                const { data, ts } = JSON.parse(cached);
+                if (Date.now() - ts < CONFIG_CACHE_TTL && data.success) {
+                    applyConfig(data);
+                    usedCache = true;
+                    hideLoader();
+                    switchView('login');
+                }
+            }
+        } catch (e) { /* bad cache, ignore */ }
+
+        // Fetch fresh config (blocks UI only if no cache)
+        try {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 12000);
             const response = await fetch(SCRIPT_URL, {
                 method: 'POST',
-                body: JSON.stringify({ action: 'getConfig' })
+                body: JSON.stringify({ action: 'getConfig' }),
+                signal: controller.signal
             });
+            clearTimeout(timeout);
             const result = await response.json();
-            
+
             if (result.success) {
-                state.activeYear = result.activeYear;
-                state.teams = result.teams;
-                state.academicYears = result.academicYears;
-                document.getElementById('loginActiveYear').textContent = state.activeYear;
-            } else {
+                applyConfig(result);
+                localStorage.setItem(CONFIG_CACHE_KEY, JSON.stringify({ data: result, ts: Date.now() }));
+            } else if (!usedCache) {
                 showToast("Error loading config.", true);
             }
         } catch (e) {
-            console.error(e);
-            showToast("Failed to connect to server.", true);
+            if (!usedCache) {
+                console.error(e);
+                showToast("Failed to connect to server.", true);
+            }
         }
 
-        document.getElementById('globalLoader').style.opacity = 0;
-        setTimeout(() => document.getElementById('globalLoader').style.display = 'none', 500);
-        switchView('login'); 
+        if (!usedCache) {
+            hideLoader();
+            switchView('login');
+        }
     }
 
     function switchView(viewName) {
@@ -510,20 +561,28 @@
                 document.getElementById('ts-greeting').textContent = `Hello, ${state.currentUser.name.split(' ')[0]}`;
                 document.getElementById('ts-team').textContent = state.currentUser.team;
                 
-                // Check if previous week is already submitted remotely
+                // Check submitted weeks and lock options accordingly
                 const prevWeekId = prevMonday.toISOString().split('T')[0];
-                const prevSubmitted = state.studentPastSubmissions.includes(prevWeekId);
-                
+                const currWeekId = currentMonday.toISOString().split('T')[0];
+
                 const select = document.getElementById('studentWeekSelect');
                 const prevOption = select.querySelector('option[value="previous"]');
-                if (prevSubmitted) {
+                const currOption = select.querySelector('option[value="current"]');
+
+                if (state.studentPastSubmissions.includes(prevWeekId)) {
                     prevOption.disabled = true; prevOption.textContent = "Previous Week (Submitted)";
                 } else {
                     prevOption.disabled = false; prevOption.textContent = "Logging: Previous Week";
                 }
-                
+
+                if (state.studentPastSubmissions.includes(currWeekId)) {
+                    currOption.textContent = "Current Week (Submitted)";
+                } else {
+                    currOption.textContent = "Logging: Current Week";
+                }
+
                 document.getElementById('studentWeekSelect').value = 'current';
-                switchStudentWeek(); 
+                switchStudentWeek();
                 switchView('timesheet');
                 document.getElementById('loginStudentID').value = ""; 
             } else {
@@ -552,15 +611,51 @@
         }
     }
 
+    function isWeekSubmitted(tab) {
+        const weekId = tab === 'previous'
+            ? prevMonday.toISOString().split('T')[0]
+            : currentMonday.toISOString().split('T')[0];
+        return (state.studentPastSubmissions || []).includes(weekId);
+    }
+
     function switchStudentWeek() {
         state.studentActiveTab = document.getElementById('studentWeekSelect').value;
         const savedData = localStorage.getItem(`ts_pending_${state.currentUser.id}_${state.studentActiveTab}`);
         state.currentWeekEntries = savedData ? JSON.parse(savedData) : [];
         setupDateRestrictions();
-        cancelEdit(); 
+        cancelEdit();
         renderTimesheetEntries();
-        const btnText = state.studentActiveTab === 'previous' ? "Submit Previous Week" : "Submit Current Week";
-        document.getElementById('submitTimesheetText').textContent = btnText;
+
+        const submitted = isWeekSubmitted(state.studentActiveTab);
+        const entryFormBox = document.getElementById('entryFormBox');
+        const submittedNotice = document.getElementById('submittedNotice');
+        const submitBtn = document.getElementById('submitBtn');
+        const submitHint = document.getElementById('submitHint');
+        const submitIcon = document.getElementById('submitBtnIcon');
+
+        if (submitted) {
+            entryFormBox.classList.add('hidden');
+            submittedNotice.classList.remove('hidden');
+            submitHint.classList.add('hidden');
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            submitBtn.classList.remove('hover:-translate-y-1', 'hover:scale-[1.02]');
+            submitIcon.setAttribute('data-lucide', 'check-circle');
+            document.getElementById('submitTimesheetText').textContent = 'Already Submitted';
+            document.getElementById('ts-weekLabel').textContent = '✓ Submitted';
+        } else {
+            entryFormBox.classList.remove('hidden');
+            submittedNotice.classList.add('hidden');
+            submitHint.classList.remove('hidden');
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            submitBtn.classList.add('hover:-translate-y-1', 'hover:scale-[1.02]');
+            submitIcon.setAttribute('data-lucide', 'send');
+            const btnText = state.studentActiveTab === 'previous' ? 'Submit Previous Week' : 'Submit Current Week';
+            document.getElementById('submitTimesheetText').textContent = btnText;
+            document.getElementById('ts-weekLabel').textContent = 'Pending Submit';
+        }
+        lucide.createIcons();
     }
 
     function saveTimeEntry() {
@@ -685,6 +780,11 @@
             if(result.success) {
                 state.currentWeekEntries = [];
                 localStorage.removeItem(`ts_pending_${state.currentUser.id}_${state.studentActiveTab}`);
+                // Mark week as submitted locally so re-login isn't needed to see the lock
+                if (!state.studentPastSubmissions) state.studentPastSubmissions = [];
+                if (!state.studentPastSubmissions.includes(weekIdToSubmit)) {
+                    state.studentPastSubmissions.push(weekIdToSubmit);
+                }
                 switchView('success');
                 fireConfetti();
             } else {
@@ -722,23 +822,24 @@
         btn.disabled = true; loader.style.display = 'block';
 
         try {
-            // First pass validation
-            const resLogin = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'adminLogin', password: pass }) });
+            // Fire both requests in parallel — only use data result if login succeeds
+            const [resLogin, resData] = await Promise.all([
+                fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'adminLogin', password: pass }) }),
+                fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'getAdminData', password: pass }) })
+            ]);
             const resultLogin = await resLogin.json();
 
             if (resultLogin.success) {
-                // Fetch deep admin data
-                const resData = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'getAdminData', password: pass }) });
                 const resultData = await resData.json();
 
                 if (resultData.success) {
-                    state.adminPassword = pass; // Cache locally for subsequent saves
+                    state.adminPassword = pass;
                     state.rosters = resultData.rosters || {};
                     state.submissions = resultData.submissions || [];
                     state.adminViewingYear = state.activeYear;
 
                     hideGate(); showToast("Access Granted");
-                    renderSettingsManager(); 
+                    renderSettingsManager();
                     renderDashboard();
                     switchView('dashboard');
                 } else {
