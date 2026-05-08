@@ -686,13 +686,19 @@
             entryFormBox.classList.remove('hidden');
             submittedNotice.classList.add('hidden');
             submitHint.classList.remove('hidden');
-            submitBtn.disabled = false;
             submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-            submitBtn.classList.add('hover:-translate-y-1', 'hover:scale-[1.02]');
             submitIcon.setAttribute('data-lucide', 'send');
             const btnText = state.studentActiveTab === 'previous' ? 'Submit Previous Week' : 'Submit Current Week';
             document.getElementById('submitTimesheetText').textContent = btnText;
             document.getElementById('ts-weekLabel').textContent = 'Pending Submit';
+            // Re-apply hour minimum — renderTimesheetEntries ran first but switchStudentWeek would have overridden it
+            const currentTotal = state.currentWeekEntries.reduce((s, e) => s + (parseFloat(e.hours) || 0), 0);
+            const meetsMin = currentTotal >= 10;
+            submitBtn.disabled = !meetsMin;
+            submitBtn.classList.toggle('opacity-40', !meetsMin);
+            submitBtn.classList.toggle('cursor-not-allowed', !meetsMin);
+            submitBtn.classList.toggle('hover:-translate-y-1', meetsMin);
+            submitBtn.classList.toggle('hover:scale-[1.02]', meetsMin);
         }
         lucide.createIcons();
     }
