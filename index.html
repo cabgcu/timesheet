@@ -110,6 +110,9 @@
         input[type="date"].control-item {
             min-width: 0;
             max-width: 100%;
+            width: 100%;
+            display: block;
+            overflow: hidden;
         }
         input[type="date"].control-item::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
 
@@ -190,16 +193,18 @@
                         <div id="ts-entriesList" class="flex flex-col gap-2 sm:gap-3 max-h-[220px] sm:max-h-[300px] overflow-y-auto pr-1"></div>
                     </div>
 
-                    <div id="entryFormBox" class="bg-zinc-900/50 rounded-xl sm:rounded-2xl p-3 sm:p-5 border border-zinc-800/50 mb-4 sm:mb-8 transition-colors duration-300">
+                    <div id="entryFormBox" class="bg-zinc-900/50 rounded-xl sm:rounded-2xl p-3 sm:p-5 border border-zinc-800/50 mb-4 sm:mb-8 transition-colors duration-300 overflow-hidden">
                         <div class="flex justify-between items-center mb-4">
                             <h4 id="formModeTitle" class="text-sm font-bold text-white uppercase tracking-wider">Log New Hours</h4>
                             <button id="cancelEditBtn" class="hidden text-xs text-rose-400 hover:text-rose-300 transition" onclick="cancelEdit()">Cancel Edit</button>
                         </div>
                         
                         <div class="flex flex-col gap-3 mb-4">
-                            <div class="form-group !mb-0">
+                            <div class="form-group !mb-0 overflow-hidden">
                                 <label class="form-label">Date</label>
-                                <input type="date" id="entryDate" class="control-item" style="min-width:0;max-width:100%;width:100%;" />
+                                <div class="overflow-hidden rounded-xl">
+                                    <input type="date" id="entryDate" class="control-item" style="min-width:0;max-width:100%;width:100%;display:block;" />
+                                </div>
                             </div>
                             <div class="form-group !mb-0">
                                 <label class="form-label">Hours</label>
