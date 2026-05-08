@@ -241,8 +241,11 @@
                         </button>
                     </div>
                     
-                    <div class="text-center mt-6">
+                    <div class="flex justify-between items-center mt-6">
                         <button class="text-zinc-500 hover:text-zinc-300 text-sm font-medium transition" onclick="logout()">Not you? Switch account</button>
+                        <button class="text-purple-400 hover:text-purple-300 text-sm font-medium transition flex items-center gap-1.5" onclick="showHistory()">
+                            <i data-lucide="clock" class="w-4 h-4"></i> My History
+                        </button>
                     </div>
                 </div>
             </div>
@@ -259,6 +262,26 @@
                     <button class="w-full bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white font-bold py-3.5 rounded-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-lg text-base" onclick="logout()">
                         Return to Login
                     </button>
+                </div>
+            </div>
+
+            <!-- STUDENT HISTORY VIEW -->
+            <div id="historyView" class="view max-w-2xl w-full mx-auto">
+                <div class="glass-card primary-card rounded-2xl sm:rounded-3xl p-4 sm:p-8">
+                    <div class="flex justify-between items-center border-b border-zinc-800 pb-4 mb-5">
+                        <div>
+                            <h3 class="text-xl font-extrabold text-white">My Hours History</h3>
+                            <p class="text-purple-400 text-sm mt-0.5" id="history-team"></p>
+                        </div>
+                        <button onclick="switchView('timesheet')" class="text-zinc-400 hover:text-white bg-zinc-800 hover:bg-zinc-700 p-2 rounded-xl transition flex items-center gap-1.5 text-sm font-medium px-3">
+                            <i data-lucide="arrow-left" class="w-4 h-4"></i> Back
+                        </button>
+                    </div>
+                    <div class="flex justify-between items-center bg-zinc-900/50 p-3 rounded-xl border border-zinc-800 mb-5">
+                        <span class="text-zinc-400 text-xs font-bold uppercase tracking-wider">All-Time Total</span>
+                        <span class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500" id="history-total">0.0</span>
+                    </div>
+                    <div id="history-list" class="flex flex-col gap-3 max-h-[60vh] overflow-y-auto pr-1"></div>
                 </div>
             </div>
 
@@ -564,8 +587,8 @@
 
             if (result.success) {
                 state.currentUser = result.student;
-                // Format submissions to match frontend expectation
                 state.studentPastSubmissions = result.submissions.map(sub => sub.weekIdentifier);
+                state.studentSubmissions = result.submissions; // full logs for history view
                 
                 document.getElementById('ts-greeting').textContent = `Hello ${state.currentUser.name.split(' ')[0]},`;
                 document.getElementById('ts-team').textContent = state.currentUser.team;
@@ -787,6 +810,7 @@
             const result = await response.json();
 
             if(result.success) {
+                const submittedLogs = [...state.currentWeekEntries];
                 state.currentWeekEntries = [];
                 localStorage.removeItem(`ts_pending_${state.currentUser.id}_${state.studentActiveTab}`);
                 // Mark week as submitted locally so re-login isn't needed to see the lock
@@ -794,6 +818,9 @@
                 if (!state.studentPastSubmissions.includes(weekIdToSubmit)) {
                     state.studentPastSubmissions.push(weekIdToSubmit);
                 }
+                // Add submitted logs to local history so it's visible without re-login
+                if (!state.studentSubmissions) state.studentSubmissions = [];
+                state.studentSubmissions.push({ weekIdentifier: weekIdToSubmit, logs: submittedLogs });
                 switchView('success');
                 fireConfetti();
             } else {
@@ -804,6 +831,69 @@
         } finally {
             btn.disabled = false; loader.style.display = 'none';
         }
+    }
+
+    function showHistory() {
+        document.getElementById('history-team').textContent = state.currentUser.team;
+
+        const subs = state.studentSubmissions || [];
+        // Group all logs by week
+        const grouped = {};
+        let totalAllTime = 0;
+        subs.forEach(sub => {
+            if (sub.logs) {
+                sub.logs.forEach(log => {
+                    totalAllTime += parseFloat(log.hours) || 0;
+                    const weekId = getWeekIdentifier(log.date);
+                    if (!grouped[weekId]) grouped[weekId] = { hours: 0, logs: [] };
+                    grouped[weekId].hours += parseFloat(log.hours) || 0;
+                    grouped[weekId].logs.push(log);
+                });
+            }
+        });
+
+        document.getElementById('history-total').textContent = totalAllTime.toFixed(1);
+        const list = document.getElementById('history-list');
+
+        if (Object.keys(grouped).length === 0) {
+            list.innerHTML = `<div class="text-zinc-500 text-sm italic py-6 text-center">No submissions yet.</div>`;
+            switchView('history');
+            lucide.createIcons();
+            return;
+        }
+
+        // Sort weeks newest first
+        const sortedWeeks = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
+        list.innerHTML = sortedWeeks.map(weekId => {
+            const weekTitle = formatWeekRange(weekId);
+            const weekData = grouped[weekId];
+            const sortedLogs = weekData.logs.slice().sort((a, b) => new Date(b.date) - new Date(a.date));
+            const logsHtml = sortedLogs.map(log => {
+                const dateStr = new Date(log.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                return `
+                    <div class="flex items-center gap-3 bg-zinc-900/60 p-2.5 rounded-lg border border-zinc-800">
+                        <div class="bg-zinc-800 text-purple-400 font-bold px-2 py-1 rounded text-xs min-w-[2.5rem] text-center shrink-0">${log.hours}</div>
+                        <div class="flex flex-col overflow-hidden">
+                            <div class="text-zinc-300 font-medium text-xs truncate">${escapeHTML(log.task)}</div>
+                            <div class="text-zinc-500 text-[10px]">${dateStr}</div>
+                        </div>
+                    </div>`;
+            }).join('');
+            return `
+                <div class="bg-zinc-900/20 rounded-xl border border-zinc-800/50 overflow-hidden">
+                    <div class="flex justify-between items-center p-3 border-b border-zinc-800/50">
+                        <span class="text-sm font-bold text-white flex items-center gap-2">
+                            <i data-lucide="calendar" class="w-4 h-4 text-zinc-500 shrink-0"></i>
+                            ${weekTitle}
+                        </span>
+                        <span class="text-xs font-bold px-2 py-1 bg-purple-900/30 text-purple-400 rounded-md border border-purple-500/20 shrink-0">${weekData.hours.toFixed(1)} hrs</span>
+                    </div>
+                    <div class="p-3 flex flex-col gap-2">${logsHtml}</div>
+                </div>`;
+        }).join('');
+
+        switchView('history');
+        lucide.createIcons();
     }
 
     function logout() {
