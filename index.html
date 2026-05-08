@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Student Leader Timesheet</title>
+    
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <!-- SheetJS for Excel Generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Outfit', 'sans-serif'] },
+                    colors: {
+                        zinc: {
+                            900: '#18181b',
+                            950: '#09090b',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #09090b; }
+        ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #71717a; }
+        .no-save-pass { -webkit-text-security: disc !important; text-security: disc !important; }
+
+        .glass-card {
+            background: rgba(9, 9, 11, 0.65);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+        
+        .primary-card {
+            border: 1px solid rgba(168, 85, 247, 0.4);
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.05);
+        }
+
+        .view { display: none; opacity: 0; transform: translateY(15px); transition: 0.4s ease; width: 100%; }
+        .view.active { display: block; opacity: 1; transform: translateY(0); }
+
+        .control-item {
+            width: 100%; 
+            background: #18181b; 
+            border: 1px solid #27272a; 
+            color: #ffffff; 
+            border-radius: 0.75rem; 
+            padding: 1rem 1.25rem; 
+            font-family: inherit; 
+            font-size: 1rem;
+            outline: none; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .control-item:hover {
+            border-color: rgba(168, 85, 247, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+        }
+        .control-item::placeholder { color: rgba(255, 255, 255, 0.5); }
+        .control-item:focus { 
+            border-color: #a855f7; 
+            background: #27272a; 
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.15); 
+            transform: translateY(-2px);
+        }
+        
+        select.control-item { 
+            appearance: none; 
+            -webkit-appearance: none; 
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); 
+            background-repeat: no-repeat; 
+            background-position: right 1rem center; 
+            background-size: 16px; 
+            padding-right: 2.5rem; 
+        }
+        select.control-item option { background: #18181b; color: white; }
+        input[type="date"].control-item::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
+
+        .form-label { display: block; margin-bottom: 0.75rem; color: #ffffff; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; line-height: 1.4; }
+        .form-group { margin-bottom: 1.5rem; }
+
+        .loader { display: none; width: 18px; height: 18px; border: 2px solid #fff; border-bottom-color: transparent; border-radius: 50%; animation: rotation 1s linear infinite; margin-left: 10px; }
+        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        #toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; padding: 16px 24px; border-radius: 100px; z-index: 2000; display: none; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
+        .pdf-mode { background: #09090b !important; color: white !important; }
+        
+        /* Full screen loading */
+        #globalLoader { position: fixed; inset: 0; background: #09090b; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s; }
+        .spinner { width: 40px; height: 40px; border: 4px solid rgba(168, 85, 247, 0.3); border-radius: 50%; border-top-color: #a855f7; animation: rotation 1s linear infinite; }
+    </style>
+</head>
+<body class="text-zinc-100 min-h-[100dvh] relative overflow-x-hidden selection:bg-purple-500/30 font-sans" style="background-image: url('https://i.imgur.com/3lA8wif.png'); background-size: cover; background-position: center; background-attachment: fixed;">
+
+    <!-- Initial Loader -->
+    <div id="globalLoader">
+        <div class="spinner mb-4"></div>
+        <div class="text-purple-400 font-bold tracking-widest text-xs uppercase animate-pulse">Connecting to Database...</div>
+    </div>
+
+    <!-- Dark Overlay -->
+    <div class="fixed inset-0 bg-zinc-950/70 z-[-1]"></div>
+
+    <main class="relative z-10 w-full max-w-7xl mx-auto p-4 sm:p-8 min-h-[100dvh] flex flex-col">
+        
+        <div class="flex-1 w-full flex flex-col items-center justify-center py-6 sm:py-10">
+
+            <!-- LOGIN VIEW -->
+            <div id="loginView" class="view active max-w-md w-full mx-auto">
+                <div class="glass-card primary-card rounded-3xl p-6 sm:p-8 text-center transition-transform duration-500 hover:shadow-[0_0_40px_rgba(168,85,247,0.15)] hover:-translate-y-1">
+                    <img src="https://i.imgur.com/p2qZOL5.png" alt="CAB Logo" class="h-16 sm:h-20 w-auto mx-auto mb-6 object-contain transition-all duration-500 hover:scale-110 hover:rotate-2 hover:drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]" />
+                    <h3 class="text-3xl font-extrabold mb-3 tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">Timesheet Login</h3>
+                    <p class="text-zinc-400 mb-8 font-medium text-sm px-2">Enter your Student ID to track and manage your weekly hours for <span id="loginActiveYear" class="text-purple-400 font-bold">...</span>.</p>
+
+                    <div class="form-group text-center">
+                        <label class="form-label">Student ID</label>
+                        <input type="number" id="loginStudentID" class="control-item text-center text-xl tracking-widest" placeholder="e.g. 123456" autocomplete="off" onkeyup="if(event.key==='Enter') studentLogin()"/>
+                    </div>
+
+                    <button class="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold py-4 rounded-xl flex justify-center items-center gap-2 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] shadow-[0_0_20px_rgba(168,85,247,0.3)] hover:shadow-[0_0_30px_rgba(168,85,247,0.6)] text-lg border border-purple-500/50" id="loginBtn" onclick="studentLogin()">
+                        <span>Access Timesheet</span>
+                        <div class="loader" id="loginLoader"></div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- TIMESHEET TRACKING VIEW -->
+            <div id="timesheetView" class="view max-w-2xl w-full mx-auto">
+                <div class="glass-card primary-card rounded-3xl p-5 sm:p-10 transition-transform duration-500 hover:shadow-[0_0_40px_rgba(168,85,247,0.15)] hover:-translate-y-1">
+                    
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-zinc-800 pb-5 sm:pb-6 mb-5 sm:mb-6 gap-4">
+                        <div>
+                            <h3 class="text-2xl font-extrabold tracking-tight text-white" id="ts-greeting">Hello, Student</h3>
+                            <p class="text-purple-400 font-medium text-sm mt-1" id="ts-team">Team Name</p>
+                        </div>
+                        <div class="flex flex-col gap-3 w-full sm:w-auto">
+                            <select id="studentWeekSelect" class="bg-zinc-800 border border-zinc-700 text-white py-2 px-3 rounded-xl text-sm font-medium outline-none cursor-pointer" onchange="switchStudentWeek()">
+                                <option value="current">Logging: Current Week</option>
+                                <option value="previous">Logging: Previous Week</option>
+                            </select>
+                            <div class="sm:text-right w-full bg-zinc-900/50 sm:bg-transparent p-3 sm:p-0 rounded-xl border border-zinc-800 sm:border-none flex flex-row sm:flex-col justify-between items-center sm:items-end">
+                                <div class="text-zinc-500 text-xs font-bold uppercase tracking-wider mb-0 sm:mb-1">Total Pending</div>
+                                <div class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500" id="ts-totalHours">0.0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-8">
+                        <div class="text-zinc-400 text-xs font-bold tracking-wider uppercase mb-4 flex justify-between">
+                            <span>Logged Hours</span>
+                            <span id="ts-weekLabel">Pending Submit</span>
+                        </div>
+                        <div id="ts-entriesList" class="flex flex-col gap-3 max-h-[250px] sm:max-h-[300px] overflow-y-auto pr-2"></div>
+                    </div>
+
+                    <div id="entryFormBox" class="bg-zinc-900/50 rounded-2xl p-4 sm:p-5 border border-zinc-800/50 mb-6 sm:mb-8 transition-colors duration-300">
+                        <div class="flex justify-between items-center mb-4">
+                            <h4 id="formModeTitle" class="text-sm font-bold text-white uppercase tracking-wider">Log New Hours</h4>
+                            <button id="cancelEditBtn" class="hidden text-xs text-rose-400 hover:text-rose-300 transition" onclick="cancelEdit()">Cancel Edit</button>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                            <div class="form-group !mb-0">
+                                <label class="form-label">Date</label>
+                                <input type="date" id="entryDate" class="control-item" />
+                            </div>
+                            <div class="form-group !mb-0">
+                                <label class="form-label">Hours</label>
+                                <input type="number" id="entryHours" class="control-item" step="0.25" min="0" placeholder="e.g. 2.5" />
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Task Description</label>
+                            <input type="text" id="entryTask" class="control-item" placeholder="What did you work on?" />
+                        </div>
+                        <button id="saveEntryBtn" class="w-full bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white font-bold py-3 rounded-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-lg flex justify-center items-center gap-2" onclick="saveTimeEntry()">
+                            <i data-lucide="plus" class="w-4 h-4" id="saveEntryIcon"></i> <span id="saveEntryText">Add to Week</span>
+                        </button>
+                    </div>
+
+                    <div class="border-t border-zinc-800 pt-5 sm:pt-6">
+                        <p class="text-xs text-zinc-400 text-center mb-4 leading-relaxed px-2">Make sure all your hours for the selected week are logged before submitting. You can leave this page and come back; your unsubmitted hours are saved.</p>
+                        <button class="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold py-4 rounded-xl flex justify-center items-center gap-2 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] shadow-[0_0_20px_rgba(168,85,247,0.3)] hover:shadow-[0_0_30px_rgba(168,85,247,0.6)] text-lg border border-purple-500/50" id="submitBtn" onclick="submitTimesheet()">
+                            <i data-lucide="send" class="w-5 h-5"></i> <span id="submitTimesheetText">Submit Weekly Timesheet</span>
+                            <div class="loader" id="submitLoader"></div>
+                        </button>
+                    </div>
+                    
+                    <div class="text-center mt-6">
+                        <button class="text-zinc-500 hover:text-zinc-300 text-sm font-medium transition" onclick="logout()">Not you? Switch account</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUCCESS VIEW -->
+            <div id="successView" class="view max-w-2xl w-full mx-auto">
+                <div class="glass-card rounded-3xl p-8 sm:p-10 text-center">
+                    <div class="w-20 h-20 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl text-white shadow-[0_0_30px_rgba(168,85,247,0.5)] border border-purple-400/30">
+                        <i data-lucide="check" class="w-10 h-10"></i>
+                    </div>
+                    <h2 class="text-3xl font-bold mb-3 tracking-tight text-white">Timesheet Submitted!</h2>
+                    <p class="text-zinc-300 mb-8 leading-relaxed">Your hours have been officially recorded.</p>
+                    
+                    <button class="w-full sm:w-auto bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white font-bold py-3 px-8 rounded-xl transition-all duration-300 hover:-translate-y-1 hover:scale-105 hover:shadow-lg" onclick="logout()">
+                        Return to Login
+                    </button>
+                </div>
+            </div>
+
+            <!-- ADMIN DASHBOARD VIEW -->
+            <div id="dashboardView" class="view max-w-7xl w-full mx-auto">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 sm:mb-8 glass-card p-4 sm:p-5 rounded-2xl border-white/5">
+                    <div>
+                        <h2 class="text-xl font-bold text-white px-2">Master Hours Overview</h2>
+                        <p class="text-zinc-400 text-sm px-2 mt-1">Reviewing submissions by week.</p>
+                    </div>
+                    <div class="flex flex-wrap gap-2 w-full md:w-auto">
+                        <select id="adminYearFilter" class="bg-zinc-800 border border-zinc-700 text-white py-2.5 px-4 rounded-xl text-sm font-medium outline-none cursor-pointer" onchange="renderDashboard()"></select>
+                        <select id="adminWeekFilter" class="bg-zinc-800 border border-zinc-700 text-white py-2.5 px-4 rounded-xl text-sm font-medium outline-none cursor-pointer" onchange="renderDashboard()">
+                            <option value="current">Current Week (Mon-Sun)</option>
+                            <option value="previous">Previous Week (Mon-Sun)</option>
+                        </select>
+                        <button onclick="downloadExcel()" class="flex-1 md:flex-none justify-center bg-emerald-900/40 hover:bg-emerald-800/60 border border-emerald-500/50 text-emerald-400 py-2.5 px-4 rounded-xl text-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg flex items-center gap-2 font-medium">
+                            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Export Excel
+                        </button>
+                        <button onclick="switchView('settings')" class="flex-1 md:flex-none justify-center bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white py-2.5 px-4 rounded-xl text-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg flex items-center gap-2 font-medium">
+                            <i data-lucide="settings" class="w-4 h-4"></i> Setup & Roster
+                        </button>
+                        <button onclick="logout()" class="w-full md:w-auto justify-center bg-gradient-to-r from-blue-600 to-purple-600 border border-purple-500/50 text-white py-2.5 px-6 rounded-xl text-sm font-medium hover:opacity-90 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_15px_rgba(168,85,247,0.4)] flex items-center gap-2">
+                            Exit Admin
+                        </button>
+                    </div>
+                </div>
+                <div id="admin-teamCards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-10"></div>
+            </div>
+
+            <!-- ADMIN SETTINGS VIEW -->
+            <div id="settingsView" class="view max-w-6xl w-full mx-auto">
+                <div class="glass-card rounded-3xl p-5 sm:p-10">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8 border-b border-zinc-800 pb-6">
+                        <h2 class="text-2xl font-bold tracking-tight text-white">System Configuration</h2>
+                        <div class="flex gap-2">
+                            <button id="saveChangesBtn" class="justify-center bg-emerald-900/40 hover:bg-emerald-800/60 border border-emerald-500/50 text-emerald-400 py-2.5 px-6 rounded-xl text-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg font-medium flex items-center gap-2" onclick="saveAdminChanges()">
+                                <i data-lucide="save" class="w-4 h-4"></i> Save to Cloud <div class="loader" id="saveLoader"></div>
+                            </button>
+                            <button class="justify-center bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 py-2.5 px-6 rounded-xl text-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg font-medium flex items-center gap-2" onclick="switchView('dashboard')">
+                                <i data-lucide="arrow-left" class="w-4 h-4"></i> Back
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-10">
+                        <div class="lg:col-span-5 flex flex-col gap-8">
+                            
+                            <!-- Passwords & Config -->
+                            <div>
+                                <div class="text-purple-400 text-xs font-bold tracking-wider uppercase mb-4 border-b border-zinc-800 pb-2">Security</div>
+                                <div class="form-group mb-0">
+                                    <input type="text" id="setNewPass" class="control-item no-save-pass" placeholder="Change admin password..." autocomplete="new-password" spellcheck="false" />
+                                </div>
+                            </div>
+
+                            <!-- Teams -->
+                            <div>
+                                <div class="text-purple-400 text-xs font-bold tracking-wider uppercase mb-4 border-b border-zinc-800 pb-2 flex justify-between">
+                                    <span>Manage Teams</span>
+                                    <span class="text-zinc-500" id="teamCount">0</span>
+                                </div>
+                                <div class="flex gap-2 mb-4">
+                                    <input type="text" id="newTeamInput" class="control-item !mb-0" placeholder="New Team Name..." />
+                                    <button class="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white px-4 rounded-xl transition-all" onclick="addTeam()">Add</button>
+                                </div>
+                                <div id="settings-teamList" class="flex flex-col gap-2 max-h-[200px] overflow-y-auto pr-2"></div>
+                            </div>
+
+                            <!-- Academic Years -->
+                            <div>
+                                <div class="text-purple-400 text-xs font-bold tracking-wider uppercase mb-4 border-b border-zinc-800 pb-2 flex justify-between">
+                                    <span>Manage Academic Years</span>
+                                    <span class="text-zinc-500" id="yearCount">0</span>
+                                </div>
+                                <div class="flex gap-2 mb-4">
+                                    <input type="text" id="newYearInput" class="control-item !mb-0" placeholder="e.g. 2025-2026" />
+                                    <button class="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white px-4 rounded-xl transition-all" onclick="addYear()">Add</button>
+                                </div>
+                                <div id="settings-yearList" class="flex flex-col gap-2 max-h-[150px] overflow-y-auto pr-2"></div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Roster -->
+                        <div class="lg:col-span-7 bg-zinc-900/30 p-5 rounded-2xl border border-white/5">
+                            <div class="flex justify-between items-center mb-4 border-b border-zinc-800 pb-2">
+                                <span class="text-purple-400 text-xs font-bold tracking-wider uppercase">Student Roster</span>
+                                <select id="settingsRosterYear" class="bg-zinc-800 border border-zinc-700 text-white py-1.5 px-3 rounded-lg text-xs font-bold outline-none cursor-pointer shadow-sm" onchange="changeRosterYear()"></select>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+                                <input type="number" id="newStudID" class="control-item !mb-0 !p-3 !text-sm" placeholder="ID Number" />
+                                <input type="text" id="newStudName" class="control-item !mb-0 !p-3 !text-sm" placeholder="Full Name" />
+                                <select id="newStudTeam" class="control-item !mb-0 !p-3 !text-sm"></select>
+                            </div>
+                            <button class="w-full mb-6 bg-gradient-to-r from-blue-600 to-purple-600 border border-purple-500/50 text-white font-bold py-3 rounded-xl hover:opacity-90 transition-all hover:-translate-y-0.5 shadow-md flex justify-center items-center gap-2 text-sm" onclick="addStudentToRoster()">
+                                <i data-lucide="user-plus" class="w-4 h-4"></i> Add to Roster
+                            </button>
+
+                            <div id="admin-rosterList" class="flex flex-col gap-2 max-h-[400px] overflow-y-auto pr-2"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div> <!-- End Center Wrapper -->
+
+        <footer class="mt-auto pt-6 text-center text-zinc-500 text-xs tracking-wider flex flex-col items-center gap-2 w-full pb-4">
+            <span>© <span id="year"></span> Canyon Activities Board</span>
+            <button class="opacity-60 hover:opacity-100 transition-opacity uppercase tracking-widest mt-2 bg-transparent border-none text-[10px] cursor-pointer text-zinc-400 p-2" onclick="showGate()">Staff Access</button>
+        </footer>
+    </main>
+
+    <!-- Admin Login Modal -->
+    <div id="gateModal" class="fixed inset-0 z-[1000] hidden items-center justify-center p-4">
+        <div class="absolute inset-0 bg-zinc-950/80 backdrop-blur-md" onclick="hideGate()"></div>
+        <div class="relative w-full max-w-sm glass-card rounded-3xl p-8 flex flex-col items-center text-center shadow-2xl border-purple-500/30 transition-all duration-500 hover:shadow-[0_0_40px_rgba(168,85,247,0.2)] hover:-translate-y-2">
+            <div class="w-16 h-16 bg-zinc-900 rounded-2xl p-3 mb-4 flex items-center justify-center border border-zinc-800 transition-transform hover:rotate-12">
+                <i data-lucide="lock" class="w-8 h-8 text-zinc-400"></i>
+            </div>
+            <h3 class="text-2xl font-bold mb-1 text-white">Coordinator Login</h3>
+            <p class="text-zinc-400 text-sm mb-6">Enter admin password to access system settings and master hours.</p>
+            
+            <input type="password" id="adminPass" class="control-item text-center mb-6 no-save-pass" placeholder="Password" autocomplete="off" spellcheck="false" onkeyup="if(event.key==='Enter') verifyAdmin()"/>
+            
+            <button class="w-full bg-gradient-to-r from-blue-600 to-purple-600 border border-purple-500/50 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] shadow-[0_0_15px_rgba(168,85,247,0.3)]" id="gateBtn" onclick="verifyAdmin()">
+                <span>Authorize</span> <div class="loader" id="gateLoader"></div>
+            </button>
+        </div>
+    </div>
+
+    <!-- Student Detail Modal -->
+    <div id="studentDetailModal" class="fixed inset-0 z-[1000] hidden items-center justify-center p-4">
+        <div class="absolute inset-0 bg-zinc-950/80 backdrop-blur-md" onclick="closeStudentDetails()"></div>
+        <div class="relative w-full max-w-lg glass-card rounded-3xl p-6 sm:p-8 flex flex-col shadow-2xl border-purple-500/30 transition-all duration-500 max-h-[90vh]">
+            <div class="flex justify-between items-start border-b border-zinc-800 pb-4 mb-4">
+                <div>
+                    <h3 class="text-2xl font-bold text-white" id="detailModalName">Student Name</h3>
+                    <p class="text-purple-400 text-sm font-medium" id="detailModalTeam">Team Name</p>
+                </div>
+                <button class="text-zinc-400 hover:text-white bg-zinc-800 hover:bg-zinc-700 p-2 rounded-xl transition" onclick="closeStudentDetails()">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="flex justify-between items-center bg-zinc-900/50 p-4 rounded-xl border border-zinc-800 mb-6">
+                <span class="text-zinc-400 text-xs font-bold uppercase tracking-wider" id="detailModalTotalLabel">All-Time Total Hours</span>
+                <span class="text-2xl font-black text-white" id="detailModalTotal">0.0</span>
+            </div>
+
+            <div class="text-purple-400 text-xs font-bold tracking-wider uppercase mb-3 px-1">Weekly Breakdown</div>
+            <div id="detailModalLogs" class="flex-1 overflow-y-auto pr-2 flex flex-col gap-2"></div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="glass-card !bg-zinc-900 !text-white font-bold shadow-xl border !border-purple-500/50">Update Successful</div>
+
+<script>
+    // ==========================================
+    // REPLACE THIS URL WITH YOUR GOOGLE WEB APP URL
+    // ==========================================
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw39uMmPhxXkerCc84MZ_23c-TkSQeFJIaNH81iJQQMNO0R9c_tpyDJ5AifuEX3o_8o/exec";
+
+    // Date Helpers
+    const todayDate = new Date();
+    function getMonday(d) {
+        const date = new Date(d);
+        const day = date.getDay();
+        const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+        return new Date(date.setDate(diff));
+    }
+    const currentMonday = getMonday(todayDate); currentMonday.setHours(0,0,0,0);
+    const prevMonday = new Date(currentMonday); prevMonday.setDate(prevMonday.getDate() - 7);
+    const currentSunday = new Date(currentMonday); currentSunday.setDate(currentMonday.getDate() + 6); currentSunday.setHours(23,59,59,999);
+    const prevSunday = new Date(prevMonday); prevSunday.setDate(prevMonday.getDate() + 6); prevSunday.setHours(23,59,59,999);
+
+    function getWeekIdentifier(dateString) {
+        return getMonday(new Date(dateString + 'T00:00:00')).toISOString().split('T')[0];
+    }
+    function formatWeekRange(startIsoString) {
+        const start = new Date(startIsoString + 'T00:00:00');
+        const end = new Date(start); end.setDate(end.getDate() + 6);
+        return `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    }
+    function escapeHTML(str) {
+        if (!str) return '';
+        return str.toString().replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
+    }
+
+    // Application State
+    let state = { 
+        view: 'login',
+        currentUser: null,
+        currentWeekEntries: [], 
+        studentActiveTab: 'current',
+        editingEntryId: null,
+        viewingStudentId: null,
+        
+        // Synced from Database
+        teams: [],
+        academicYears: [],
+        activeYear: '',
+        adminViewingYear: '',
+        rosters: {},
+        submissions: []
+    };
+
+    // --- INITIALIZATION (Network) ---
+    async function init() { 
+        document.getElementById('year').textContent = new Date().getFullYear();
+        lucide.createIcons();
+        
+        const adminFilter = document.getElementById('adminWeekFilter');
+        if (adminFilter && (todayDate.getDay() === 1 || todayDate.getDay() === 2)) adminFilter.value = 'previous';
+
+        // Fetch Public Config
+        try {
+            const response = await fetch(SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'getConfig' })
+            });
+            const result = await response.json();
+            
+            if (result.success) {
+                state.activeYear = result.activeYear;
+                state.teams = result.teams;
+                state.academicYears = result.academicYears;
+                document.getElementById('loginActiveYear').textContent = state.activeYear;
+            } else {
+                showToast("Error loading config.", true);
+            }
+        } catch (e) {
+            console.error(e);
+            showToast("Failed to connect to server.", true);
+        }
+
+        document.getElementById('globalLoader').style.opacity = 0;
+        setTimeout(() => document.getElementById('globalLoader').style.display = 'none', 500);
+        switchView('login'); 
+    }
+
+    function switchView(viewName) {
+        state.view = viewName;
+        document.querySelectorAll('.view').forEach(v => {
+            v.classList.remove('active');
+            v.style.display = 'none'; 
+        });
+        const target = document.getElementById(viewName + 'View');
+        if (target) {
+            target.style.display = 'block';
+            setTimeout(() => target.classList.add('active'), 10);
+        }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // --- STUDENT LOGIC (Network) ---
+    async function studentLogin() {
+        const idInput = document.getElementById('loginStudentID').value.trim();
+        if(!idInput) return showToast("Please enter your Student ID", true);
+
+        const btn = document.getElementById('loginBtn');
+        const loader = document.getElementById('loginLoader');
+        btn.disabled = true; loader.style.display = 'block';
+
+        try {
+            const response = await fetch(SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'studentLogin', studentId: idInput })
+            });
+            const result = await response.json();
+
+            if (result.success) {
+                state.currentUser = result.student;
+                // Format submissions to match frontend expectation
+                state.studentPastSubmissions = result.submissions.map(sub => sub.weekIdentifier);
+                
+                document.getElementById('ts-greeting').textContent = `Hello, ${state.currentUser.name.split(' ')[0]}`;
+                document.getElementById('ts-team').textContent = state.currentUser.team;
+                
+                // Check if previous week is already submitted remotely
+                const prevWeekId = prevMonday.toISOString().split('T')[0];
+                const prevSubmitted = state.studentPastSubmissions.includes(prevWeekId);
+                
+                const select = document.getElementById('studentWeekSelect');
+                const prevOption = select.querySelector('option[value="previous"]');
+                if (prevSubmitted) {
+                    prevOption.disabled = true; prevOption.textContent = "Previous Week (Submitted)";
+                } else {
+                    prevOption.disabled = false; prevOption.textContent = "Logging: Previous Week";
+                }
+                
+                document.getElementById('studentWeekSelect').value = 'current';
+                switchStudentWeek(); 
+                switchView('timesheet');
+                document.getElementById('loginStudentID').value = ""; 
+            } else {
+                showToast(result.message || "ID not found.", true);
+            }
+        } catch (e) {
+            showToast("Connection error", true);
+        } finally {
+            btn.disabled = false; loader.style.display = 'none';
+        }
+    }
+
+    function setupDateRestrictions() {
+        const dateInput = document.getElementById('entryDate');
+        const todayStr = todayDate.toISOString().split('T')[0];
+        if (state.studentActiveTab === 'previous') {
+            dateInput.min = prevMonday.toISOString().split('T')[0];
+            dateInput.max = prevSunday.toISOString().split('T')[0];
+        } else {
+            dateInput.min = currentMonday.toISOString().split('T')[0];
+            dateInput.max = todayStr; 
+        }
+        let selectedStr = dateInput.value;
+        if (!selectedStr || selectedStr < dateInput.min || selectedStr > dateInput.max) {
+            dateInput.value = (todayStr >= dateInput.min && todayStr <= dateInput.max) ? todayStr : dateInput.max;
+        }
+    }
+
+    function switchStudentWeek() {
+        state.studentActiveTab = document.getElementById('studentWeekSelect').value;
+        const savedData = localStorage.getItem(`ts_pending_${state.currentUser.id}_${state.studentActiveTab}`);
+        state.currentWeekEntries = savedData ? JSON.parse(savedData) : [];
+        setupDateRestrictions();
+        cancelEdit(); 
+        renderTimesheetEntries();
+        const btnText = state.studentActiveTab === 'previous' ? "Submit Previous Week" : "Submit Current Week";
+        document.getElementById('submitTimesheetText').textContent = btnText;
+    }
+
+    function saveTimeEntry() {
+        const date = document.getElementById('entryDate').value;
+        const hours = parseFloat(document.getElementById('entryHours').value);
+        const task = document.getElementById('entryTask').value.trim();
+
+        if(!date || !hours || !task) return showToast("Please fill out Date, Hours, and Task.", true);
+        const dateVal = new Date(date + 'T00:00:00').getTime();
+        const minBound = new Date(document.getElementById('entryDate').min + 'T00:00:00').getTime();
+        const maxBound = new Date(document.getElementById('entryDate').max + 'T00:00:00').getTime();
+
+        if(dateVal < minBound || dateVal > maxBound) return showToast("Selected date is outside the allowed logging window.", true);
+
+        if (state.editingEntryId) {
+            const index = state.currentWeekEntries.findIndex(e => e.id === state.editingEntryId);
+            if(index !== -1) {
+                state.currentWeekEntries[index] = { id: state.editingEntryId, date, hours, task };
+                showToast("Entry updated successfully!");
+            }
+            cancelEdit(); 
+        } else {
+            state.currentWeekEntries.push({ id: Date.now(), date, hours, task });
+            showToast("Hours added to current week!");
+            document.getElementById('entryHours').value = "";
+            document.getElementById('entryTask').value = "";
+        }
+        localStorage.setItem(`ts_pending_${state.currentUser.id}_${state.studentActiveTab}`, JSON.stringify(state.currentWeekEntries));
+        renderTimesheetEntries();
+    }
+
+    function editEntry(id) {
+        const entry = state.currentWeekEntries.find(e => e.id === id);
+        if(!entry) return;
+        state.editingEntryId = id;
+        document.getElementById('entryDate').value = entry.date;
+        document.getElementById('entryHours').value = entry.hours;
+        document.getElementById('entryTask').value = entry.task;
+        document.getElementById('formModeTitle').textContent = "Edit Logged Hours";
+        document.getElementById('formModeTitle').classList.add('text-purple-400');
+        document.getElementById('entryFormBox').classList.add('border-purple-500/50', 'bg-purple-900/10');
+        document.getElementById('saveEntryText').textContent = "Update Entry";
+        document.getElementById('saveEntryIcon').setAttribute('data-lucide', 'save');
+        document.getElementById('cancelEditBtn').classList.remove('hidden');
+        lucide.createIcons();
+        document.getElementById('entryFormBox').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function cancelEdit() {
+        state.editingEntryId = null;
+        document.getElementById('entryDate').valueAsDate = new Date();
+        document.getElementById('entryHours').value = "";
+        document.getElementById('entryTask').value = "";
+        document.getElementById('formModeTitle').textContent = "Log New Hours";
+        document.getElementById('formModeTitle').classList.remove('text-purple-400');
+        document.getElementById('entryFormBox').classList.remove('border-purple-500/50', 'bg-purple-900/10');
+        document.getElementById('saveEntryText').textContent = "Add to Week";
+        document.getElementById('saveEntryIcon').setAttribute('data-lucide', 'plus');
+        document.getElementById('cancelEditBtn').classList.add('hidden');
+        lucide.createIcons();
+    }
+
+    function removeEntry(id) {
+        if(state.editingEntryId === id) cancelEdit();
+        state.currentWeekEntries = state.currentWeekEntries.filter(e => e.id !== id);
+        localStorage.setItem(`ts_pending_${state.currentUser.id}_${state.studentActiveTab}`, JSON.stringify(state.currentWeekEntries));
+        renderTimesheetEntries();
+    }
+
+    function renderTimesheetEntries() {
+        const list = document.getElementById('ts-entriesList');
+        const totalEl = document.getElementById('ts-totalHours');
+        
+        if(state.currentWeekEntries.length === 0) {
+            list.innerHTML = `<div class="text-zinc-500 text-sm italic py-4 text-center border border-dashed border-zinc-800 rounded-xl">No pending hours logged.</div>`;
+            totalEl.textContent = "0.0"; return;
+        }
+
+        let total = 0;
+        list.innerHTML = state.currentWeekEntries.map(entry => {
+            total += entry.hours;
+            const dateStr = new Date(entry.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+            return `
+            <div class="flex items-center justify-between bg-zinc-900/80 p-3 rounded-xl border border-zinc-800 gap-3 transition-all hover:border-purple-500/30 group">
+                <div class="flex items-center gap-3 overflow-hidden flex-1">
+                    <div class="bg-zinc-800 text-purple-400 font-bold px-3 py-2 rounded-lg text-center min-w-[3rem] shrink-0">${entry.hours}</div>
+                    <div class="flex flex-col overflow-hidden">
+                        <div class="text-white font-medium text-sm truncate">${escapeHTML(entry.task)}</div>
+                        <div class="text-zinc-500 text-xs">${dateStr}</div>
+                    </div>
+                </div>
+                <div class="flex shrink-0 gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button class="text-blue-400 hover:text-blue-300 p-2 bg-zinc-800 rounded-lg transition" onclick="editEntry(${entry.id})" title="Edit"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                    <button class="text-rose-500 hover:text-rose-400 p-2 bg-zinc-800 rounded-lg transition" onclick="removeEntry(${entry.id})" title="Remove"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                </div>
+            </div>`;
+        }).join('');
+        totalEl.textContent = total.toFixed(1); lucide.createIcons();
+    }
+
+    async function submitTimesheet() {
+        if(state.currentWeekEntries.length === 0) return showToast("You haven't logged any hours!", true);
+
+        const btn = document.getElementById('submitBtn');
+        const loader = document.getElementById('submitLoader');
+        btn.disabled = true; loader.style.display = 'block';
+
+        const weekIdToSubmit = state.studentActiveTab === 'previous' ? prevMonday.toISOString().split('T')[0] : currentMonday.toISOString().split('T')[0];
+
+        try {
+            const response = await fetch(SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify({ 
+                    action: 'submitTimesheet', 
+                    studentId: state.currentUser.id,
+                    weekIdentifier: weekIdToSubmit,
+                    logs: state.currentWeekEntries
+                })
+            });
+            const result = await response.json();
+
+            if(result.success) {
+                state.currentWeekEntries = [];
+                localStorage.removeItem(`ts_pending_${state.currentUser.id}_${state.studentActiveTab}`);
+                switchView('success');
+                fireConfetti();
+            } else {
+                showToast(result.message || "Submission failed", true);
+            }
+        } catch (e) {
+            showToast("Connection Error", true);
+        } finally {
+            btn.disabled = false; loader.style.display = 'none';
+        }
+    }
+
+    function logout() {
+        state.currentUser = null; state.currentWeekEntries = []; state.editingEntryId = null; switchView('login');
+    }
+
+    // --- ADMIN LOGIC (Network) ---
+    function showGate() { 
+        document.getElementById('gateModal').style.display = 'flex'; 
+        document.getElementById('gateModal').classList.remove('hidden');
+    }
+    
+    function hideGate() { 
+        document.getElementById('gateModal').style.display = 'none'; 
+        document.getElementById('gateModal').classList.add('hidden');
+        document.getElementById('adminPass').value = ""; 
+    }
+
+    async function verifyAdmin() {
+        const pass = document.getElementById('adminPass').value;
+        if(!pass) return showToast("Password Required", true);
+
+        const btn = document.getElementById('gateBtn');
+        const loader = document.getElementById('gateLoader');
+        btn.disabled = true; loader.style.display = 'block';
+
+        try {
+            // First pass validation
+            const resLogin = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'adminLogin', password: pass }) });
+            const resultLogin = await resLogin.json();
+
+            if (resultLogin.success) {
+                // Fetch deep admin data
+                const resData = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'getAdminData', password: pass }) });
+                const resultData = await resData.json();
+
+                if (resultData.success) {
+                    state.adminPassword = pass; // Cache locally for subsequent saves
+                    state.rosters = resultData.rosters || {};
+                    state.submissions = resultData.submissions || [];
+                    state.adminViewingYear = state.activeYear;
+
+                    hideGate(); showToast("Access Granted");
+                    renderSettingsManager(); 
+                    renderDashboard();
+                    switchView('dashboard');
+                } else {
+                    showToast(resultData.message || "Failed to load master data", true);
+                }
+            } else {
+                showToast("Incorrect Password", true);
+            }
+        } catch (e) {
+            showToast("Connection error", true);
+        } finally {
+            btn.disabled = false; loader.style.display = 'none';
+        }
+    }
+
+    function renderDashboard() {
+        const grid = document.getElementById('admin-teamCards');
+        grid.innerHTML = "";
+
+        const weekFilterVal = document.getElementById('adminWeekFilter').value;
+        const yearFilterVal = document.getElementById('adminYearFilter').value;
+        
+        const targetMonday = weekFilterVal === 'current' ? currentMonday : prevMonday;
+        const targetSunday = weekFilterVal === 'current' ? currentSunday : prevSunday;
+
+        state.teams.forEach(teamName => {
+            const teamRoster = (state.rosters[yearFilterVal] || []).filter(r => r.team === teamName);
+            let teamTotal = 0; let studentListHTML = "";
+            
+            if (teamRoster.length > 0) {
+                studentListHTML = teamRoster.map(student => {
+                    // Collect all logs for student in the selected year
+                    const studentSubs = state.submissions.filter(s => s.studentId === student.id && s.academicYear === yearFilterVal);
+                    let weekHours = 0;
+                    
+                    studentSubs.forEach(sub => {
+                        const weekLogs = sub.logs.filter(log => {
+                            const logDate = new Date(log.date + 'T00:00:00');
+                            return logDate >= targetMonday && logDate <= targetSunday;
+                        });
+                        weekHours += weekLogs.reduce((sum, l) => sum + l.hours, 0);
+                    });
+                    
+                    teamTotal += weekHours;
+                    const statusClass = weekHours === 0 ? "text-rose-400 bg-rose-900/20 border border-rose-500/20" : "text-purple-400 bg-purple-900/20 border border-purple-500/20";
+
+                    return `
+                        <div class="flex justify-between items-center py-2 border-b border-zinc-800/50 last:border-0 cursor-pointer hover:bg-zinc-800/50 rounded-lg px-2 -mx-2 transition" onclick="viewStudentDetails('${student.id}')">
+                            <div class="flex flex-col">
+                                <span class="text-sm font-medium ${weekHours === 0 ? 'text-zinc-400' : 'text-zinc-200'}">${escapeHTML(student.name)}</span>
+                                <span class="text-[10px] text-zinc-500">ID: ${escapeHTML(student.id)}</span>
+                            </div>
+                            <span class="text-sm font-bold px-2 py-1 rounded-md ${statusClass}">${weekHours.toFixed(1)} hrs</span>
+                        </div>
+                    `;
+                }).join('');
+            } else {
+                studentListHTML = `<div class="text-xs text-zinc-500 italic py-2">No students on roster for this team.</div>`;
+            }
+
+            const card = document.createElement('div');
+            card.className = "glass-card rounded-2xl border-white/5 flex flex-col transition hover:-translate-y-1 hover:border-purple-500/30 overflow-hidden";
+            card.innerHTML = `
+                <div class="p-5 border-b border-zinc-800 bg-zinc-900/50 flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center border border-zinc-700 text-purple-400 shrink-0"><i data-lucide="users" class="w-4 h-4"></i></div>
+                        <span class="font-bold text-white truncate">${escapeHTML(teamName)}</span>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Week Total</div>
+                        <div class="text-xl font-black text-white">${teamTotal.toFixed(1)}</div>
+                    </div>
+                </div>
+                <div class="p-4 flex-1 flex flex-col gap-1 max-h-[250px] overflow-y-auto">${studentListHTML}</div>
+            `;
+            grid.appendChild(card);
+        });
+        lucide.createIcons();
+    }
+
+    function viewStudentDetails(studentId) {
+        state.viewingStudentId = studentId;
+        document.getElementById('studentDetailModal').style.display = 'flex';
+        document.getElementById('studentDetailModal').classList.remove('hidden');
+        renderStudentDetails();
+    }
+
+    function renderStudentDetails() {
+        let rosterStudent = null;
+        for (const year in state.rosters) {
+            const found = state.rosters[year].find(s => s.id === state.viewingStudentId);
+            if(found) { rosterStudent = found; break; }
+        }
+        if(!rosterStudent) return;
+
+        const studentSubs = state.submissions.filter(s => s.studentId === state.viewingStudentId && s.academicYear === document.getElementById('adminYearFilter').value);
+        document.getElementById('detailModalName').textContent = rosterStudent.name;
+        document.getElementById('detailModalTeam').textContent = rosterStudent.team;
+
+        // Group existing logs
+        const grouped = {};
+        let totalAllTime = 0;
+        studentSubs.forEach(sub => {
+            if(sub.logs) {
+                sub.logs.forEach(log => {
+                    totalAllTime += log.hours;
+                    const weekId = getWeekIdentifier(log.date);
+                    if(!grouped[weekId]) grouped[weekId] = { hours: 0, logs: [] };
+                    grouped[weekId].hours += log.hours;
+                    grouped[weekId].logs.push(log);
+                });
+            }
+        });
+        
+        document.getElementById('detailModalTotal').textContent = totalAllTime.toFixed(1);
+        const logsContainer = document.getElementById('detailModalLogs');
+        let weeksHtml = '';
+
+        for (let i = 0; i < 5; i++) {
+            const targetMon = new Date(currentMonday); targetMon.setDate(targetMon.getDate() - (i * 7));
+            const weekId = targetMon.toISOString().split('T')[0];
+            const weekTitle = formatWeekRange(weekId);
+            const weekData = grouped[weekId];
+            
+            let statusBadge = ''; let isLocked = false;
+            if (i === 0) statusBadge = '<span class="text-[9px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded uppercase tracking-wider ml-2">Current</span>';
+            else if (i === 1) statusBadge = '<span class="text-[9px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded uppercase tracking-wider ml-2">Prev (Open)</span>';
+            else { isLocked = true; statusBadge = '<span class="text-[9px] bg-zinc-700 text-zinc-400 px-1.5 py-0.5 rounded uppercase tracking-wider ml-2">Locked</span>'; }
+
+            if (weekData && weekData.logs.length > 0) {
+                const sortedLogs = weekData.logs.sort((a,b) => new Date(b.date) - new Date(a.date));
+                const logsHtml = sortedLogs.map(log => {
+                    const dateStr = new Date(log.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                    return `
+                        <div class="bg-zinc-900/50 p-2.5 rounded-lg border border-zinc-800 flex items-center gap-3 ml-2 mb-2 hover:bg-zinc-800/50 transition">
+                            <div class="bg-zinc-800 text-purple-400 font-bold px-2 py-1 rounded text-xs min-w-[2.5rem] text-center shrink-0">${log.hours}</div>
+                            <div class="flex flex-col overflow-hidden">
+                                <div class="text-zinc-300 font-medium text-xs truncate">${escapeHTML(log.task)}</div>
+                                <div class="text-zinc-500 text-[10px]">${dateStr}</div>
+                            </div>
+                        </div>`;
+                }).join('');
+                weeksHtml += `
+                    <div class="mb-5 bg-zinc-900/20 p-3 rounded-xl border border-zinc-800/50">
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="text-sm font-bold text-white flex items-center flex-wrap gap-y-1"><i data-lucide="calendar" class="w-4 h-4 text-zinc-500 mr-2 shrink-0"></i> ${weekTitle} ${statusBadge}</span>
+                            <span class="text-xs font-bold px-2 py-1 bg-purple-900/30 text-purple-400 rounded-md border border-purple-500/20 shrink-0">${weekData.hours.toFixed(1)} hrs</span>
+                        </div>
+                        <div class="border-l-2 border-zinc-800/50 pl-2">${logsHtml}</div>
+                    </div>`;
+            } else {
+                weeksHtml += `
+                    <div class="mb-5 bg-zinc-900/20 p-3 rounded-xl border border-zinc-800/50 opacity-70">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm font-bold text-zinc-400 flex items-center flex-wrap gap-y-1"><i data-lucide="calendar" class="w-4 h-4 text-zinc-600 mr-2 shrink-0"></i> ${weekTitle} ${statusBadge}</span>
+                            <span class="text-xs font-bold px-2 py-1 bg-rose-900/10 text-rose-400/80 rounded-md border border-rose-500/20 shrink-0">0.0 hrs</span>
+                        </div>
+                        <div class="text-xs text-zinc-500 italic pl-6">No hours submitted. ${isLocked ? '<span class="text-rose-400/70">Automatically locked at 0.</span>' : 'Pending submission.'}</div>
+                    </div>`;
+            }
+        }
+        logsContainer.innerHTML = weeksHtml; lucide.createIcons();
+    }
+
+    function closeStudentDetails() {
+        document.getElementById('studentDetailModal').style.display = 'none';
+        document.getElementById('studentDetailModal').classList.add('hidden');
+        state.viewingStudentId = null;
+    }
+
+    // --- SETTINGS (Network) ---
+    function renderSettingsManager() {
+        const teamList = document.getElementById('settings-teamList'); document.getElementById('teamCount').textContent = state.teams.length;
+        teamList.innerHTML = state.teams.map((t, idx) => `
+            <div class="flex items-center justify-between bg-zinc-900 p-2.5 rounded-xl border border-zinc-800">
+                <span class="text-sm text-zinc-300">${escapeHTML(t)}</span>
+                <button class="text-rose-500 hover:text-rose-400 p-1.5" onclick="removeTeam(${idx})"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>`).join('');
+
+        const yearList = document.getElementById('settings-yearList'); document.getElementById('yearCount').textContent = state.academicYears.length;
+        yearList.innerHTML = state.academicYears.map(y => `
+            <div class="flex items-center justify-between bg-zinc-900 p-2.5 rounded-xl border ${state.activeYear === y ? 'border-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.2)]' : 'border-zinc-800'} transition-all">
+                <div class="flex items-center gap-2"><span class="text-sm ${state.activeYear === y ? 'text-purple-400 font-bold' : 'text-zinc-300'}">${escapeHTML(y)}</span>
+                ${state.activeYear === y ? '<span class="text-[10px] bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded uppercase font-bold tracking-wider">Active</span>' : ''}</div>
+                <div class="flex gap-1">${state.activeYear !== y ? `<button class="text-xs text-zinc-400 hover:text-white bg-zinc-800 hover:bg-zinc-700 px-2 py-1 rounded transition border border-zinc-700" onclick="setActiveYear('${y}')">Set Active</button>` : ''}
+                <button class="text-rose-500 hover:text-rose-400 p-1.5 ml-1" onclick="removeYear('${y}')" title="Remove Year"><i data-lucide="x" class="w-4 h-4"></i></button></div>
+            </div>`).join('');
+
+        const teamSelect = document.getElementById('newStudTeam'); teamSelect.innerHTML = state.teams.map(t => `<option value="${escapeHTML(t)}">${escapeHTML(t)}</option>`).join('');
+        const rosterYearSelect = document.getElementById('settingsRosterYear'); rosterYearSelect.innerHTML = state.academicYears.map(y => `<option value="${escapeHTML(y)}">${escapeHTML(y)}</option>`).join('');
+        rosterYearSelect.value = state.adminViewingYear;
+
+        const dashYearSelect = document.getElementById('adminYearFilter');
+        dashYearSelect.innerHTML = state.academicYears.map(y => `<option value="${escapeHTML(y)}">${escapeHTML(y)}</option>`).join('');
+        dashYearSelect.value = state.activeYear; 
+
+        renderRoster(); lucide.createIcons();
+    }
+
+    function setActiveYear(year) { state.activeYear = year; document.getElementById('loginActiveYear').textContent = year; renderSettingsManager(); showToast(`Active Year changed to ${year}`); }
+    function changeRosterYear() { state.adminViewingYear = document.getElementById('settingsRosterYear').value; renderRoster(); }
+    function addTeam() { const input = document.getElementById('newTeamInput'); const val = input.value.trim(); if(val && !state.teams.includes(val)) { state.teams.push(val); input.value = ""; renderSettingsManager(); renderDashboard(); showToast("Team Added"); } }
+    function removeTeam(idx) { state.teams.splice(idx, 1); renderSettingsManager(); renderDashboard(); }
+    function addYear() { const input = document.getElementById('newYearInput'); const val = input.value.trim(); if(val && !state.academicYears.includes(val)) { state.academicYears.push(val); state.rosters[val] = []; input.value = ""; renderSettingsManager(); showToast("Year Added"); } }
+    function removeYear(yearStr) { if(state.activeYear === yearStr) return showToast("Cannot remove active year.", true); state.academicYears = state.academicYears.filter(y => y !== yearStr); delete state.rosters[yearStr]; if(state.adminViewingYear === yearStr) state.adminViewingYear = state.activeYear; renderSettingsManager(); }
+
+    function renderRoster() {
+        const list = document.getElementById('admin-rosterList'); const currentRoster = state.rosters[state.adminViewingYear] || [];
+        if(currentRoster.length === 0) { list.innerHTML = `<div class="text-zinc-500 text-sm italic py-4 text-center">No students found.</div>`; return; }
+        list.innerHTML = currentRoster.map((s, idx) => `
+            <div class="flex items-center justify-between bg-zinc-900/50 p-3 rounded-xl border border-zinc-800 gap-2 hover:bg-zinc-800/50 transition">
+                <div class="flex flex-col overflow-hidden"><span class="text-white font-medium text-sm truncate">${escapeHTML(s.name)}</span>
+                <span class="text-zinc-500 text-[11px] flex flex-wrap gap-1 sm:gap-2 uppercase font-bold tracking-wider mt-0.5"><span>ID: ${escapeHTML(s.id)}</span><span class="hidden sm:inline">&bull;</span><span class="text-purple-400/80 truncate">${escapeHTML(s.team)}</span></span></div>
+                <button class="text-rose-500 bg-rose-500/10 hover:bg-rose-500/20 rounded-lg p-2 shrink-0 transition" onclick="removeStudent(${idx})"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+            </div>`).join(''); lucide.createIcons();
+    }
+    function addStudentToRoster() {
+        const id = document.getElementById('newStudID').value.trim(); const name = document.getElementById('newStudName').value.trim(); const team = document.getElementById('newStudTeam').value;
+        if(!id || !name || !team) return showToast("Fill all fields", true); if(!state.rosters[state.adminViewingYear]) state.rosters[state.adminViewingYear] = [];
+        if(state.rosters[state.adminViewingYear].find(s => s.id === id)) return showToast("ID exists", true);
+        state.rosters[state.adminViewingYear].push({ id, name, team }); document.getElementById('newStudID').value = ""; document.getElementById('newStudName').value = ""; renderRoster();
+    }
+    function removeStudent(idx) { state.rosters[state.adminViewingYear].splice(idx, 1); renderRoster(); }
+
+    async function saveAdminChanges() {
+        const btn = document.getElementById('saveChangesBtn'); const loader = document.getElementById('saveLoader');
+        btn.disabled = true; loader.style.display = 'block';
+
+        const newPass = document.getElementById('setNewPass').value.trim();
+        
+        try {
+            const p1 = fetch(SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'saveSettings', password: state.adminPassword, newPassword: newPass, activeYear: state.activeYear, teams: state.teams, academicYears: state.academicYears })
+            });
+            const p2 = fetch(SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'saveRoster', password: state.adminPassword, rosters: state.rosters })
+            });
+
+            const [res1, res2] = await Promise.all([p1, p2]);
+            const result1 = await res1.json(); const result2 = await res2.json();
+
+            if (result1.success && result2.success) {
+                if (newPass) { state.adminPassword = newPass; document.getElementById('setNewPass').value = ""; }
+                showToast("Configuration & Roster Saved to Cloud");
+            } else {
+                showToast("Failed to save. Check password?", true);
+            }
+        } catch (e) {
+            showToast("Connection Error", true);
+        } finally {
+            btn.disabled = false; loader.style.display = 'none';
+        }
+    }
+
+    // --- EXCEL GENERATION ---
+    function downloadExcel() {
+        const yearFilterVal = document.getElementById('adminYearFilter').value; let exportData = [];
+        state.teams.forEach(teamName => {
+            const teamRoster = (state.rosters[yearFilterVal] || []).filter(r => r.team === teamName);
+            teamRoster.forEach(student => {
+                const studentSubs = state.submissions.filter(s => s.studentId === student.id && s.academicYear === yearFilterVal);
+                let hasData = false;
+                studentSubs.forEach(sub => {
+                    if (sub.logs && sub.logs.length > 0) {
+                        hasData = true;
+                        sub.logs.forEach(log => {
+                            const weekStr = formatWeekRange(getWeekIdentifier(log.date));
+                            exportData.push({ "Academic Year": yearFilterVal, "Team": student.team, "Student Name": student.name, "Student ID": student.id, "Week of": weekStr, "Date": log.date, "Hours": log.hours, "Task Description": log.task });
+                        });
+                    }
+                });
+                if (!hasData) exportData.push({ "Academic Year": yearFilterVal, "Team": student.team, "Student Name": student.name, "Student ID": student.id, "Week of": "N/A", "Date": "N/A", "Hours": 0, "Task Description": "No submissions recorded" });
+            });
+        });
+
+        exportData.sort((a, b) => {
+            if (a.Team !== b.Team) return a.Team.localeCompare(b.Team);
+            if (a["Student Name"] !== b["Student Name"]) return a["Student Name"].localeCompare(b["Student Name"]);
+            return new Date(a.Date) - new Date(b.Date);
+        });
+
+        if(exportData.length === 0) return showToast("No roster to export.", true);
+        const ws = XLSX.utils.json_to_sheet(exportData);
+        ws['!cols'] = [{wch: 15}, {wch: 15}, {wch: 20}, {wch: 15}, {wch: 20}, {wch: 12}, {wch: 8}, {wch: 40}];
+        const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Master Timesheet");
+        XLSX.writeFile(wb, `Timesheet_Report_${yearFilterVal}.xlsx`);
+        showToast("Excel Exported Successfully!");
+    }
+
+    window.onload = init;
+</script>
+</body>
+</html>
