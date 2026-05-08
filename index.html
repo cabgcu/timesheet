@@ -375,7 +375,7 @@
             <div class="w-16 h-16 bg-zinc-900 rounded-2xl p-3 mb-4 flex items-center justify-center border border-zinc-800 transition-transform hover:rotate-12">
                 <i data-lucide="lock" class="w-8 h-8 text-zinc-400"></i>
             </div>
-            <h3 class="text-2xl font-bold mb-1 text-white">Coordinator Login</h3>
+            <h3 class="text-2xl font-bold mb-1 text-white">Staff Login</h3>
             <p class="text-zinc-400 text-sm mb-6">Enter admin password to access system settings and master hours.</p>
             
             <input type="password" id="adminPass" class="control-item text-center mb-6 no-save-pass" placeholder="Password" autocomplete="off" spellcheck="false" onkeyup="if(event.key==='Enter') verifyAdmin()"/>
@@ -893,7 +893,12 @@
                     });
                     
                     teamTotal += weekHours;
-                    const statusClass = weekHours === 0 ? "text-rose-400 bg-rose-900/20 border border-rose-500/20" : "text-purple-400 bg-purple-900/20 border border-purple-500/20";
+                    const hasEverSubmitted = state.submissions.some(s => s.studentId === student.id);
+                    const statusClass = weekHours > 0
+                        ? "text-purple-400 bg-purple-900/20 border border-purple-500/20"
+                        : hasEverSubmitted
+                            ? "text-rose-400 bg-rose-900/20 border border-rose-500/20"
+                            : "text-zinc-500 bg-zinc-800/40 border border-zinc-700/50";
 
                     return `
                         <div class="flex justify-between items-center py-2 border-b border-zinc-800/50 last:border-0 cursor-pointer hover:bg-zinc-800/50 rounded-lg px-2 -mx-2 transition" onclick="viewStudentDetails('${student.id}')">
@@ -965,14 +970,28 @@
         
         document.getElementById('detailModalTotal').textContent = totalAllTime.toFixed(1);
         const logsContainer = document.getElementById('detailModalLogs');
-        let weeksHtml = '';
 
-        for (let i = 0; i < 5; i++) {
+        // No submissions at all — don't show any weeks
+        if (totalAllTime === 0 && Object.keys(grouped).length === 0) {
+            logsContainer.innerHTML = `<div class="text-zinc-500 text-sm italic py-6 text-center">No submissions recorded yet.</div>`;
+            lucide.createIcons();
+            return;
+        }
+
+        // Find the earliest week the student ever submitted
+        const firstSubmissionWeekId = Object.keys(grouped).sort()[0];
+
+        let weeksHtml = '';
+        for (let i = 0; i < 26; i++) { // scan up to 26 weeks back
             const targetMon = new Date(currentMonday); targetMon.setDate(targetMon.getDate() - (i * 7));
             const weekId = targetMon.toISOString().split('T')[0];
+
+            // Stop once we go before the student's first ever submission
+            if (weekId < firstSubmissionWeekId) break;
+
             const weekTitle = formatWeekRange(weekId);
             const weekData = grouped[weekId];
-            
+
             let statusBadge = ''; let isLocked = false;
             if (i === 0) statusBadge = '<span class="text-[9px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded uppercase tracking-wider ml-2">Current</span>';
             else if (i === 1) statusBadge = '<span class="text-[9px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded uppercase tracking-wider ml-2">Prev (Open)</span>';
@@ -1000,13 +1019,14 @@
                         <div class="border-l-2 border-zinc-800/50 pl-2">${logsHtml}</div>
                     </div>`;
             } else {
+                // Only show missed weeks (0 hrs) that fall on or after their first submission
                 weeksHtml += `
-                    <div class="mb-5 bg-zinc-900/20 p-3 rounded-xl border border-zinc-800/50 opacity-70">
+                    <div class="mb-5 bg-zinc-900/20 p-3 rounded-xl border border-zinc-800/50 opacity-60">
                         <div class="flex justify-between items-center mb-2">
                             <span class="text-sm font-bold text-zinc-400 flex items-center flex-wrap gap-y-1"><i data-lucide="calendar" class="w-4 h-4 text-zinc-600 mr-2 shrink-0"></i> ${weekTitle} ${statusBadge}</span>
                             <span class="text-xs font-bold px-2 py-1 bg-rose-900/10 text-rose-400/80 rounded-md border border-rose-500/20 shrink-0">0.0 hrs</span>
                         </div>
-                        <div class="text-xs text-zinc-500 italic pl-6">No hours submitted. ${isLocked ? '<span class="text-rose-400/70">Automatically locked at 0.</span>' : 'Pending submission.'}</div>
+                        <div class="text-xs text-zinc-500 italic pl-6">${isLocked ? 'No hours submitted.' : 'Pending submission.'}</div>
                     </div>`;
             }
         }
