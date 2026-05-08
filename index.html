@@ -50,8 +50,7 @@
         ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #71717a; }
         .no-save-pass { -webkit-text-security: disc !important; text-security: disc !important; }
-        html, body { background-color: #09090b; }
-        body { padding-top: env(safe-area-inset-top); padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
+        html { background-color: #09090b; }
 
         .glass-card {
             background: rgba(9, 9, 11, 0.65);
@@ -70,28 +69,32 @@
         .view.active { display: block; opacity: 1; transform: translateY(0); }
 
         .control-item {
-            width: 100%; 
-            background: #18181b; 
-            border: 1px solid #27272a; 
-            color: #ffffff; 
-            border-radius: 0.75rem; 
-            padding: 1rem 1.25rem; 
-            font-family: inherit; 
+            width: 100%;
+            background: #18181b;
+            border: 1px solid #27272a;
+            color: #ffffff;
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            font-family: inherit;
             font-size: 1rem;
-            outline: none; 
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            outline: none;
+            transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
         }
-        .control-item:hover {
-            border-color: rgba(168, 85, 247, 0.4);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+        @media (min-width: 640px) {
+            .control-item { padding: 1rem 1.25rem; }
+        }
+        @media (hover: hover) {
+            .control-item:hover {
+                border-color: rgba(168, 85, 247, 0.4);
+                transform: translateY(-2px);
+                box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+            }
         }
         .control-item::placeholder { color: rgba(255, 255, 255, 0.5); }
-        .control-item:focus { 
-            border-color: #a855f7; 
-            background: #27272a; 
-            box-shadow: 0 0 15px rgba(168, 85, 247, 0.15); 
-            transform: translateY(-2px);
+        .control-item:focus {
+            border-color: #a855f7;
+            background: #27272a;
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.15);
         }
         
         select.control-item { 
@@ -120,10 +123,7 @@
         .spinner { width: 40px; height: 40px; border: 4px solid rgba(168, 85, 247, 0.3); border-radius: 50%; border-top-color: #a855f7; animation: rotation 1s linear infinite; }
     </style>
 </head>
-<body class="text-zinc-100 min-h-[100dvh] relative overflow-x-hidden selection:bg-purple-500/30 font-sans bg-zinc-950">
-
-    <!-- Fixed Background (avoids iOS Safari white edges from background-attachment:fixed) -->
-    <div class="fixed inset-0 z-[-2]" style="background-image: url('https://i.imgur.com/J3ZEdiB.png'); background-size: cover; background-position: center;"></div>
+<body class="text-zinc-100 min-h-[100dvh] relative overflow-x-hidden selection:bg-purple-500/30 font-sans" style="background-image: url('https://i.imgur.com/J3ZEdiB.png'); background-size: cover; background-position: center top; background-attachment: scroll;">
 
     <!-- Initial Loader -->
     <div id="globalLoader">
@@ -134,16 +134,16 @@
     <!-- Dark Overlay -->
     <div class="fixed inset-0 bg-zinc-950/70 z-[-1]"></div>
 
-    <main class="relative z-10 w-full max-w-7xl mx-auto p-4 sm:p-8 min-h-[100dvh] flex flex-col">
-        
-        <div class="flex-1 w-full flex flex-col items-center justify-center py-6 sm:py-10">
+    <main class="relative z-10 w-full max-w-7xl mx-auto px-3 py-4 sm:p-8 min-h-[100dvh] flex flex-col">
+
+        <div class="flex-1 w-full flex flex-col items-center justify-center py-4 sm:py-10">
 
             <!-- LOGIN VIEW -->
-            <div id="loginView" class="view active max-w-md w-full mx-auto">
-                <div class="glass-card primary-card rounded-3xl p-6 sm:p-8 text-center transition-transform duration-500 hover:shadow-[0_0_40px_rgba(168,85,247,0.15)] hover:-translate-y-1">
-                    <img src="https://i.imgur.com/p2qZOL5.png" alt="CAB Logo" class="h-16 sm:h-20 w-auto mx-auto mb-6 object-contain transition-all duration-500 hover:scale-110 hover:rotate-2 hover:drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]" />
-                    <h3 class="text-3xl font-extrabold mb-3 tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">Timesheet Login</h3>
-                    <p class="text-zinc-400 mb-8 font-medium text-sm px-2">Enter your Student ID to track and manage your weekly hours for <span id="loginActiveYear" class="text-purple-400 font-bold">...</span>.</p>
+            <div id="loginView" class="view active w-full mx-auto" style="max-width: min(28rem, 100%);">
+                <div class="glass-card primary-card rounded-2xl sm:rounded-3xl p-5 sm:p-8 text-center">
+                    <img src="https://i.imgur.com/p2qZOL5.png" alt="CAB Logo" class="h-14 sm:h-20 w-auto mx-auto mb-4 sm:mb-6 object-contain" />
+                    <h3 class="text-2xl sm:text-3xl font-extrabold mb-2 sm:mb-3 tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">Timesheet Login</h3>
+                    <p class="text-zinc-400 mb-5 sm:mb-8 font-medium text-sm px-1">Enter your Student ID to track hours for <span id="loginActiveYear" class="text-purple-400 font-bold">...</span>.</p>
 
                     <div class="form-group text-center">
                         <label class="form-label">Student ID</label>
@@ -159,15 +159,15 @@
 
             <!-- TIMESHEET TRACKING VIEW -->
             <div id="timesheetView" class="view max-w-2xl w-full mx-auto">
-                <div class="glass-card primary-card rounded-3xl p-5 sm:p-10 transition-transform duration-500 hover:shadow-[0_0_40px_rgba(168,85,247,0.15)] hover:-translate-y-1">
-                    
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-zinc-800 pb-5 sm:pb-6 mb-5 sm:mb-6 gap-4">
+                <div class="glass-card primary-card rounded-2xl sm:rounded-3xl p-4 sm:p-8">
+
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-zinc-800 pb-4 sm:pb-6 mb-4 sm:mb-6 gap-3">
                         <div>
-                            <h3 class="text-2xl font-extrabold tracking-tight text-white" id="ts-greeting">Hello, Student</h3>
-                            <p class="text-purple-400 font-medium text-sm mt-1" id="ts-team">Team Name</p>
+                            <h3 class="text-xl sm:text-2xl font-extrabold tracking-tight text-white" id="ts-greeting">Hello, Student</h3>
+                            <p class="text-purple-400 font-medium text-sm mt-0.5" id="ts-team">Team Name</p>
                         </div>
-                        <div class="flex flex-col gap-3 w-full sm:w-auto">
-                            <select id="studentWeekSelect" class="bg-zinc-800 border border-zinc-700 text-white py-2 px-3 rounded-xl text-sm font-medium outline-none cursor-pointer" onchange="switchStudentWeek()">
+                        <div class="flex flex-col gap-2 w-full sm:w-auto">
+                            <select id="studentWeekSelect" class="w-full sm:w-auto bg-zinc-800 border border-zinc-700 text-white py-2 px-3 rounded-xl text-sm font-medium outline-none cursor-pointer" onchange="switchStudentWeek()">
                                 <option value="current">Logging: Current Week</option>
                                 <option value="previous">Logging: Previous Week</option>
                             </select>
@@ -178,15 +178,15 @@
                         </div>
                     </div>
 
-                    <div class="mb-8">
-                        <div class="text-zinc-400 text-xs font-bold tracking-wider uppercase mb-4 flex justify-between">
+                    <div class="mb-5 sm:mb-8">
+                        <div class="text-zinc-400 text-xs font-bold tracking-wider uppercase mb-3 flex justify-between">
                             <span>Logged Hours</span>
                             <span id="ts-weekLabel">Pending Submit</span>
                         </div>
-                        <div id="ts-entriesList" class="flex flex-col gap-3 max-h-[250px] sm:max-h-[300px] overflow-y-auto pr-2"></div>
+                        <div id="ts-entriesList" class="flex flex-col gap-2 sm:gap-3 max-h-[220px] sm:max-h-[300px] overflow-y-auto pr-1"></div>
                     </div>
 
-                    <div id="entryFormBox" class="bg-zinc-900/50 rounded-2xl p-4 sm:p-5 border border-zinc-800/50 mb-6 sm:mb-8 transition-colors duration-300">
+                    <div id="entryFormBox" class="bg-zinc-900/50 rounded-xl sm:rounded-2xl p-3 sm:p-5 border border-zinc-800/50 mb-4 sm:mb-8 transition-colors duration-300">
                         <div class="flex justify-between items-center mb-4">
                             <h4 id="formModeTitle" class="text-sm font-bold text-white uppercase tracking-wider">Log New Hours</h4>
                             <button id="cancelEditBtn" class="hidden text-xs text-rose-400 hover:text-rose-300 transition" onclick="cancelEdit()">Cancel Edit</button>
