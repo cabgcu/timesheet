@@ -144,7 +144,7 @@
 
     <main class="relative z-10 w-full max-w-7xl mx-auto px-3 py-4 sm:p-8 min-h-[100dvh] flex flex-col">
 
-        <div class="flex-1 w-full flex flex-col items-center justify-center py-4 sm:py-10">
+        <div class="flex-1 w-full flex flex-col items-center justify-center py-8 sm:py-10">
 
             <!-- LOGIN VIEW -->
             <div id="loginView" class="view active mx-auto w-full" style="max-width: min(22rem, calc(100% - 2.5rem));">
@@ -243,15 +243,15 @@
             </div>
 
             <!-- SUCCESS VIEW -->
-            <div id="successView" class="view max-w-2xl w-full mx-auto">
-                <div class="glass-card rounded-3xl p-8 sm:p-10 text-center">
-                    <div class="w-20 h-20 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl text-white shadow-[0_0_30px_rgba(168,85,247,0.5)] border border-purple-400/30">
-                        <i data-lucide="check" class="w-10 h-10"></i>
+            <div id="successView" class="view mx-auto w-full" style="max-width: min(22rem, calc(100% - 2.5rem));">
+                <div class="glass-card primary-card rounded-3xl px-6 py-8 sm:p-8 text-center">
+                    <div class="w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-5 text-white shadow-[0_0_30px_rgba(168,85,247,0.5)] border border-purple-400/30">
+                        <i data-lucide="check" class="w-8 h-8"></i>
                     </div>
-                    <h2 class="text-3xl font-bold mb-3 tracking-tight text-white">Timesheet Submitted!</h2>
-                    <p class="text-zinc-300 mb-8 leading-relaxed">Your hours have been officially recorded.</p>
-                    
-                    <button class="w-full sm:w-auto bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white font-bold py-3 px-8 rounded-xl transition-all duration-300 hover:-translate-y-1 hover:scale-105 hover:shadow-lg" onclick="logout()">
+                    <h2 class="text-2xl sm:text-3xl font-bold mb-2 tracking-tight text-white">Timesheet Submitted!</h2>
+                    <p class="text-zinc-400 mb-6 text-sm leading-relaxed">Your hours have been officially recorded.</p>
+
+                    <button class="w-full bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white font-bold py-3.5 rounded-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-lg text-base" onclick="logout()">
                         Return to Login
                     </button>
                 </div>
