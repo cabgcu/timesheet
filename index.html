@@ -430,9 +430,23 @@
                 </button>
             </div>
 
-            <div class="flex justify-between items-center bg-zinc-900/50 p-4 rounded-xl border border-zinc-800 mb-6">
+            <div class="flex justify-between items-center bg-zinc-900/50 p-4 rounded-xl border border-zinc-800 mb-4">
                 <span class="text-zinc-400 text-xs font-bold uppercase tracking-wider" id="detailModalTotalLabel">All-Time Total Hours</span>
                 <span class="text-2xl font-black text-white" id="detailModalTotal">0.0</span>
+            </div>
+
+            <!-- Admin inline edit/add panel -->
+            <div id="adminLogEditPanel" class="hidden bg-zinc-900/80 border border-purple-500/30 rounded-xl p-4 mb-4">
+                <div class="text-xs font-bold text-purple-400 uppercase tracking-wider mb-3" id="adminEditPanelTitle">Edit Entry</div>
+                <div class="flex flex-col gap-2">
+                    <input type="date" id="adminEditDate" class="control-item" style="min-width:0;max-width:100%;width:100%;" />
+                    <input type="number" id="adminEditHours" class="control-item" step="0.25" min="0" placeholder="Hours" />
+                    <input type="text" id="adminEditTask" class="control-item" placeholder="Task description" />
+                </div>
+                <div class="flex gap-2 mt-3">
+                    <button onclick="adminConfirmEdit()" class="flex-1 bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 rounded-xl text-sm transition">Save</button>
+                    <button onclick="adminCancelEdit()" class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold py-2 rounded-xl text-sm transition">Cancel</button>
+                </div>
             </div>
 
             <div class="text-purple-400 text-xs font-bold tracking-wider uppercase mb-3 px-1">Weekly Breakdown</div>
@@ -1105,73 +1119,174 @@
         
         document.getElementById('detailModalTotal').textContent = totalAllTime.toFixed(1);
         const logsContainer = document.getElementById('detailModalLogs');
+        adminCancelEdit();
 
-        // No submissions at all — don't show any weeks
-        if (totalAllTime === 0 && Object.keys(grouped).length === 0) {
-            logsContainer.innerHTML = `<div class="text-zinc-500 text-sm italic py-6 text-center">No submissions recorded yet.</div>`;
-            lucide.createIcons();
-            return;
-        }
+        const hasAnySubs = Object.keys(grouped).length > 0;
+        const firstSubmissionWeekId = hasAnySubs ? Object.keys(grouped).sort()[0] : currentMonday.toISOString().split('T')[0];
 
-        // Find the earliest week the student ever submitted
-        const firstSubmissionWeekId = Object.keys(grouped).sort()[0];
+        const sid = rosterStudent.id;
+        const academicYear = document.getElementById('adminYearFilter').value;
 
         let weeksHtml = '';
-        for (let i = 0; i < 26; i++) { // scan up to 26 weeks back
+        for (let i = 0; i < 26; i++) {
             const targetMon = new Date(currentMonday); targetMon.setDate(targetMon.getDate() - (i * 7));
             const weekId = targetMon.toISOString().split('T')[0];
-
-            // Stop once we go before the student's first ever submission
             if (weekId < firstSubmissionWeekId) break;
 
             const weekTitle = formatWeekRange(weekId);
             const weekData = grouped[weekId];
 
-            let statusBadge = ''; let isLocked = false;
+            let statusBadge = '';
             if (i === 0) statusBadge = '<span class="text-[9px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded uppercase tracking-wider ml-2">Current</span>';
-            else if (i === 1) statusBadge = '<span class="text-[9px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded uppercase tracking-wider ml-2">Prev (Open)</span>';
-            else { isLocked = true; statusBadge = '<span class="text-[9px] bg-zinc-700 text-zinc-400 px-1.5 py-0.5 rounded uppercase tracking-wider ml-2">Locked</span>'; }
+            else if (i === 1) statusBadge = '<span class="text-[9px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded uppercase tracking-wider ml-2">Prev</span>';
+
+            const addBtn = `<button onclick="adminStartAdd('${sid}','${weekId}')" class="w-full mt-2 text-[11px] text-zinc-500 hover:text-purple-400 py-1.5 border border-dashed border-zinc-700 hover:border-purple-500/40 rounded-lg transition flex items-center justify-center gap-1"><i data-lucide="plus" class="w-3 h-3"></i> Add Entry</button>`;
 
             if (weekData && weekData.logs.length > 0) {
-                const sortedLogs = weekData.logs.sort((a,b) => new Date(b.date) - new Date(a.date));
+                const sortedLogs = [...weekData.logs].sort((a,b) => new Date(b.date) - new Date(a.date));
                 const logsHtml = sortedLogs.map(log => {
+                    const logKey = log.id ? log.id.toString() : `${log.date}_${log.hours}_${log.task}`;
                     const dateStr = new Date(log.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
                     return `
-                        <div class="bg-zinc-900/50 p-2.5 rounded-lg border border-zinc-800 flex items-center gap-3 ml-2 mb-2 hover:bg-zinc-800/50 transition">
+                        <div class="bg-zinc-900/50 p-2.5 rounded-lg border border-zinc-800 flex items-center gap-2 ml-2 mb-2 hover:bg-zinc-800/50 transition group">
                             <div class="bg-zinc-800 text-purple-400 font-bold px-2 py-1 rounded text-xs min-w-[2.5rem] text-center shrink-0">${log.hours}</div>
-                            <div class="flex flex-col overflow-hidden">
+                            <div class="flex flex-col overflow-hidden flex-1">
                                 <div class="text-zinc-300 font-medium text-xs truncate">${escapeHTML(log.task)}</div>
                                 <div class="text-zinc-500 text-[10px]">${dateStr}</div>
+                            </div>
+                            <div class="flex gap-1 shrink-0 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onclick="adminStartEdit('${sid}','${weekId}','${logKey}')" class="text-zinc-400 hover:text-blue-400 p-1.5 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition" title="Edit"><i data-lucide="edit-2" class="w-3 h-3"></i></button>
+                                <button onclick="adminDeleteLog('${sid}','${weekId}','${logKey}')" class="text-zinc-400 hover:text-rose-400 p-1.5 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition" title="Delete"><i data-lucide="trash-2" class="w-3 h-3"></i></button>
                             </div>
                         </div>`;
                 }).join('');
                 weeksHtml += `
-                    <div class="mb-5 bg-zinc-900/20 p-3 rounded-xl border border-zinc-800/50">
+                    <div class="mb-4 bg-zinc-900/20 p-3 rounded-xl border border-zinc-800/50">
                         <div class="flex justify-between items-center mb-3">
                             <span class="text-sm font-bold text-white flex items-center flex-wrap gap-y-1"><i data-lucide="calendar" class="w-4 h-4 text-zinc-500 mr-2 shrink-0"></i> ${weekTitle} ${statusBadge}</span>
                             <span class="text-xs font-bold px-2 py-1 bg-purple-900/30 text-purple-400 rounded-md border border-purple-500/20 shrink-0">${weekData.hours.toFixed(1)} hrs</span>
                         </div>
                         <div class="border-l-2 border-zinc-800/50 pl-2">${logsHtml}</div>
+                        ${addBtn}
                     </div>`;
             } else {
-                // Only show missed weeks (0 hrs) that fall on or after their first submission
                 weeksHtml += `
-                    <div class="mb-5 bg-zinc-900/20 p-3 rounded-xl border border-zinc-800/50 opacity-60">
+                    <div class="mb-4 bg-zinc-900/20 p-3 rounded-xl border border-zinc-800/50 opacity-70">
                         <div class="flex justify-between items-center mb-2">
                             <span class="text-sm font-bold text-zinc-400 flex items-center flex-wrap gap-y-1"><i data-lucide="calendar" class="w-4 h-4 text-zinc-600 mr-2 shrink-0"></i> ${weekTitle} ${statusBadge}</span>
                             <span class="text-xs font-bold px-2 py-1 bg-rose-900/10 text-rose-400/80 rounded-md border border-rose-500/20 shrink-0">0.0 hrs</span>
                         </div>
-                        <div class="text-xs text-zinc-500 italic pl-6">${isLocked ? 'No hours submitted.' : 'Pending submission.'}</div>
+                        ${addBtn}
                     </div>`;
             }
         }
-        logsContainer.innerHTML = weeksHtml; lucide.createIcons();
+        logsContainer.innerHTML = weeksHtml || `<div class="text-zinc-500 text-sm italic py-6 text-center">No submissions recorded yet.</div>`;
+        lucide.createIcons();
     }
 
     function closeStudentDetails() {
         document.getElementById('studentDetailModal').style.display = 'none';
         document.getElementById('studentDetailModal').classList.add('hidden');
         state.viewingStudentId = null;
+    }
+
+    // --- ADMIN HOUR EDITING ---
+    let adminEditingCtx = null;
+
+    function adminStartEdit(studentId, weekId, logKey) {
+        const sub = state.submissions.find(s => s.studentId === studentId && s.weekIdentifier === weekId);
+        if (!sub || !sub.logs) return;
+        const log = sub.logs.find(l => (l.id ? l.id.toString() : `${l.date}_${l.hours}_${l.task}`) === logKey);
+        if (!log) return;
+        adminEditingCtx = { studentId, weekId, logKey, mode: 'edit' };
+        document.getElementById('adminEditPanelTitle').textContent = 'Edit Entry';
+        document.getElementById('adminEditDate').value = log.date;
+        document.getElementById('adminEditHours').value = log.hours;
+        document.getElementById('adminEditTask').value = log.task;
+        document.getElementById('adminLogEditPanel').classList.remove('hidden');
+        document.getElementById('adminEditDate').focus();
+    }
+
+    function adminStartAdd(studentId, weekId) {
+        adminEditingCtx = { studentId, weekId, logKey: null, mode: 'add' };
+        document.getElementById('adminEditPanelTitle').textContent = 'Add Entry';
+        document.getElementById('adminEditDate').value = weekId;
+        document.getElementById('adminEditHours').value = '';
+        document.getElementById('adminEditTask').value = '';
+        document.getElementById('adminLogEditPanel').classList.remove('hidden');
+        document.getElementById('adminEditHours').focus();
+    }
+
+    function adminCancelEdit() {
+        adminEditingCtx = null;
+        const panel = document.getElementById('adminLogEditPanel');
+        if (panel) panel.classList.add('hidden');
+    }
+
+    async function adminConfirmEdit() {
+        if (!adminEditingCtx) return;
+        const date = document.getElementById('adminEditDate').value;
+        const hours = parseFloat(document.getElementById('adminEditHours').value);
+        const task = document.getElementById('adminEditTask').value.trim();
+        if (!date || isNaN(hours) || hours <= 0 || !task) return showToast('Fill all fields', true);
+
+        const { studentId, weekId, logKey, mode } = adminEditingCtx;
+        const academicYear = document.getElementById('adminYearFilter').value;
+
+        let sub = state.submissions.find(s => s.studentId === studentId && s.weekIdentifier === weekId && s.academicYear === academicYear);
+
+        if (mode === 'add') {
+            const newLog = { id: Date.now().toString(), date, hours, task };
+            if (sub) {
+                sub.logs = sub.logs || [];
+                sub.logs.push(newLog);
+                sub.totalHours = sub.logs.reduce((s, l) => s + Number(l.hours), 0);
+            } else {
+                const roster = state.rosters[academicYear] || [];
+                const student = roster.find(s => s.id === studentId);
+                if (!student) return showToast('Student not found', true);
+                sub = { academicYear, studentId, studentName: student.name, team: student.team, weekIdentifier: weekId, totalHours: hours, logs: [newLog] };
+                state.submissions.push(sub);
+            }
+        } else {
+            if (!sub || !sub.logs) return showToast('Entry not found', true);
+            const logIdx = sub.logs.findIndex(l => (l.id ? l.id.toString() : `${l.date}_${l.hours}_${l.task}`) === logKey);
+            if (logIdx === -1) return showToast('Entry not found', true);
+            sub.logs[logIdx] = { ...sub.logs[logIdx], date, hours, task };
+            sub.totalHours = sub.logs.reduce((s, l) => s + Number(l.hours), 0);
+        }
+
+        adminCancelEdit();
+        await adminSaveSubmission(academicYear, studentId, weekId, sub.logs);
+    }
+
+    async function adminDeleteLog(studentId, weekId, logKey) {
+        const academicYear = document.getElementById('adminYearFilter').value;
+        const sub = state.submissions.find(s => s.studentId === studentId && s.weekIdentifier === weekId && s.academicYear === academicYear);
+        if (!sub || !sub.logs) return;
+        sub.logs = sub.logs.filter(l => (l.id ? l.id.toString() : `${l.date}_${l.hours}_${l.task}`) !== logKey);
+        sub.totalHours = sub.logs.reduce((s, l) => s + Number(l.hours), 0);
+        if (sub.logs.length === 0) state.submissions = state.submissions.filter(s => s !== sub);
+        await adminSaveSubmission(academicYear, studentId, weekId, sub.logs);
+    }
+
+    async function adminSaveSubmission(academicYear, studentId, weekId, logs) {
+        const password = state.adminPassword;
+        try {
+            showToast('Saving…');
+            const res = await fetch(SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'adminUpdateSubmission', password, academicYear, studentId, weekIdentifier: weekId, logs })
+            });
+            const result = await res.json();
+            if (!result.success) throw new Error(result.error || 'Save failed');
+            showToast('Saved!');
+            renderStudentDetails();
+            renderDashboard();
+        } catch (e) {
+            showToast('Error: ' + e.message, true);
+            renderStudentDetails();
+        }
     }
 
     // --- SETTINGS (Network) ---
