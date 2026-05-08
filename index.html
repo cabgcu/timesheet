@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Student Leader Timesheet</title>
     
+    <!-- Fix for missing favicon 404 error -->
+    <link rel="icon" href="data:," />
+    
     <!-- Canvas Confetti -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     
@@ -1025,6 +1028,35 @@
         const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Master Timesheet");
         XLSX.writeFile(wb, `Timesheet_Report_${yearFilterVal}.xlsx`);
         showToast("Excel Exported Successfully!");
+    }
+
+    // --- UI HELPERS ---
+    function showToast(msg, isError = false) { 
+        const t = document.getElementById('toast'); 
+        t.textContent = msg; 
+        if(isError) {
+            t.classList.add('!border-rose-500/50');
+            t.classList.remove('!border-purple-500/50');
+        } else {
+            t.classList.remove('!border-rose-500/50');
+            t.classList.add('!border-purple-500/50');
+        }
+        t.style.display = 'block'; 
+        setTimeout(() => t.style.display = 'none', 3500); 
+    }
+
+    function fireConfetti() {
+        const duration = 3 * 1000;
+        const animationEnd = Date.now() + duration;
+        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+        function randomInRange(min, max) { return Math.random() * (max - min) + min; }
+        const interval = setInterval(function() {
+            const timeLeft = animationEnd - Date.now();
+            if (timeLeft <= 0) return clearInterval(interval);
+            const particleCount = 50 * (timeLeft / duration);
+            confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }, colors: ['#0A84FF', '#BF5AF2', '#34d399'] }));
+            confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }, colors: ['#0A84FF', '#BF5AF2', '#34d399'] }));
+        }, 250);
     }
 
     window.onload = init;
