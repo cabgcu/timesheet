@@ -780,7 +780,14 @@
         
         if(state.currentWeekEntries.length === 0) {
             list.innerHTML = `<div class="text-zinc-500 text-sm italic py-4 text-center border border-dashed border-zinc-800 rounded-xl">No pending hours logged.</div>`;
-            totalEl.textContent = "0.0"; return;
+            totalEl.textContent = "0.0";
+            const submitBtn = document.getElementById('submitBtn');
+            if (submitBtn && !isWeekSubmitted(state.studentActiveTab)) {
+                submitBtn.disabled = true;
+                submitBtn.classList.add('opacity-40', 'cursor-not-allowed');
+                submitBtn.classList.remove('hover:-translate-y-1', 'hover:scale-[1.02]');
+            }
+            return;
         }
 
         let total = 0;
@@ -802,11 +809,26 @@
                 </div>
             </div>`;
         }).join('');
-        totalEl.textContent = total.toFixed(1); lucide.createIcons();
+        totalEl.textContent = total.toFixed(1);
+
+        // Gate submit button on minimum hours threshold
+        const submitBtn = document.getElementById('submitBtn');
+        if (submitBtn && !isWeekSubmitted(state.studentActiveTab)) {
+            const meetsMinimum = total >= 10;
+            submitBtn.disabled = !meetsMinimum;
+            submitBtn.classList.toggle('opacity-40', !meetsMinimum);
+            submitBtn.classList.toggle('cursor-not-allowed', !meetsMinimum);
+            submitBtn.classList.toggle('hover:-translate-y-1', meetsMinimum);
+            submitBtn.classList.toggle('hover:scale-[1.02]', meetsMinimum);
+        }
+
+        lucide.createIcons();
     }
 
     async function submitTimesheet() {
         if(state.currentWeekEntries.length === 0) return showToast("You haven't logged any hours!", true);
+        const total = state.currentWeekEntries.reduce((s, e) => s + e.hours, 0);
+        if(total < 10) return;
 
         const btn = document.getElementById('submitBtn');
         const loader = document.getElementById('submitLoader');
