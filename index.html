@@ -171,7 +171,7 @@
 
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-zinc-800 pb-4 sm:pb-6 mb-4 sm:mb-6 gap-3">
                         <div>
-                            <h3 class="text-xl sm:text-2xl font-extrabold tracking-tight text-white" id="ts-greeting">Hello, Student</h3>
+                            <h3 class="text-xl sm:text-2xl font-extrabold tracking-tight text-white" id="ts-greeting">Hello Student,</h3>
                             <p class="text-purple-400 font-medium text-sm mt-0.5" id="ts-team">Team Name</p>
                         </div>
                         <div class="flex flex-col gap-2 w-full sm:w-auto">
@@ -566,7 +566,7 @@
                 // Format submissions to match frontend expectation
                 state.studentPastSubmissions = result.submissions.map(sub => sub.weekIdentifier);
                 
-                document.getElementById('ts-greeting').textContent = `Hello, ${state.currentUser.name.split(' ')[0]}`;
+                document.getElementById('ts-greeting').textContent = `Hello ${state.currentUser.name.split(' ')[0]},`;
                 document.getElementById('ts-team').textContent = state.currentUser.team;
                 
                 // Check submitted weeks and lock options accordingly
