@@ -133,7 +133,7 @@
         .spinner { width: 40px; height: 40px; border: 4px solid rgba(168, 85, 247, 0.3); border-radius: 50%; border-top-color: #a855f7; animation: rotation 1s linear infinite; }
     </style>
 </head>
-<body class="text-zinc-100 min-h-[100dvh] relative overflow-x-hidden selection:bg-purple-500/30 font-sans" style="background-image: url('https://i.imgur.com/23ZFgoY.jpeg'); background-size: cover; background-position: center top; background-attachment: scroll;">
+<body class="text-zinc-100 min-h-[100dvh] relative overflow-x-hidden selection:bg-purple-500/30 font-sans" style="background-image: url('https://i.imgur.com/4DfFmUh.png'); background-size: cover; background-position: center top; background-attachment: scroll;">
 
     <!-- Initial Loader -->
     <div id="globalLoader">
@@ -1262,12 +1262,12 @@
 
     async function adminDeleteLog(studentId, weekId, logKey) {
         const academicYear = document.getElementById('adminYearFilter').value;
-        const sub = state.submissions.find(s => s.studentId === studentId && s.weekIdentifier === weekId && s.academicYear === academicYear);
-        if (!sub || !sub.logs) return;
+        const sub = state.submissions.find(s => s.studentId === studentId && s.academicYear === academicYear && s.logs && s.logs.some(l => (l.id ? l.id.toString() : `${l.date}_${l.hours}_${l.task}`) === logKey));
+        if (!sub || !sub.logs) { showToast('Entry not found', true); return; }
         sub.logs = sub.logs.filter(l => (l.id ? l.id.toString() : `${l.date}_${l.hours}_${l.task}`) !== logKey);
         sub.totalHours = sub.logs.reduce((s, l) => s + Number(l.hours), 0);
         if (sub.logs.length === 0) state.submissions = state.submissions.filter(s => s !== sub);
-        await adminSaveSubmission(academicYear, studentId, weekId, sub.logs);
+        await adminSaveSubmission(academicYear, studentId, sub.weekIdentifier, sub.logs);
     }
 
     async function adminSaveSubmission(academicYear, studentId, weekId, logs) {
