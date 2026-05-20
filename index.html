@@ -138,7 +138,7 @@
     <!-- Initial Loader -->
     <div id="globalLoader">
         <div class="spinner mb-4"></div>
-        <div class="text-purple-400 font-bold tracking-widest text-xs uppercase animate-pulse">Connecting to Database...</div>
+        <div class="text-purple-400 font-bold tracking-widest text-xs uppercase animate-pulse">Loading...</div>
     </div>
 
     <!-- Dark Overlay -->
@@ -181,15 +181,9 @@
                             <h3 class="text-xl sm:text-2xl font-extrabold tracking-tight text-white" id="ts-greeting">Hello Student,</h3>
                             <p class="text-purple-400 font-medium text-sm mt-0.5" id="ts-team">Team Name</p>
                         </div>
-                        <div class="flex flex-col gap-2 w-full sm:w-auto">
-                            <select id="studentWeekSelect" class="w-full sm:w-auto bg-zinc-800 border border-zinc-700 text-white py-2 px-3 rounded-xl text-sm font-medium outline-none cursor-pointer" onchange="switchStudentWeek()">
-                                <option value="current">Logging: Current Week</option>
-                                <option value="previous">Logging: Previous Week</option>
-                            </select>
-                            <div class="sm:text-right w-full bg-zinc-900/50 sm:bg-transparent p-3 sm:p-0 rounded-xl border border-zinc-800 sm:border-none flex flex-row sm:flex-col justify-between items-center sm:items-end">
-                                <div class="text-zinc-500 text-xs font-bold uppercase tracking-wider mb-0 sm:mb-1">Total Pending</div>
-                                <div class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500" id="ts-totalHours">0.0</div>
-                            </div>
+                        <div class="sm:text-right">
+                            <div class="text-zinc-500 text-xs font-bold uppercase tracking-wider mb-1">Total Pending</div>
+                            <div class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500" id="ts-totalHours">0.0</div>
                         </div>
                     </div>
 
@@ -241,7 +235,7 @@
                     </div>
 
                     <div class="border-t border-zinc-800 pt-5 sm:pt-6">
-                        <p id="submitHint" class="text-xs text-zinc-400 text-center mb-4 leading-relaxed px-2"><span class="text-emerald-400 font-semibold">Hours auto-save as you add them.</span> You can close this page and return anytime — your entries will still be here until you submit.</p>
+                        <p id="submitHint" class="text-xs text-zinc-400 text-center mb-4 leading-relaxed px-2"><span class="text-emerald-400 font-semibold">Hours auto-save as you add them.</span> Submit before <span class="text-purple-400 font-semibold">Monday midnight (AZ time)</span> — hours are automatically locked at the start of each new week.</p>
                         <button class="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold py-4 rounded-xl flex justify-center items-center gap-2 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] shadow-[0_0_20px_rgba(168,85,247,0.3)] hover:shadow-[0_0_30px_rgba(168,85,247,0.6)] text-lg border border-purple-500/50" id="submitBtn" onclick="submitTimesheet()">
                             <i data-lucide="send" class="w-5 h-5" id="submitBtnIcon"></i> <span id="submitTimesheetText">Submit Weekly Timesheet</span>
                             <div class="loader" id="submitLoader"></div>
@@ -492,11 +486,10 @@
     }
 
     // Application State
-    let state = { 
+    let state = {
         view: 'login',
         currentUser: null,
-        currentWeekEntries: [], 
-        studentActiveTab: 'current',
+        currentWeekEntries: [],
         editingEntryId: null,
         viewingStudentId: null,
         
@@ -613,31 +606,35 @@
                 
                 document.getElementById('ts-greeting').textContent = `Hello ${state.currentUser.name.split(' ')[0]},`;
                 document.getElementById('ts-team').textContent = state.currentUser.team;
-                
-                // Check submitted weeks and lock options accordingly
-                const prevWeekId = prevMonday.toISOString().split('T')[0];
+
+                // Auto-submit any stale pending entries from a previous week
                 const currWeekId = currentMonday.toISOString().split('T')[0];
-
-                const select = document.getElementById('studentWeekSelect');
-                const prevOption = select.querySelector('option[value="previous"]');
-                const currOption = select.querySelector('option[value="current"]');
-
-                if (state.studentPastSubmissions.includes(prevWeekId)) {
-                    prevOption.disabled = true; prevOption.textContent = "Previous Week (Submitted)";
-                } else {
-                    prevOption.disabled = false; prevOption.textContent = "Logging: Previous Week";
+                const pendingRaw = localStorage.getItem(`ts_pending_${state.currentUser.id}`);
+                if (pendingRaw) {
+                    try {
+                        const pendingEntries = JSON.parse(pendingRaw);
+                        if (Array.isArray(pendingEntries) && pendingEntries.length > 0) {
+                            const staleEntries = pendingEntries.filter(e => e.date < currWeekId);
+                            if (staleEntries.length > 0) {
+                                const staleWeekId = getWeekIdentifier(staleEntries[0].date);
+                                autoSubmitEntries(staleWeekId, staleEntries);
+                            }
+                            // Keep only current-week entries
+                            const freshEntries = pendingEntries.filter(e => e.date >= currWeekId);
+                            if (freshEntries.length !== pendingEntries.length) {
+                                if (freshEntries.length > 0) localStorage.setItem(`ts_pending_${state.currentUser.id}`, JSON.stringify(freshEntries));
+                                else localStorage.removeItem(`ts_pending_${state.currentUser.id}`);
+                            }
+                        }
+                    } catch(e) { localStorage.removeItem(`ts_pending_${state.currentUser.id}`); }
                 }
+                // Clean up old-format keys
+                localStorage.removeItem(`ts_pending_${state.currentUser.id}_current`);
+                localStorage.removeItem(`ts_pending_${state.currentUser.id}_previous`);
 
-                if (state.studentPastSubmissions.includes(currWeekId)) {
-                    currOption.textContent = "Current Week (Submitted)";
-                } else {
-                    currOption.textContent = "Logging: Current Week";
-                }
-
-                document.getElementById('studentWeekSelect').value = 'current';
-                switchStudentWeek();
+                initTimesheetView();
                 switchView('timesheet');
-                document.getElementById('loginStudentID').value = ""; 
+                document.getElementById('loginStudentID').value = "";
             } else {
                 showToast(result.message || "ID not found.", true);
             }
@@ -651,35 +648,26 @@
     function setupDateRestrictions() {
         const dateInput = document.getElementById('entryDate');
         const todayStr = todayDate.toISOString().split('T')[0];
-        if (state.studentActiveTab === 'previous') {
-            dateInput.min = prevMonday.toISOString().split('T')[0];
-            dateInput.max = prevSunday.toISOString().split('T')[0];
-        } else {
-            dateInput.min = currentMonday.toISOString().split('T')[0];
-            dateInput.max = todayStr; 
-        }
-        let selectedStr = dateInput.value;
+        dateInput.min = currentMonday.toISOString().split('T')[0];
+        dateInput.max = todayStr;
+        const selectedStr = dateInput.value;
         if (!selectedStr || selectedStr < dateInput.min || selectedStr > dateInput.max) {
-            dateInput.value = (todayStr >= dateInput.min && todayStr <= dateInput.max) ? todayStr : dateInput.max;
+            dateInput.value = todayStr;
         }
     }
 
-    function isWeekSubmitted(tab) {
-        const weekId = tab === 'previous'
-            ? prevMonday.toISOString().split('T')[0]
-            : currentMonday.toISOString().split('T')[0];
-        return (state.studentPastSubmissions || []).includes(weekId);
+    function isWeekSubmitted() {
+        return (state.studentPastSubmissions || []).includes(currentMonday.toISOString().split('T')[0]);
     }
 
-    function switchStudentWeek() {
-        state.studentActiveTab = document.getElementById('studentWeekSelect').value;
-        const savedData = localStorage.getItem(`ts_pending_${state.currentUser.id}_${state.studentActiveTab}`);
+    function initTimesheetView() {
+        const savedData = localStorage.getItem(`ts_pending_${state.currentUser.id}`);
         state.currentWeekEntries = savedData ? JSON.parse(savedData) : [];
         setupDateRestrictions();
         cancelEdit();
         renderTimesheetEntries();
 
-        const submitted = isWeekSubmitted(state.studentActiveTab);
+        const submitted = isWeekSubmitted();
         const entryFormBox = document.getElementById('entryFormBox');
         const submittedNotice = document.getElementById('submittedNotice');
         const submitBtn = document.getElementById('submitBtn');
@@ -702,10 +690,8 @@
             submitHint.classList.remove('hidden');
             submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
             submitIcon.setAttribute('data-lucide', 'send');
-            const btnText = state.studentActiveTab === 'previous' ? 'Submit Previous Week' : 'Submit Current Week';
-            document.getElementById('submitTimesheetText').textContent = btnText;
+            document.getElementById('submitTimesheetText').textContent = 'Submit Weekly Timesheet';
             document.getElementById('ts-weekLabel').textContent = 'Pending Submit';
-            // Re-apply hour minimum — renderTimesheetEntries ran first but switchStudentWeek would have overridden it
             const currentTotal = state.currentWeekEntries.reduce((s, e) => s + (parseFloat(e.hours) || 0), 0);
             const meetsMin = currentTotal >= 10;
             submitBtn.disabled = !meetsMin;
@@ -715,6 +701,25 @@
             submitBtn.classList.toggle('hover:scale-[1.02]', meetsMin);
         }
         lucide.createIcons();
+    }
+
+    async function autoSubmitEntries(weekId, entries) {
+        try {
+            const total = entries.reduce((s, e) => s + (parseFloat(e.hours) || 0), 0);
+            if (total <= 0 || !state.currentUser) return;
+            const response = await fetch(SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'submitTimesheet', studentId: state.currentUser.id, weekIdentifier: weekId, logs: entries })
+            });
+            const result = await response.json();
+            if (result.success) {
+                if (!state.studentPastSubmissions) state.studentPastSubmissions = [];
+                if (!state.studentPastSubmissions.includes(weekId)) state.studentPastSubmissions.push(weekId);
+                if (!state.studentSubmissions) state.studentSubmissions = [];
+                state.studentSubmissions.push({ weekIdentifier: weekId, logs: entries });
+                showToast("Last week's hours were auto-submitted!");
+            }
+        } catch(e) { /* silently ignore auto-submit failures */ }
     }
 
     function flashAutosave() {
@@ -750,7 +755,7 @@
             document.getElementById('entryHours').value = "";
             document.getElementById('entryTask').value = "";
         }
-        localStorage.setItem(`ts_pending_${state.currentUser.id}_${state.studentActiveTab}`, JSON.stringify(state.currentWeekEntries));
+        localStorage.setItem(`ts_pending_${state.currentUser.id}`, JSON.stringify(state.currentWeekEntries));
         flashAutosave();
         renderTimesheetEntries();
     }
@@ -789,7 +794,7 @@
     function removeEntry(id) {
         if(state.editingEntryId === id) cancelEdit();
         state.currentWeekEntries = state.currentWeekEntries.filter(e => e.id !== id);
-        localStorage.setItem(`ts_pending_${state.currentUser.id}_${state.studentActiveTab}`, JSON.stringify(state.currentWeekEntries));
+        localStorage.setItem(`ts_pending_${state.currentUser.id}`, JSON.stringify(state.currentWeekEntries));
         flashAutosave();
         renderTimesheetEntries();
     }
@@ -802,7 +807,7 @@
             list.innerHTML = `<div class="text-zinc-500 text-sm italic py-4 text-center border border-dashed border-zinc-800 rounded-xl">No pending hours logged.</div>`;
             totalEl.textContent = "0.0";
             const submitBtn = document.getElementById('submitBtn');
-            if (submitBtn && !isWeekSubmitted(state.studentActiveTab)) {
+            if (submitBtn && !isWeekSubmitted()) {
                 submitBtn.disabled = true;
                 submitBtn.classList.add('opacity-40', 'cursor-not-allowed');
                 submitBtn.classList.remove('hover:-translate-y-1', 'hover:scale-[1.02]');
@@ -833,7 +838,7 @@
 
         // Gate submit button on minimum hours threshold
         const submitBtn = document.getElementById('submitBtn');
-        if (submitBtn && !isWeekSubmitted(state.studentActiveTab)) {
+        if (submitBtn && !isWeekSubmitted()) {
             const meetsMinimum = total >= 10;
             submitBtn.disabled = !meetsMinimum;
             submitBtn.classList.toggle('opacity-40', !meetsMinimum);
@@ -854,7 +859,7 @@
         const loader = document.getElementById('submitLoader');
         btn.disabled = true; loader.style.display = 'block';
 
-        const weekIdToSubmit = state.studentActiveTab === 'previous' ? prevMonday.toISOString().split('T')[0] : currentMonday.toISOString().split('T')[0];
+        const weekIdToSubmit = currentMonday.toISOString().split('T')[0];
 
         try {
             const response = await fetch(SCRIPT_URL, {
@@ -871,7 +876,7 @@
             if(result.success) {
                 const submittedLogs = [...state.currentWeekEntries];
                 state.currentWeekEntries = [];
-                localStorage.removeItem(`ts_pending_${state.currentUser.id}_${state.studentActiveTab}`);
+                localStorage.removeItem(`ts_pending_${state.currentUser.id}`);
                 // Mark week as submitted locally so re-login isn't needed to see the lock
                 if (!state.studentPastSubmissions) state.studentPastSubmissions = [];
                 if (!state.studentPastSubmissions.includes(weekIdToSubmit)) {
