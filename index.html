@@ -234,12 +234,8 @@
                         <div class="text-zinc-400 text-xs leading-relaxed">This week's timesheet has already been submitted and recorded.</div>
                     </div>
 
-                    <div class="border-t border-zinc-800 pt-5 sm:pt-6">
-                        <p id="submitHint" class="text-xs text-zinc-400 text-center mb-4 leading-relaxed px-2"><span class="text-emerald-400 font-semibold">Hours auto-save as you add them.</span> Submit before <span class="text-purple-400 font-semibold">Monday midnight (AZ time)</span> — hours are automatically locked at the start of each new week.</p>
-                        <button class="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold py-4 rounded-xl flex justify-center items-center gap-2 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] shadow-[0_0_20px_rgba(168,85,247,0.3)] hover:shadow-[0_0_30px_rgba(168,85,247,0.6)] text-lg border border-purple-500/50" id="submitBtn" onclick="submitTimesheet()">
-                            <i data-lucide="send" class="w-5 h-5" id="submitBtnIcon"></i> <span id="submitTimesheetText">Submit Weekly Timesheet</span>
-                            <div class="loader" id="submitLoader"></div>
-                        </button>
+                    <div class="border-t border-zinc-800 pt-5 sm:pt-6 text-center">
+                        <p class="text-xs text-zinc-400 leading-relaxed px-2"><span class="text-emerald-400 font-semibold">Hours auto-save as you add them.</span> Hours are due <span class="text-purple-400 font-semibold">Sunday at 11:59 PM (AZ time)</span> and are automatically submitted at the start of each new week.</p>
                     </div>
                     
                     <div class="flex justify-between items-center mt-6">
@@ -475,6 +471,9 @@
     function getWeekIdentifier(dateString) {
         return getMonday(new Date(dateString + 'T00:00:00')).toISOString().split('T')[0];
     }
+    // Arizona time (America/Phoenix, UTC-7, no DST)
+    function getAZDateStr() { return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Phoenix' }); }
+    const CURRENT_WEEK_ID_AZ = getWeekIdentifier(getAZDateStr());
     function formatWeekRange(startIsoString) {
         const start = new Date(startIsoString + 'T00:00:00');
         const end = new Date(start); end.setDate(end.getDate() + 6);
@@ -608,19 +607,18 @@
                 document.getElementById('ts-team').textContent = state.currentUser.team;
 
                 // Auto-submit any stale pending entries from a previous week
-                const currWeekId = currentMonday.toISOString().split('T')[0];
                 const pendingRaw = localStorage.getItem(`ts_pending_${state.currentUser.id}`);
                 if (pendingRaw) {
                     try {
                         const pendingEntries = JSON.parse(pendingRaw);
                         if (Array.isArray(pendingEntries) && pendingEntries.length > 0) {
-                            const staleEntries = pendingEntries.filter(e => e.date < currWeekId);
+                            const staleEntries = pendingEntries.filter(e => e.date < CURRENT_WEEK_ID_AZ);
                             if (staleEntries.length > 0) {
                                 const staleWeekId = getWeekIdentifier(staleEntries[0].date);
                                 autoSubmitEntries(staleWeekId, staleEntries);
                             }
                             // Keep only current-week entries
-                            const freshEntries = pendingEntries.filter(e => e.date >= currWeekId);
+                            const freshEntries = pendingEntries.filter(e => e.date >= CURRENT_WEEK_ID_AZ);
                             if (freshEntries.length !== pendingEntries.length) {
                                 if (freshEntries.length > 0) localStorage.setItem(`ts_pending_${state.currentUser.id}`, JSON.stringify(freshEntries));
                                 else localStorage.removeItem(`ts_pending_${state.currentUser.id}`);
@@ -647,17 +645,17 @@
 
     function setupDateRestrictions() {
         const dateInput = document.getElementById('entryDate');
-        const todayStr = todayDate.toISOString().split('T')[0];
-        dateInput.min = currentMonday.toISOString().split('T')[0];
-        dateInput.max = todayStr;
+        const todayAZ = getAZDateStr();
+        dateInput.min = CURRENT_WEEK_ID_AZ;
+        dateInput.max = todayAZ;
         const selectedStr = dateInput.value;
         if (!selectedStr || selectedStr < dateInput.min || selectedStr > dateInput.max) {
-            dateInput.value = todayStr;
+            dateInput.value = todayAZ;
         }
     }
 
     function isWeekSubmitted() {
-        return (state.studentPastSubmissions || []).includes(currentMonday.toISOString().split('T')[0]);
+        return (state.studentPastSubmissions || []).includes(CURRENT_WEEK_ID_AZ);
     }
 
     function initTimesheetView() {
@@ -668,38 +666,9 @@
         renderTimesheetEntries();
 
         const submitted = isWeekSubmitted();
-        const entryFormBox = document.getElementById('entryFormBox');
-        const submittedNotice = document.getElementById('submittedNotice');
-        const submitBtn = document.getElementById('submitBtn');
-        const submitHint = document.getElementById('submitHint');
-        const submitIcon = document.getElementById('submitBtnIcon');
-
-        if (submitted) {
-            entryFormBox.classList.add('hidden');
-            submittedNotice.classList.remove('hidden');
-            submitHint.classList.add('hidden');
-            submitBtn.disabled = true;
-            submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
-            submitBtn.classList.remove('hover:-translate-y-1', 'hover:scale-[1.02]');
-            submitIcon.setAttribute('data-lucide', 'check-circle');
-            document.getElementById('submitTimesheetText').textContent = 'Already Submitted';
-            document.getElementById('ts-weekLabel').textContent = '✓ Submitted';
-        } else {
-            entryFormBox.classList.remove('hidden');
-            submittedNotice.classList.add('hidden');
-            submitHint.classList.remove('hidden');
-            submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-            submitIcon.setAttribute('data-lucide', 'send');
-            document.getElementById('submitTimesheetText').textContent = 'Submit Weekly Timesheet';
-            document.getElementById('ts-weekLabel').textContent = 'Pending Submit';
-            const currentTotal = state.currentWeekEntries.reduce((s, e) => s + (parseFloat(e.hours) || 0), 0);
-            const meetsMin = currentTotal >= 10;
-            submitBtn.disabled = !meetsMin;
-            submitBtn.classList.toggle('opacity-40', !meetsMin);
-            submitBtn.classList.toggle('cursor-not-allowed', !meetsMin);
-            submitBtn.classList.toggle('hover:-translate-y-1', meetsMin);
-            submitBtn.classList.toggle('hover:scale-[1.02]', meetsMin);
-        }
+        document.getElementById('entryFormBox').classList.toggle('hidden', submitted);
+        document.getElementById('submittedNotice').classList.toggle('hidden', !submitted);
+        document.getElementById('ts-weekLabel').textContent = submitted ? '✓ Submitted' : 'Current Week';
         lucide.createIcons();
     }
 
@@ -717,10 +686,23 @@
                 if (!state.studentPastSubmissions.includes(weekId)) state.studentPastSubmissions.push(weekId);
                 if (!state.studentSubmissions) state.studentSubmissions = [];
                 state.studentSubmissions.push({ weekIdentifier: weekId, logs: entries });
-                showToast("Last week's hours were auto-submitted!");
+                showToast("Hours auto-submitted!");
             }
         } catch(e) { /* silently ignore auto-submit failures */ }
     }
+
+    // Every 30 seconds check if the AZ week has rolled over (Monday midnight)
+    setInterval(async () => {
+        if (!state.currentUser) return;
+        if (getWeekIdentifier(getAZDateStr()) !== CURRENT_WEEK_ID_AZ) {
+            if (state.currentWeekEntries.length > 0) {
+                await autoSubmitEntries(CURRENT_WEEK_ID_AZ, [...state.currentWeekEntries]);
+                state.currentWeekEntries = [];
+                localStorage.removeItem(`ts_pending_${state.currentUser.id}`);
+            }
+            window.location.reload();
+        }
+    }, 30000);
 
     function flashAutosave() {
         const el = document.getElementById('autosaveIndicator');
@@ -806,12 +788,6 @@
         if(state.currentWeekEntries.length === 0) {
             list.innerHTML = `<div class="text-zinc-500 text-sm italic py-4 text-center border border-dashed border-zinc-800 rounded-xl">No pending hours logged.</div>`;
             totalEl.textContent = "0.0";
-            const submitBtn = document.getElementById('submitBtn');
-            if (submitBtn && !isWeekSubmitted()) {
-                submitBtn.disabled = true;
-                submitBtn.classList.add('opacity-40', 'cursor-not-allowed');
-                submitBtn.classList.remove('hover:-translate-y-1', 'hover:scale-[1.02]');
-            }
             return;
         }
 
@@ -835,66 +811,10 @@
             </div>`;
         }).join('');
         totalEl.textContent = total.toFixed(1);
-
-        // Gate submit button on minimum hours threshold
-        const submitBtn = document.getElementById('submitBtn');
-        if (submitBtn && !isWeekSubmitted()) {
-            const meetsMinimum = total >= 10;
-            submitBtn.disabled = !meetsMinimum;
-            submitBtn.classList.toggle('opacity-40', !meetsMinimum);
-            submitBtn.classList.toggle('cursor-not-allowed', !meetsMinimum);
-            submitBtn.classList.toggle('hover:-translate-y-1', meetsMinimum);
-            submitBtn.classList.toggle('hover:scale-[1.02]', meetsMinimum);
-        }
-
         lucide.createIcons();
     }
 
-    async function submitTimesheet() {
-        if(state.currentWeekEntries.length === 0) return showToast("You haven't logged any hours!", true);
-        const total = state.currentWeekEntries.reduce((s, e) => s + e.hours, 0);
-        if(total < 10) return;
-
-        const btn = document.getElementById('submitBtn');
-        const loader = document.getElementById('submitLoader');
-        btn.disabled = true; loader.style.display = 'block';
-
-        const weekIdToSubmit = currentMonday.toISOString().split('T')[0];
-
-        try {
-            const response = await fetch(SCRIPT_URL, {
-                method: 'POST',
-                body: JSON.stringify({ 
-                    action: 'submitTimesheet', 
-                    studentId: state.currentUser.id,
-                    weekIdentifier: weekIdToSubmit,
-                    logs: state.currentWeekEntries
-                })
-            });
-            const result = await response.json();
-
-            if(result.success) {
-                const submittedLogs = [...state.currentWeekEntries];
-                state.currentWeekEntries = [];
-                localStorage.removeItem(`ts_pending_${state.currentUser.id}`);
-                // Mark week as submitted locally so re-login isn't needed to see the lock
-                if (!state.studentPastSubmissions) state.studentPastSubmissions = [];
-                if (!state.studentPastSubmissions.includes(weekIdToSubmit)) {
-                    state.studentPastSubmissions.push(weekIdToSubmit);
-                }
-                // Add submitted logs to local history so it's visible without re-login
-                if (!state.studentSubmissions) state.studentSubmissions = [];
-                state.studentSubmissions.push({ weekIdentifier: weekIdToSubmit, logs: submittedLogs });
-                switchView('success');
-                fireConfetti();
-            } else {
-                showToast(result.message || "Submission failed", true);
-            }
-        } catch (e) {
-            showToast("Connection Error", true);
-        } finally {
-            btn.disabled = false; loader.style.display = 'none';
-        }
+    // submitTimesheet removed — hours are auto-submitted at Monday midnight AZ time
     }
 
     function showHistory() {
