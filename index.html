@@ -140,9 +140,13 @@
             100% { background-position: 0% 50%; }
         }
         body {
-            background: linear-gradient(-45deg, #09090b, #0f0a1e, #0a0a2e, #0d0621, #09090b, #1a0533, #0f0620);
-            background-size: 400% 400%;
-            animation: gradientShift 18s ease infinite;
+            background: linear-gradient(-45deg,
+                #07060f, #0d0a42, #1c0548, #090e4a,
+                #180445, #07060f, #0a0c40, #1a0550,
+                #07060f, #0d0a42, #1c0548, #090e4a
+            );
+            background-size: 300% 300%;
+            animation: gradientShift 14s ease infinite;
         }
     </style>
 </head>
@@ -605,19 +609,25 @@
         btn.disabled = true; loader.style.display = 'block';
 
         try {
-            const response = await fetch(SCRIPT_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: 'studentLogin', studentId: idInput })
-            });
+            const [response, draftRes] = await Promise.all([
+                fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'studentLogin', studentId: idInput }) }),
+                fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'getDraft', studentId: idInput, weekIdentifier: CURRENT_WEEK_ID_AZ }) })
+            ]);
             const result = await response.json();
+            const draftResult = await draftRes.json().catch(() => ({ success: false }));
 
             if (result.success) {
                 state.currentUser = result.student;
                 state.studentPastSubmissions = result.submissions.map(sub => sub.weekIdentifier);
                 state.studentSubmissions = result.submissions; // full logs for history view
-                
+
                 document.getElementById('ts-greeting').textContent = `Hello ${state.currentUser.name.split(' ')[0]},`;
                 document.getElementById('ts-team').textContent = state.currentUser.team;
+
+                // If server has a draft for this week, use it as source of truth
+                if (draftResult.success && Array.isArray(draftResult.logs) && draftResult.logs.length > 0) {
+                    localStorage.setItem(`ts_pending_${state.currentUser.id}`, JSON.stringify(draftResult.logs));
+                }
 
                 // Auto-submit any stale pending entries from a previous week
                 const pendingRaw = localStorage.getItem(`ts_pending_${state.currentUser.id}`);
@@ -751,6 +761,7 @@
             document.getElementById('entryTask').value = "";
         }
         localStorage.setItem(`ts_pending_${state.currentUser.id}`, JSON.stringify(state.currentWeekEntries));
+        saveDraftToServer();
         flashAutosave();
         renderTimesheetEntries();
     }
@@ -790,8 +801,17 @@
         if(state.editingEntryId === id) cancelEdit();
         state.currentWeekEntries = state.currentWeekEntries.filter(e => e.id !== id);
         localStorage.setItem(`ts_pending_${state.currentUser.id}`, JSON.stringify(state.currentWeekEntries));
+        saveDraftToServer();
         flashAutosave();
         renderTimesheetEntries();
+    }
+
+    function saveDraftToServer() {
+        if (!state.currentUser) return;
+        fetch(SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'saveDraft', studentId: state.currentUser.id, weekIdentifier: CURRENT_WEEK_ID_AZ, logs: state.currentWeekEntries })
+        }).catch(() => {});
     }
 
     function renderTimesheetEntries() {
