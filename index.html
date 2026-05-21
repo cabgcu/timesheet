@@ -718,7 +718,8 @@
             switchView('timesheet');
             document.getElementById('loginStudentID').value = '';
         } catch (e) {
-            showToast('Connection error', true);
+            console.error('studentLogin error:', e);
+            showToast('Connection error: ' + e.message, true);
         } finally {
             btn.disabled = false; loader.style.display = 'none';
         }
@@ -1037,7 +1038,8 @@
             renderDashboard();
             switchView('dashboard');
         } catch (e) {
-            showToast('Connection error', true);
+            console.error('verifyAdmin error:', e);
+            showToast('Connection error: ' + e.message, true);
         } finally {
             btn.disabled = false; loader.style.display = 'none';
         }
