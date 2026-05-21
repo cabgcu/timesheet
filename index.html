@@ -509,6 +509,31 @@
     const CONFIG_CACHE_KEY = 'ts_config_v1';
     const CONFIG_CACHE_TTL = 3600000; // 1 hour
 
+    // Supabase REST helpers
+    const sb = {
+        _h(extra = {}) {
+            return { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', ...extra };
+        },
+        async select(table, query = '') {
+            const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}${query ? '?' + query : ''}`, { headers: sb._h() });
+            if (!res.ok) throw new Error(await res.text());
+            return res.json();
+        },
+        async upsert(table, data, onConflict = '') {
+            const url = `${SUPABASE_URL}/rest/v1/${table}${onConflict ? '?on_conflict=' + onConflict : ''}`;
+            const res = await fetch(url, { method: 'POST', headers: sb._h({ 'Prefer': 'resolution=merge-duplicates,return=minimal' }), body: JSON.stringify(data) });
+            if (!res.ok) throw new Error(await res.text());
+        },
+        async insert(table, data) {
+            const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, { method: 'POST', headers: sb._h({ 'Prefer': 'return=minimal' }), body: JSON.stringify(data) });
+            if (!res.ok) throw new Error(await res.text());
+        },
+        async delete(table, query) {
+            const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${query}`, { method: 'DELETE', headers: sb._h() });
+            if (!res.ok) throw new Error(await res.text());
+        }
+    };
+
     // Date Helpers
     const todayDate = new Date();
     function getMonday(d) {
@@ -582,7 +607,7 @@
             const cached = localStorage.getItem(CONFIG_CACHE_KEY);
             if (cached) {
                 const { data, ts } = JSON.parse(cached);
-                if (Date.now() - ts < CONFIG_CACHE_TTL && data.success) {
+                if (Date.now() - ts < CONFIG_CACHE_TTL && data.activeYear) {
                     applyConfig(data);
                     usedCache = true;
                     hideLoader();
@@ -591,24 +616,18 @@
             }
         } catch (e) { /* bad cache, ignore */ }
 
-        // Fetch fresh config (blocks UI only if no cache)
+        // Fetch fresh config from Supabase
         try {
-            const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 12000);
-            const response = await fetch(SCRIPT_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: 'getConfig' }),
-                signal: controller.signal
-            });
-            clearTimeout(timeout);
-            const result = await response.json();
-
-            if (result.success) {
-                applyConfig(result);
-                localStorage.setItem(CONFIG_CACHE_KEY, JSON.stringify({ data: result, ts: Date.now() }));
-            } else if (!usedCache) {
-                showToast("Error loading config.", true);
-            }
+            const rows = await sb.select('settings');
+            const map = {};
+            rows.forEach(r => map[r.key] = r.value);
+            const config = {
+                activeYear:    map['ActiveYear'] || '',
+                teams:         JSON.parse(map['Teams']         || '[]'),
+                academicYears: JSON.parse(map['AcademicYears'] || '[]')
+            };
+            applyConfig(config);
+            localStorage.setItem(CONFIG_CACHE_KEY, JSON.stringify({ data: config, ts: Date.now() }));
         } catch (e) {
             if (!usedCache) {
                 console.error(e);
@@ -646,58 +665,60 @@
         btn.disabled = true; loader.style.display = 'block';
 
         try {
-            const [response, draftRes] = await Promise.all([
-                fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'studentLogin', studentId: idInput }) }),
-                fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'getDraft', studentId: idInput, weekIdentifier: CURRENT_WEEK_ID_AZ }) })
+            const [rosterRows, subRows, draftRows] = await Promise.all([
+                sb.select('roster',      `student_id=eq.${encodeURIComponent(idInput)}`),
+                sb.select('submissions', `student_id=eq.${encodeURIComponent(idInput)}`),
+                sb.select('drafts',      `student_id=eq.${encodeURIComponent(idInput)}&week_identifier=eq.${CURRENT_WEEK_ID_AZ}`)
             ]);
-            const result = await response.json();
-            const draftResult = await draftRes.json().catch(() => ({ success: false }));
 
-            if (result.success) {
-                state.currentUser = result.student;
-                state.studentPastSubmissions = result.submissions.map(sub => sub.weekIdentifier);
-                state.studentSubmissions = result.submissions; // full logs for history view
+            if (!rosterRows.length) { showToast('Student ID not found.', true); return; }
 
-                document.getElementById('ts-greeting').textContent = `Hello ${state.currentUser.name.split(' ')[0]},`;
-                document.getElementById('ts-team').textContent = state.currentUser.team;
+            const row = rosterRows[0];
+            state.currentUser = { id: row.student_id, name: row.name, team: row.team };
+            state.studentPastSubmissions = subRows.map(s => s.week_identifier);
+            state.studentSubmissions = subRows.map(s => ({
+                academicYear:   s.academic_year,
+                studentId:      s.student_id,
+                studentName:    s.student_name,
+                team:           s.team,
+                weekIdentifier: s.week_identifier,
+                totalHours:     s.total_hours,
+                logs:           JSON.parse(s.logs_json || '[]')
+            }));
 
-                // If server has a draft for this week, use it as source of truth
-                if (draftResult.success && Array.isArray(draftResult.logs) && draftResult.logs.length > 0) {
-                    localStorage.setItem(`ts_pending_${state.currentUser.id}`, JSON.stringify(draftResult.logs));
-                }
+            document.getElementById('ts-greeting').textContent = `Hello ${state.currentUser.name.split(' ')[0]},`;
+            document.getElementById('ts-team').textContent = state.currentUser.team;
 
-                // Auto-submit any stale pending entries from a previous week
-                const pendingRaw = localStorage.getItem(`ts_pending_${state.currentUser.id}`);
-                if (pendingRaw) {
-                    try {
-                        const pendingEntries = JSON.parse(pendingRaw);
-                        if (Array.isArray(pendingEntries) && pendingEntries.length > 0) {
-                            const staleEntries = pendingEntries.filter(e => e.date < CURRENT_WEEK_ID_AZ);
-                            if (staleEntries.length > 0) {
-                                const staleWeekId = getWeekIdentifier(staleEntries[0].date);
-                                autoSubmitEntries(staleWeekId, staleEntries);
-                            }
-                            // Keep only current-week entries
-                            const freshEntries = pendingEntries.filter(e => e.date >= CURRENT_WEEK_ID_AZ);
-                            if (freshEntries.length !== pendingEntries.length) {
-                                if (freshEntries.length > 0) localStorage.setItem(`ts_pending_${state.currentUser.id}`, JSON.stringify(freshEntries));
-                                else localStorage.removeItem(`ts_pending_${state.currentUser.id}`);
-                            }
-                        }
-                    } catch(e) { localStorage.removeItem(`ts_pending_${state.currentUser.id}`); }
-                }
-                // Clean up old-format keys
-                localStorage.removeItem(`ts_pending_${state.currentUser.id}_current`);
-                localStorage.removeItem(`ts_pending_${state.currentUser.id}_previous`);
-
-                initTimesheetView();
-                switchView('timesheet');
-                document.getElementById('loginStudentID').value = "";
-            } else {
-                showToast(result.message || "ID not found.", true);
+            // Use server draft as source of truth if available
+            if (draftRows.length > 0) {
+                const draftLogs = JSON.parse(draftRows[0].logs_json || '[]');
+                if (draftLogs.length > 0) localStorage.setItem(`ts_pending_${state.currentUser.id}`, JSON.stringify(draftLogs));
             }
+
+            // Auto-submit stale entries from a previous week
+            const pendingRaw = localStorage.getItem(`ts_pending_${state.currentUser.id}`);
+            if (pendingRaw) {
+                try {
+                    const pendingEntries = JSON.parse(pendingRaw);
+                    if (Array.isArray(pendingEntries) && pendingEntries.length > 0) {
+                        const staleEntries = pendingEntries.filter(e => e.date < CURRENT_WEEK_ID_AZ);
+                        if (staleEntries.length > 0) autoSubmitEntries(getWeekIdentifier(staleEntries[0].date), staleEntries);
+                        const freshEntries = pendingEntries.filter(e => e.date >= CURRENT_WEEK_ID_AZ);
+                        if (freshEntries.length !== pendingEntries.length) {
+                            if (freshEntries.length > 0) localStorage.setItem(`ts_pending_${state.currentUser.id}`, JSON.stringify(freshEntries));
+                            else localStorage.removeItem(`ts_pending_${state.currentUser.id}`);
+                        }
+                    }
+                } catch(e) { localStorage.removeItem(`ts_pending_${state.currentUser.id}`); }
+            }
+            localStorage.removeItem(`ts_pending_${state.currentUser.id}_current`);
+            localStorage.removeItem(`ts_pending_${state.currentUser.id}_previous`);
+
+            initTimesheetView();
+            switchView('timesheet');
+            document.getElementById('loginStudentID').value = '';
         } catch (e) {
-            showToast("Connection error", true);
+            showToast('Connection error', true);
         } finally {
             btn.disabled = false; loader.style.display = 'none';
         }
@@ -736,19 +757,28 @@
         try {
             const total = entries.reduce((s, e) => s + (parseFloat(e.hours) || 0), 0);
             if (total <= 0 || !state.currentUser) return;
-            const response = await fetch(SCRIPT_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: 'submitTimesheet', studentId: state.currentUser.id, weekIdentifier: weekId, logs: entries })
-            });
-            const result = await response.json();
-            if (result.success) {
-                if (!state.studentPastSubmissions) state.studentPastSubmissions = [];
-                if (!state.studentPastSubmissions.includes(weekId)) state.studentPastSubmissions.push(weekId);
-                if (!state.studentSubmissions) state.studentSubmissions = [];
-                state.studentSubmissions.push({ weekIdentifier: weekId, logs: entries });
-                showToast("Hours auto-submitted!");
-            }
-        } catch(e) { /* silently ignore auto-submit failures */ }
+            // Merge with any existing submission for this week
+            const existing = await sb.select('submissions',
+                `student_id=eq.${encodeURIComponent(state.currentUser.id)}&week_identifier=eq.${encodeURIComponent(weekId)}&academic_year=eq.${encodeURIComponent(state.activeYear)}`);
+            let finalLogs = entries;
+            if (existing.length > 0) finalLogs = JSON.parse(existing[0].logs_json || '[]').concat(entries);
+            const finalTotal = finalLogs.reduce((s, l) => s + Number(l.hours), 0);
+            await sb.upsert('submissions', {
+                academic_year:   state.activeYear,
+                student_id:      state.currentUser.id,
+                student_name:    state.currentUser.name,
+                team:            state.currentUser.team,
+                week_identifier: weekId,
+                total_hours:     finalTotal,
+                logs_json:       JSON.stringify(finalLogs)
+            }, 'academic_year,student_id,week_identifier');
+            sb.delete('drafts', `student_id=eq.${encodeURIComponent(state.currentUser.id)}&week_identifier=eq.${encodeURIComponent(weekId)}`).catch(() => {});
+            if (!state.studentPastSubmissions) state.studentPastSubmissions = [];
+            if (!state.studentPastSubmissions.includes(weekId)) state.studentPastSubmissions.push(weekId);
+            if (!state.studentSubmissions) state.studentSubmissions = [];
+            state.studentSubmissions.push({ weekIdentifier: weekId, logs: finalLogs });
+            showToast('Hours auto-submitted!');
+        } catch(e) { /* silently ignore */ }
     }
 
     // Every 30 seconds check if the AZ week has rolled over (Monday midnight)
@@ -845,10 +875,12 @@
 
     function saveDraftToServer() {
         if (!state.currentUser) return;
-        fetch(SCRIPT_URL, {
-            method: 'POST',
-            body: JSON.stringify({ action: 'saveDraft', studentId: state.currentUser.id, weekIdentifier: CURRENT_WEEK_ID_AZ, logs: state.currentWeekEntries })
-        }).catch(() => {});
+        sb.upsert('drafts', {
+            student_id:      state.currentUser.id,
+            week_identifier: CURRENT_WEEK_ID_AZ,
+            logs_json:       JSON.stringify(state.currentWeekEntries),
+            last_updated:    new Date().toISOString()
+        }, 'student_id,week_identifier').catch(() => {});
     }
 
     function renderTimesheetEntries() {
@@ -972,34 +1004,40 @@
         btn.disabled = true; loader.style.display = 'block';
 
         try {
-            // Fire both requests in parallel — only use data result if login succeeds
-            const [resLogin, resData] = await Promise.all([
-                fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'adminLogin', password: pass }) }),
-                fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'getAdminData', password: pass }) })
+            const pwRows = await sb.select('settings', 'key=eq.AdminPassword');
+            if (!pwRows.length || pwRows[0].value !== pass) { showToast('Incorrect Password', true); return; }
+
+            state.adminPassword = pass;
+            const [subRows, rosterRows] = await Promise.all([
+                sb.select('submissions'),
+                sb.select('roster')
             ]);
-            const resultLogin = await resLogin.json();
 
-            if (resultLogin.success) {
-                const resultData = await resData.json();
+            state.submissions = subRows.map(s => ({
+                academicYear:   s.academic_year,
+                studentId:      s.student_id,
+                studentName:    s.student_name,
+                name:           s.student_name,
+                team:           s.team,
+                weekIdentifier: s.week_identifier,
+                totalHours:     s.total_hours,
+                hours:          s.total_hours,
+                logs:           JSON.parse(s.logs_json || '[]')
+            }));
+            const rosters = {};
+            rosterRows.forEach(r => {
+                if (!rosters[r.academic_year]) rosters[r.academic_year] = [];
+                rosters[r.academic_year].push({ id: r.student_id, name: r.name, team: r.team });
+            });
+            state.rosters = rosters;
+            state.adminViewingYear = state.activeYear;
 
-                if (resultData.success) {
-                    state.adminPassword = pass;
-                    state.rosters = resultData.rosters || {};
-                    state.submissions = resultData.submissions || [];
-                    state.adminViewingYear = state.activeYear;
-
-                    hideGate(); showToast("Access Granted");
-                    renderSettingsManager();
-                    renderDashboard();
-                    switchView('dashboard');
-                } else {
-                    showToast(resultData.message || "Failed to load master data", true);
-                }
-            } else {
-                showToast("Incorrect Password", true);
-            }
+            hideGate(); showToast('Access Granted');
+            renderSettingsManager();
+            renderDashboard();
+            switchView('dashboard');
         } catch (e) {
-            showToast("Connection error", true);
+            showToast('Connection error', true);
         } finally {
             btn.disabled = false; loader.style.display = 'none';
         }
@@ -1263,15 +1301,23 @@
     }
 
     async function adminSaveSubmission(academicYear, studentId, weekId, logs) {
-        const password = state.adminPassword;
         try {
             showToast('Saving…');
-            const res = await fetch(SCRIPT_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: 'adminUpdateSubmission', password, academicYear, studentId, weekIdentifier: weekId, logs })
-            });
-            const result = await res.json();
-            if (!result.success) throw new Error(result.error || 'Save failed');
+            if (logs.length === 0) {
+                await sb.delete('submissions',
+                    `academic_year=eq.${encodeURIComponent(academicYear)}&student_id=eq.${encodeURIComponent(studentId)}&week_identifier=eq.${encodeURIComponent(weekId)}`);
+            } else {
+                const sub = state.submissions.find(s => s.studentId === studentId && s.academicYear === academicYear);
+                await sb.upsert('submissions', {
+                    academic_year:   academicYear,
+                    student_id:      studentId,
+                    student_name:    sub?.studentName || sub?.name || '',
+                    team:            sub?.team || '',
+                    week_identifier: weekId,
+                    total_hours:     logs.reduce((s, l) => s + Number(l.hours), 0),
+                    logs_json:       JSON.stringify(logs)
+                }, 'academic_year,student_id,week_identifier');
+            }
             showToast('Saved!');
             renderStudentDetails();
             renderDashboard();
@@ -1342,26 +1388,26 @@
         const newPass = document.getElementById('setNewPass').value.trim();
         
         try {
-            const p1 = fetch(SCRIPT_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: 'saveSettings', password: state.adminPassword, newPassword: newPass, activeYear: state.activeYear, teams: state.teams, academicYears: state.academicYears })
-            });
-            const p2 = fetch(SCRIPT_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: 'saveRoster', password: state.adminPassword, rosters: state.rosters })
-            });
+            const settingsRows = [
+                { key: 'ActiveYear',    value: state.activeYear },
+                { key: 'Teams',         value: JSON.stringify(state.teams) },
+                { key: 'AcademicYears', value: JSON.stringify(state.academicYears) }
+            ];
+            if (newPass) settingsRows.push({ key: 'AdminPassword', value: newPass });
+            await sb.upsert('settings', settingsRows, 'key');
 
-            const [res1, res2] = await Promise.all([p1, p2]);
-            const result1 = await res1.json(); const result2 = await res2.json();
-
-            if (result1.success && result2.success) {
-                if (newPass) { state.adminPassword = newPass; document.getElementById('setNewPass').value = ""; }
-                showToast("Configuration & Roster Saved to Cloud");
-            } else {
-                showToast("Failed to save. Check password?", true);
+            // Replace roster: delete all then insert fresh
+            await sb.delete('roster', 'id=gte.0');
+            const newRows = [];
+            for (const year in state.rosters) {
+                (state.rosters[year] || []).forEach(s => newRows.push({ academic_year: year, student_id: s.id, name: s.name, team: s.team }));
             }
+            if (newRows.length > 0) await sb.insert('roster', newRows);
+
+            if (newPass) { state.adminPassword = newPass; document.getElementById('setNewPass').value = ''; }
+            showToast('Configuration & Roster Saved to Cloud');
         } catch (e) {
-            showToast("Connection Error", true);
+            showToast('Save failed: ' + e.message, true);
         } finally {
             btn.disabled = false; loader.style.display = 'none';
         }
