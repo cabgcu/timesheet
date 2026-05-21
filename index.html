@@ -210,7 +210,7 @@
                     <p class="text-zinc-400 mb-6 sm:mb-8 font-medium text-sm leading-relaxed">Enter your Student ID for <span id="loginActiveYear" class="text-purple-400 font-bold">...</span>.</p>
 
                     <div class="mb-5 text-center">
-                        <label class="form-label">Student ID</label>
+                        <label for="loginStudentID" class="form-label">Student ID</label>
                         <input type="number" id="loginStudentID" class="control-item text-center text-xl tracking-widest" placeholder="e.g. 123456" autocomplete="off" onkeyup="if(event.key==='Enter') studentLogin()"/>
                     </div>
 
@@ -262,16 +262,16 @@
                         
                         <div class="flex flex-col gap-3 mb-4">
                             <div class="form-group !mb-0">
-                                <label class="form-label">Date</label>
+                                <label for="entryDate" class="form-label">Date</label>
                                 <input type="date" id="entryDate" class="control-item" />
                             </div>
                             <div class="form-group !mb-0">
-                                <label class="form-label">Hours</label>
+                                <label for="entryHours" class="form-label">Hours</label>
                                 <input type="number" id="entryHours" class="control-item" step="0.25" min="0" placeholder="e.g. 2.5" />
                             </div>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Task Description</label>
+                            <label for="entryTask" class="form-label">Task Description</label>
                             <input type="text" id="entryTask" class="control-item" placeholder="What did you work on?" />
                         </div>
                         <button id="saveEntryBtn" class="w-full bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white font-bold py-3 rounded-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-lg flex justify-center items-center gap-2" onclick="saveTimeEntry()">
