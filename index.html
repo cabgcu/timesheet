@@ -630,8 +630,8 @@
             localStorage.setItem(CONFIG_CACHE_KEY, JSON.stringify({ data: config, ts: Date.now() }));
         } catch (e) {
             if (!usedCache) {
-                console.error(e);
-                showToast("Failed to connect to server.", true);
+                console.error('Supabase init error:', e);
+                showToast("Connection error: " + e.message, true);
             }
         }
 
