@@ -129,10 +129,6 @@
         #toast { position: fixed; bottom: max(30px, calc(env(safe-area-inset-bottom, 0px) + 15px)); left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; padding: 16px 24px; border-radius: 100px; z-index: 2000; display: none; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
         .pdf-mode { background: #09090b !important; color: white !important; }
         
-        /* Full screen loading */
-        #globalLoader { position: fixed; inset: 0; background: #09090b; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s; }
-        .spinner { width: 40px; height: 40px; border: 4px solid rgba(168, 85, 247, 0.3); border-radius: 50%; border-top-color: #a855f7; animation: rotation 1s linear infinite; }
-
         /* Custom Background Image */
         body {
             background-color: #07060f;
@@ -145,12 +141,6 @@
     </style>
 </head>
 <body class="text-zinc-100 min-h-[100dvh] relative overflow-x-hidden selection:bg-purple-500/30 font-sans">
-
-    <!-- Initial Loader -->
-    <div id="globalLoader">
-        <div class="spinner mb-4"></div>
-        <div class="text-purple-400 font-bold tracking-widest text-xs uppercase animate-pulse">Loading...</div>
-    </div>
 
     <!-- Dark Overlay -->
     <div class="fixed inset-0 bg-zinc-950/70 z-[-1]"></div>
@@ -329,7 +319,7 @@
                             <button id="saveChangesBtn" class="justify-center bg-emerald-900/40 hover:bg-emerald-800/60 border border-emerald-500/50 text-emerald-400 py-2.5 px-6 rounded-xl text-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg font-medium flex items-center gap-2" onclick="saveAdminChanges()">
                                 <i data-lucide="save" class="w-4 h-4"></i> Save to Cloud <div class="loader" id="saveLoader"></div>
                             </button>
-                            <button class="justify-center bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 py-2.5 px-6 rounded-xl text-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg font-medium flex items-center gap-2" onclick="switchView('dashboard')">
+                            <button class="justify-center bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 py-2.5 px-6 rounded-xl text-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg font-medium flex items-center gap-2" onclick="renderDashboard(); switchView('dashboard')">
                                 <i data-lucide="arrow-left" class="w-4 h-4"></i> Back
                             </button>
                         </div>
@@ -426,9 +416,14 @@
                     <h3 class="text-2xl font-bold text-white" id="detailModalName">Student Name</h3>
                     <p class="text-purple-400 text-sm font-medium" id="detailModalTeam">Team Name</p>
                 </div>
-                <button class="text-zinc-400 hover:text-white bg-zinc-800 hover:bg-zinc-700 p-2 rounded-xl transition" onclick="closeStudentDetails()">
-                    <i data-lucide="x" class="w-5 h-5"></i>
-                </button>
+                <div class="flex items-center gap-2">
+                    <button id="deleteStudentBtn" class="text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-500/80 p-2.5 rounded-xl transition flex items-center justify-center gap-1.5 border border-rose-500/20" onclick="adminDeleteStudent()" title="Permanently Delete Student">
+                        <i data-lucide="trash-2" class="w-5 h-5"></i>
+                    </button>
+                    <button class="text-zinc-400 hover:text-white bg-zinc-800 hover:bg-zinc-700 p-2.5 rounded-xl transition" onclick="closeStudentDetails()">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
             </div>
 
             <div class="flex justify-between items-center bg-zinc-900/50 p-4 rounded-xl border border-zinc-800 mb-4">
@@ -548,12 +543,6 @@
         document.getElementById('loginActiveYear').textContent = state.activeYear;
     }
 
-    function hideLoader() {
-        const loader = document.getElementById('globalLoader');
-        loader.style.opacity = 0;
-        setTimeout(() => loader.style.display = 'none', 400);
-    }
-
     async function init() {
         document.getElementById('year').textContent = new Date().getFullYear();
         lucide.createIcons();
@@ -570,7 +559,6 @@
                 if (Date.now() - ts < CONFIG_CACHE_TTL && data.activeYear) {
                     applyConfig(data);
                     usedCache = true;
-                    hideLoader();
                     switchView('login');
                 }
             }
@@ -596,7 +584,6 @@
         }
 
         if (!usedCache) {
-            hideLoader();
             switchView('login');
         }
     }
@@ -1150,6 +1137,47 @@
         state.viewingStudentId = null;
     }
 
+    async function adminDeleteStudent() {
+        const studentId = state.viewingStudentId;
+        if(!studentId) return;
+
+        if(!confirm("⚠️ WARNING ⚠️\n\nAre you sure you want to PERMANENTLY DELETE this student from the roster AND erase all their submitted hours?\n\nThis cannot be undone!")) return;
+
+        const btn = document.getElementById('deleteStudentBtn');
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = '<div class="loader !ml-0 !mr-0 !w-4 !h-4" style="display:block;border-color:#fff;border-bottom-color:transparent;"></div>';
+        btn.disabled = true;
+
+        try {
+            // 1. Delete from DB completely
+            await Promise.all([
+                sb.delete('roster', `student_id=eq.${encodeURIComponent(studentId)}`),
+                sb.delete('submissions', `student_id=eq.${encodeURIComponent(studentId)}`),
+                sb.delete('drafts', `student_id=eq.${encodeURIComponent(studentId)}`)
+            ]);
+
+            // 2. Clean up local state
+            for (const year in state.rosters) {
+                state.rosters[year] = state.rosters[year].filter(s => s.id !== studentId);
+            }
+            state.submissions = state.submissions.filter(s => s.studentId !== studentId);
+
+            showToast('Student completely deleted.');
+            
+            // 3. Update the UI
+            closeStudentDetails();
+            renderDashboard();
+            renderRoster();
+            renderSettingsManager();
+        } catch(e) {
+            showToast('Error deleting: ' + e.message, true);
+        } finally {
+            btn.innerHTML = originalHTML;
+            btn.disabled = false;
+            lucide.createIcons();
+        }
+    }
+
     // --- ADMIN HOUR EDITING ---
     let adminEditingCtx = null;
 
@@ -1336,6 +1364,9 @@
 
             if (newPass) { state.adminPassword = newPass; document.getElementById('setNewPass').value = ''; }
             showToast('Configuration & Roster Saved to Cloud');
+            
+            // Re-render dashboard to immediately reflect the cloud changes
+            renderDashboard(); 
         } catch (e) {
             showToast('Save failed: ' + e.message, true);
         } finally {
