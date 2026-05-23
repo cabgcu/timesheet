@@ -133,61 +133,18 @@
         #globalLoader { position: fixed; inset: 0; background: #09090b; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s; }
         .spinner { width: 40px; height: 40px; border: 4px solid rgba(168, 85, 247, 0.3); border-radius: 50%; border-top-color: #a855f7; animation: rotation 1s linear infinite; }
 
-        /* Gradient orb background */
-        body { background: #07060f; }
-
-        .orb-container {
-            position: fixed; inset: 0; z-index: -2;
-            overflow: hidden; pointer-events: none;
-        }
-        .orb {
-            position: absolute; border-radius: 50%;
-            filter: blur(90px); opacity: 0.55;
-        }
-        .orb-1 {
-            width: 55vw; height: 55vw;
-            background: radial-gradient(circle at center, #4f3aed, #7c3aed88, transparent 70%);
-            top: -15%; left: -10%;
-            animation: orbMove1 22s ease-in-out infinite;
-        }
-        .orb-2 {
-            width: 45vw; height: 45vw;
-            background: radial-gradient(circle at center, #2563eb, #1d4ed888, transparent 70%);
-            bottom: -10%; right: -10%;
-            animation: orbMove2 28s ease-in-out infinite;
-        }
-        .orb-3 {
-            width: 35vw; height: 35vw;
-            background: radial-gradient(circle at center, #7e22ce, #6d28d988, transparent 70%);
-            top: 40%; left: 35%;
-            animation: orbMove3 18s ease-in-out infinite;
-        }
-        @keyframes orbMove1 {
-            0%,100% { transform: translate(0%, 0%); }
-            25%     { transform: translate(55%, 30%); }
-            50%     { transform: translate(30%, 65%); }
-            75%     { transform: translate(-5%, 35%); }
-        }
-        @keyframes orbMove2 {
-            0%,100% { transform: translate(0%, 0%); }
-            30%     { transform: translate(-60%, -25%); }
-            60%     { transform: translate(-25%, -60%); }
-        }
-        @keyframes orbMove3 {
-            0%,100% { transform: translate(0%, 0%); }
-            33%     { transform: translate(-40%, -30%); }
-            66%     { transform: translate(30%, 25%); }
+        /* Custom Background Image */
+        body {
+            background-color: #07060f;
+            background-image: url('https://i.imgur.com/4DfFmUh.png');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
         }
     </style>
 </head>
 <body class="text-zinc-100 min-h-[100dvh] relative overflow-x-hidden selection:bg-purple-500/30 font-sans">
-
-    <!-- Gradient orbs -->
-    <div class="orb-container">
-        <div class="orb orb-1"></div>
-        <div class="orb orb-2"></div>
-        <div class="orb orb-3"></div>
-    </div>
 
     <!-- Initial Loader -->
     <div id="globalLoader">
@@ -503,9 +460,12 @@
 
 <script>
     // ==========================================
-    // REPLACE THIS URL WITH YOUR GOOGLE WEB APP URL
+    // SUPABASE CONFIGURATION
     // ==========================================
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyCX5IpuckSrrQucoTUrMOztt40aIhmYiLcGtQGUHHD4SUa-nY0ohf2VLSJWvcHdjbF/exec";
+    const SUPABASE_URL = "https://nmmshjdknmuzpgpquwec.supabase.co";
+    // Using the publishable key as this code runs in the client browser
+    const SUPABASE_KEY = "sb_publishable_PCxlxywY7W6K3TmMrSnSsw_NPXKugoZ";
+
     const CONFIG_CACHE_KEY = 'ts_config_v1';
     const CONFIG_CACHE_TTL = 3600000; // 1 hour
 
