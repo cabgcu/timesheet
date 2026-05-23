@@ -655,14 +655,12 @@
                 if (draftLogs.length > 0) localStorage.setItem(`ts_pending_${state.currentUser.id}`, JSON.stringify(draftLogs));
             }
 
-            // Auto-submit stale entries from a previous week
+            // Clean up stale entries from previous weeks (Backend handles auto-submit now)
             const pendingRaw = localStorage.getItem(`ts_pending_${state.currentUser.id}`);
             if (pendingRaw) {
                 try {
                     const pendingEntries = JSON.parse(pendingRaw);
                     if (Array.isArray(pendingEntries) && pendingEntries.length > 0) {
-                        const staleEntries = pendingEntries.filter(e => e.date < CURRENT_WEEK_ID_AZ);
-                        if (staleEntries.length > 0) autoSubmitEntries(getWeekIdentifier(staleEntries[0].date), staleEntries);
                         const freshEntries = pendingEntries.filter(e => e.date >= CURRENT_WEEK_ID_AZ);
                         if (freshEntries.length !== pendingEntries.length) {
                             if (freshEntries.length > 0) localStorage.setItem(`ts_pending_${state.currentUser.id}`, JSON.stringify(freshEntries));
@@ -714,43 +712,13 @@
         lucide.createIcons();
     }
 
-    async function autoSubmitEntries(weekId, entries) {
-        try {
-            const total = entries.reduce((s, e) => s + (parseFloat(e.hours) || 0), 0);
-            if (total <= 0 || !state.currentUser) return;
-            // Merge with any existing submission for this week
-            const existing = await sb.select('submissions',
-                `student_id=eq.${encodeURIComponent(state.currentUser.id)}&week_identifier=eq.${encodeURIComponent(weekId)}&academic_year=eq.${encodeURIComponent(state.activeYear)}`);
-            let finalLogs = entries;
-            if (existing.length > 0) finalLogs = JSON.parse(existing[0].logs_json || '[]').concat(entries);
-            const finalTotal = finalLogs.reduce((s, l) => s + Number(l.hours), 0);
-            await sb.upsert('submissions', {
-                academic_year:   state.activeYear,
-                student_id:      state.currentUser.id,
-                student_name:    state.currentUser.name,
-                team:            state.currentUser.team,
-                week_identifier: weekId,
-                total_hours:     finalTotal,
-                logs_json:       JSON.stringify(finalLogs)
-            }, 'academic_year,student_id,week_identifier');
-            sb.delete('drafts', `student_id=eq.${encodeURIComponent(state.currentUser.id)}&week_identifier=eq.${encodeURIComponent(weekId)}`).catch(() => {});
-            if (!state.studentPastSubmissions) state.studentPastSubmissions = [];
-            if (!state.studentPastSubmissions.includes(weekId)) state.studentPastSubmissions.push(weekId);
-            if (!state.studentSubmissions) state.studentSubmissions = [];
-            state.studentSubmissions.push({ weekIdentifier: weekId, logs: finalLogs });
-            showToast('Hours auto-submitted!');
-        } catch(e) { /* silently ignore */ }
-    }
-
     // Every 30 seconds check if the AZ week has rolled over (Monday midnight)
     setInterval(async () => {
         if (!state.currentUser) return;
         if (getWeekIdentifier(getAZDateStr()) !== CURRENT_WEEK_ID_AZ) {
-            if (state.currentWeekEntries.length > 0) {
-                await autoSubmitEntries(CURRENT_WEEK_ID_AZ, [...state.currentWeekEntries]);
-                state.currentWeekEntries = [];
-                localStorage.removeItem(`ts_pending_${state.currentUser.id}`);
-            }
+            // Week rolled over! Clear local state and reload. Backend cron handles the submission.
+            state.currentWeekEntries = [];
+            localStorage.removeItem(`ts_pending_${state.currentUser.id}`);
             window.location.reload();
         }
     }, 30000);
@@ -1042,12 +1010,12 @@
                             : "text-zinc-500 bg-zinc-800/40 border border-zinc-700/50";
 
                     return `
-                        <div class="flex justify-between items-center py-2 border-b border-zinc-800/50 last:border-0 cursor-pointer hover:bg-zinc-800/50 rounded-lg px-2 -mx-2 transition" onclick="viewStudentDetails('${student.id}')">
-                            <div class="flex flex-col">
-                                <span class="text-sm font-medium ${weekHours === 0 ? 'text-zinc-400' : 'text-zinc-200'}">${escapeHTML(student.name)}</span>
-                                <span class="text-[10px] text-zinc-500">ID: ${escapeHTML(student.id)}</span>
+                        <div class="flex justify-between items-center py-2 border-b border-zinc-800/50 last:border-0 cursor-pointer hover:bg-zinc-800/50 rounded-lg px-2 -mx-2 transition gap-2" onclick="viewStudentDetails('${student.id}')">
+                            <div class="flex flex-col flex-1 min-w-0">
+                                <span class="text-sm font-medium truncate ${weekHours === 0 ? 'text-zinc-400' : 'text-zinc-200'}">${escapeHTML(student.name)}</span>
+                                <span class="text-[10px] text-zinc-500 truncate">ID: ${escapeHTML(student.id)}</span>
                             </div>
-                            <span class="text-sm font-bold px-2 py-1 rounded-md ${statusClass}">${weekHours.toFixed(1)} hrs</span>
+                            <span class="text-sm font-bold px-2 py-1 rounded-md shrink-0 ${statusClass}">${weekHours.toFixed(1)} hrs</span>
                         </div>
                     `;
                 }).join('');
@@ -1058,14 +1026,14 @@
             const card = document.createElement('div');
             card.className = "glass-card rounded-2xl border-white/5 flex flex-col transition hover:-translate-y-1 hover:border-purple-500/30 overflow-hidden";
             card.innerHTML = `
-                <div class="p-5 border-b border-zinc-800 bg-zinc-900/50 flex justify-between items-center">
-                    <div class="flex items-center gap-3">
+                <div class="p-4 sm:p-5 border-b border-zinc-800 bg-zinc-900/50 flex justify-between items-center gap-3">
+                    <div class="flex items-center gap-3 flex-1 min-w-0">
                         <div class="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center border border-zinc-700 text-purple-400 shrink-0"><i data-lucide="users" class="w-4 h-4"></i></div>
-                        <span class="font-bold text-white truncate">${escapeHTML(teamName)}</span>
+                        <span class="font-bold text-white break-words leading-tight">${escapeHTML(teamName)}</span>
                     </div>
-                    <div class="text-right">
+                    <div class="text-right shrink-0">
                         <div class="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Week Total</div>
-                        <div class="text-xl font-black text-white">${teamTotal.toFixed(1)}</div>
+                        <div class="text-xl font-black text-white leading-tight">${teamTotal.toFixed(1)}</div>
                     </div>
                 </div>
                 <div class="p-4 flex-1 flex flex-col gap-1 max-h-[250px] overflow-y-auto">${studentListHTML}</div>
