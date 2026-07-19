@@ -436,29 +436,10 @@
 
                         <!-- Right Column: Roster -->
                         <div class="lg:col-span-7 bg-zinc-900/30 p-5 rounded-2xl border border-white/5 flex flex-col h-full">
-        <div class="flex justify-between items-center mb-4 border-b border-zinc-800 pb-2">
-            <span class="text-purple-400 text-xs font-bold tracking-wider uppercase">Student Roster</span>
-            <select id="settingsRosterYear" class="bg-zinc-800 border border-zinc-700 text-white py-1.5 px-3 rounded-lg text-xs font-bold outline-none cursor-pointer shadow-sm" onchange="changeRosterYear()"></select>
-        </div>
-        
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-            <input type="number" id="newStudID" class="control-item !mb-0 !p-3 !text-sm" placeholder="ID Number" />
-            <input type="text" id="newStudName" class="control-item !mb-0 !p-3 !text-sm" placeholder="Full Name" />
-        </div>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-            <input type="email" id="newStudEmail" class="control-item !mb-0 !p-3 !text-sm" placeholder="Student Email" />
-            <select id="newStudTeam" class="control-item !mb-0 !p-3 !text-sm"><option value="">Select Team...</option></select>
-            <select id="newStudPosition" class="control-item !mb-0 !p-3 !text-sm"><option value="">Select Position...</option></select>
-        </div>
-        <div class="flex gap-2 mb-6">
-            <button id="addStudBtn" class="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 border border-purple-500/50 text-white font-bold py-3 rounded-xl hover:opacity-90 transition-all shadow-md flex justify-center items-center gap-2 text-sm" onclick="addStudentToRoster()">
-                <i data-lucide="user-plus" class="w-4 h-4" id="addStudIcon"></i> <span id="addStudText">Add to Roster</span>
-            </button>
-            <button id="cancelStudEditBtn" class="hidden bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 font-bold py-3 px-6 rounded-xl transition" onclick="cancelRosterEdit()">Cancel</button>
-        </div>
-
-        <div id="admin-rosterList" class="flex flex-col gap-2 flex-1 min-h-[400px] overflow-y-auto pr-2"></div>
-    </div>
+                            <div class="flex justify-between items-center mb-4 border-b border-zinc-800 pb-2">
+                                <span class="text-purple-400 text-xs font-bold tracking-wider uppercase">Student Roster</span>
+                                <select id="settingsRosterYear" class="bg-zinc-800 border border-zinc-700 text-white py-1.5 px-3 rounded-lg text-xs font-bold outline-none cursor-pointer shadow-sm" onchange="changeRosterYear()"></select>
+                            </div>
                             
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                                 <input type="number" id="newStudID" class="control-item !mb-0 !p-3 !text-sm" placeholder="ID Number" />
@@ -469,9 +450,12 @@
                                 <select id="newStudTeam" class="control-item !mb-0 !p-3 !text-sm"><option value="">Select Team...</option></select>
                                 <select id="newStudPosition" class="control-item !mb-0 !p-3 !text-sm"><option value="">Select Position...</option></select>
                             </div>
-                            <button class="w-full mb-6 bg-gradient-to-r from-blue-600 to-purple-600 border border-purple-500/50 text-white font-bold py-3 rounded-xl hover:opacity-90 transition-all hover:-translate-y-0.5 shadow-md flex justify-center items-center gap-2 text-sm" onclick="addStudentToRoster()">
-                                <i data-lucide="user-plus" class="w-4 h-4"></i> Add to Roster
-                            </button>
+                            <div class="flex gap-2 mb-6">
+                                <button id="addStudBtn" class="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 border border-purple-500/50 text-white font-bold py-3 rounded-xl hover:opacity-90 transition-all shadow-md flex justify-center items-center gap-2 text-sm" onclick="addStudentToRoster()">
+                                    <i data-lucide="user-plus" class="w-4 h-4" id="addStudIcon"></i> <span id="addStudText">Add to Roster</span>
+                                </button>
+                                <button id="cancelStudEditBtn" class="hidden bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 font-bold py-3 px-6 rounded-xl transition" onclick="cancelRosterEdit()">Cancel</button>
+                            </div>
 
                             <div id="admin-rosterList" class="flex flex-col gap-2 flex-1 min-h-[400px] overflow-y-auto pr-2"></div>
                         </div>
@@ -642,6 +626,7 @@
         currentWeekEntries: [],
         editingEntryId: null,
         viewingStudentId: null,
+        editingRosterIdx: null,
         
         // Synced from Database
         teams: [],
@@ -655,7 +640,6 @@
         submissions: []
     };
 
-    // --- INITIALIZATION (Network) ---
     function applyConfig(result) {
         state.activeYear = result.activeYear;
         state.teams = result.teams;
@@ -728,7 +712,6 @@
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // --- STUDENT LOGIC (Network) ---
     async function studentLogin() {
         const idInput = document.getElementById('loginStudentID').value.trim();
         if(!idInput) return showToast("Please enter your Student ID", true);
@@ -1060,7 +1043,6 @@
         state.currentUser = null; state.currentWeekEntries = []; state.editingEntryId = null; switchView('login');
     }
 
-    // --- ADMIN LOGIC (Network) ---
     function showGate() { 
         document.getElementById('gateModal').style.display = 'flex'; 
         document.getElementById('gateModal').classList.remove('hidden');
@@ -1395,7 +1377,6 @@
         }
     }
 
-    // --- ADMIN HOUR EDITING ---
     let adminEditingCtx = null;
 
     function adminStartEdit(studentId, weekId, logKey) {
@@ -1502,7 +1483,6 @@
         }
     }
 
-    // --- EMAIL SIMULATOR LOGIC ---
     function runEmailSimulation() {
         const resEl = document.getElementById('simResults');
         resEl.classList.remove('hidden', 'bg-emerald-900/20', 'border-emerald-500/30', 'text-emerald-400', 'bg-amber-900/20', 'border-amber-500/30', 'text-amber-400', 'bg-rose-900/20', 'border-rose-500/30', 'text-rose-400');
@@ -1567,7 +1547,6 @@
         }, 500); 
     }
 
-    // --- SETTINGS (Network) ---
     function renderSettingsManager() {
         const teamList = document.getElementById('settings-teamList'); document.getElementById('teamCount').textContent = state.teams.length;
         teamList.innerHTML = state.teams.map((t, idx) => `
@@ -1737,7 +1716,12 @@
         }
         renderRoster();
     }
-    function removeStudent(idx) { state.rosters[state.adminViewingYear].splice(idx, 1); renderRoster(); }
+    
+    function removeStudent(idx) { 
+        state.rosters[state.adminViewingYear].splice(idx, 1); 
+        if (state.editingRosterIdx === idx) cancelRosterEdit();
+        renderRoster(); 
+    }
 
     async function saveAdminChanges() {
         const btn = document.getElementById('saveChangesBtn'); const loader = document.getElementById('saveLoader');
@@ -1781,7 +1765,6 @@
         }
     }
 
-    // --- EXCEL GENERATION ---
     function downloadExcel() {
         const yearFilterVal = document.getElementById('adminYearFilter').value; let exportData = [];
         state.teams.forEach(teamName => {
