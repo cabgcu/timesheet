@@ -436,10 +436,29 @@
 
                         <!-- Right Column: Roster -->
                         <div class="lg:col-span-7 bg-zinc-900/30 p-5 rounded-2xl border border-white/5 flex flex-col h-full">
-                            <div class="flex justify-between items-center mb-4 border-b border-zinc-800 pb-2">
-                                <span class="text-purple-400 text-xs font-bold tracking-wider uppercase">Student Roster</span>
-                                <select id="settingsRosterYear" class="bg-zinc-800 border border-zinc-700 text-white py-1.5 px-3 rounded-lg text-xs font-bold outline-none cursor-pointer shadow-sm" onchange="changeRosterYear()"></select>
-                            </div>
+        <div class="flex justify-between items-center mb-4 border-b border-zinc-800 pb-2">
+            <span class="text-purple-400 text-xs font-bold tracking-wider uppercase">Student Roster</span>
+            <select id="settingsRosterYear" class="bg-zinc-800 border border-zinc-700 text-white py-1.5 px-3 rounded-lg text-xs font-bold outline-none cursor-pointer shadow-sm" onchange="changeRosterYear()"></select>
+        </div>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+            <input type="number" id="newStudID" class="control-item !mb-0 !p-3 !text-sm" placeholder="ID Number" />
+            <input type="text" id="newStudName" class="control-item !mb-0 !p-3 !text-sm" placeholder="Full Name" />
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+            <input type="email" id="newStudEmail" class="control-item !mb-0 !p-3 !text-sm" placeholder="Student Email" />
+            <select id="newStudTeam" class="control-item !mb-0 !p-3 !text-sm"><option value="">Select Team...</option></select>
+            <select id="newStudPosition" class="control-item !mb-0 !p-3 !text-sm"><option value="">Select Position...</option></select>
+        </div>
+        <div class="flex gap-2 mb-6">
+            <button id="addStudBtn" class="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 border border-purple-500/50 text-white font-bold py-3 rounded-xl hover:opacity-90 transition-all shadow-md flex justify-center items-center gap-2 text-sm" onclick="addStudentToRoster()">
+                <i data-lucide="user-plus" class="w-4 h-4" id="addStudIcon"></i> <span id="addStudText">Add to Roster</span>
+            </button>
+            <button id="cancelStudEditBtn" class="hidden bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 font-bold py-3 px-6 rounded-xl transition" onclick="cancelRosterEdit()">Cancel</button>
+        </div>
+
+        <div id="admin-rosterList" class="flex flex-col gap-2 flex-1 min-h-[400px] overflow-y-auto pr-2"></div>
+    </div>
                             
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                                 <input type="number" id="newStudID" class="control-item !mb-0 !p-3 !text-sm" placeholder="ID Number" />
@@ -1658,10 +1677,41 @@
                         <span class="text-purple-400/80 truncate">${escapeHTML(s.team)}</span>
                     </span>
                 </div>
-                <button class="text-rose-500 bg-rose-500/10 hover:bg-rose-500/20 rounded-lg p-2 shrink-0 transition" onclick="removeStudent(${idx})"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                <div class="flex gap-1 shrink-0">
+                    <button class="text-blue-400 hover:text-blue-300 bg-blue-500/10 p-2 rounded-lg transition" onclick="startEditRoster(${idx})"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                    <button class="text-rose-500 bg-rose-500/10 hover:bg-rose-500/20 rounded-lg p-2 transition" onclick="removeStudent(${idx})"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                </div>
             </div>`).join(''); lucide.createIcons();
     }
     
+    function startEditRoster(idx) {
+        const s = state.rosters[state.adminViewingYear][idx];
+        state.editingRosterIdx = idx;
+        document.getElementById('newStudID').value = s.id;
+        document.getElementById('newStudName').value = s.name;
+        document.getElementById('newStudEmail').value = s.email || '';
+        document.getElementById('newStudTeam').value = s.team;
+        document.getElementById('newStudPosition').value = s.position || '';
+        document.getElementById('addStudText').textContent = "Update Student";
+        document.getElementById('addStudIcon').setAttribute('data-lucide', 'save');
+        document.getElementById('cancelStudEditBtn').classList.remove('hidden');
+        lucide.createIcons();
+        document.getElementById('newStudID').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function cancelRosterEdit() {
+        state.editingRosterIdx = null;
+        document.getElementById('newStudID').value = "";
+        document.getElementById('newStudName').value = "";
+        document.getElementById('newStudEmail').value = "";
+        document.getElementById('newStudTeam').value = "";
+        document.getElementById('newStudPosition').value = "";
+        document.getElementById('addStudText').textContent = "Add to Roster";
+        document.getElementById('addStudIcon').setAttribute('data-lucide', 'user-plus');
+        document.getElementById('cancelStudEditBtn').classList.add('hidden');
+        lucide.createIcons();
+    }
+
     function addStudentToRoster() {
         const id = document.getElementById('newStudID').value.trim(); 
         const name = document.getElementById('newStudName').value.trim(); 
@@ -1670,16 +1720,21 @@
         const position = document.getElementById('newStudPosition').value;
 
         if(!id || !name || !email || !team || !position) return showToast("Fill all fields", true); 
-        if(!state.rosters[state.adminViewingYear]) state.rosters[state.adminViewingYear] = [];
-        if(state.rosters[state.adminViewingYear].find(s => s.id === id)) return showToast("ID exists", true);
         
-        state.rosters[state.adminViewingYear].push({ id, name, email, team, position }); 
-        
-        document.getElementById('newStudID').value = ""; 
-        document.getElementById('newStudName').value = ""; 
-        document.getElementById('newStudEmail').value = "";
-        document.getElementById('newStudTeam').value = "";
-        document.getElementById('newStudPosition').value = "";
+        if (state.editingRosterIdx !== null) {
+            state.rosters[state.adminViewingYear][state.editingRosterIdx] = { id, name, email, team, position };
+            showToast("Student updated");
+            cancelRosterEdit();
+        } else {
+            if(!state.rosters[state.adminViewingYear]) state.rosters[state.adminViewingYear] = [];
+            if(state.rosters[state.adminViewingYear].find(s => s.id === id)) return showToast("ID exists", true);
+            state.rosters[state.adminViewingYear].push({ id, name, email, team, position }); 
+            document.getElementById('newStudID').value = ""; 
+            document.getElementById('newStudName').value = ""; 
+            document.getElementById('newStudEmail').value = "";
+            document.getElementById('newStudTeam').value = "";
+            document.getElementById('newStudPosition').value = "";
+        }
         renderRoster();
     }
     function removeStudent(idx) { state.rosters[state.adminViewingYear].splice(idx, 1); renderRoster(); }
