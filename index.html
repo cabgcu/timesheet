@@ -107,6 +107,22 @@
             background-size: 16px; 
             padding-right: 2.5rem; 
         }
+        
+        select[multiple].control-item {
+            background-image: none;
+            padding-right: 1rem;
+            min-height: 80px;
+        }
+        select[multiple].control-item option {
+            padding: 0.5rem;
+            margin-bottom: 2px;
+            border-radius: 0.25rem;
+        }
+        select[multiple].control-item option:checked {
+            background: linear-gradient(to right, #2563eb, #9333ea) !important;
+            color: white;
+        }
+
         select.control-item option { background: #18181b; color: white; }
         input[type="date"].control-item {
             width: 100%;
@@ -129,7 +145,6 @@
         #toast { position: fixed; bottom: max(30px, calc(env(safe-area-inset-bottom, 0px) + 15px)); left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; padding: 16px 24px; border-radius: 100px; z-index: 2000; display: none; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
         .pdf-mode { background: #09090b !important; color: white !important; }
         
-        /* Custom Background Image */
         body {
             background-color: #07060f;
             background-image: url('https://i.imgur.com/4DfFmUh.png');
@@ -149,7 +164,6 @@
 
         <div class="flex-1 w-full flex flex-col items-center justify-center py-8 sm:py-10">
 
-            <!-- LOGIN VIEW -->
             <div id="loginView" class="view active mx-auto w-full" style="max-width: min(22rem, calc(100% - 2.5rem));">
                 <div class="glass-card primary-card rounded-3xl px-6 py-8 sm:p-8 text-center">
                     <img src="https://i.imgur.com/p2qZOL5.png" alt="CAB Logo" class="h-16 sm:h-20 w-auto mx-auto mb-5 sm:mb-6 object-contain" />
@@ -173,18 +187,20 @@
                 </div>
             </div>
 
-            <!-- TIMESHEET TRACKING VIEW -->
             <div id="timesheetView" class="view max-w-2xl w-full mx-auto">
                 <div class="glass-card primary-card rounded-2xl sm:rounded-3xl p-4 sm:p-8">
 
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-zinc-800 pb-4 sm:pb-6 mb-4 sm:mb-6 gap-3">
                         <div>
                             <h3 class="text-xl sm:text-2xl font-extrabold tracking-tight text-white" id="ts-greeting">Hello Student,</h3>
-                            <p class="text-purple-400 font-medium text-sm mt-0.5" id="ts-team">Team Name</p>
+                            <p class="text-purple-400 font-medium text-sm mt-0.5"><span id="ts-position">Position</span> &bull; <span id="ts-team">Team Name</span></p>
                         </div>
                         <div class="sm:text-right">
-                            <div class="text-zinc-500 text-xs font-bold uppercase tracking-wider mb-1">Total Pending</div>
-                            <div class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500" id="ts-totalHours">0.0</div>
+                            <div class="text-zinc-500 text-xs font-bold uppercase tracking-wider mb-1" id="ts-hoursLabel">Total Pending</div>
+                            <div class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 flex items-baseline gap-1 justify-end">
+                                <span id="ts-totalHours">0.0</span>
+                                <span class="text-sm font-medium text-zinc-500" id="ts-reqHours">/ 0.0 required</span>
+                            </div>
                         </div>
                     </div>
 
@@ -248,7 +264,6 @@
                 </div>
             </div>
 
-            <!-- SUCCESS VIEW -->
             <div id="successView" class="view mx-auto w-full" style="max-width: min(22rem, calc(100% - 2.5rem));">
                 <div class="glass-card primary-card rounded-3xl px-6 py-8 sm:p-8 text-center">
                     <div class="w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-5 text-white shadow-[0_0_30px_rgba(168,85,247,0.5)] border border-purple-400/30">
@@ -263,7 +278,6 @@
                 </div>
             </div>
 
-            <!-- STUDENT HISTORY VIEW -->
             <div id="historyView" class="view max-w-2xl w-full mx-auto">
                 <div class="glass-card primary-card rounded-2xl sm:rounded-3xl p-4 sm:p-8">
                     <div class="flex justify-between items-center border-b border-zinc-800 pb-4 mb-5">
@@ -283,12 +297,14 @@
                 </div>
             </div>
 
-            <!-- ADMIN DASHBOARD VIEW -->
             <div id="dashboardView" class="view max-w-7xl w-full mx-auto">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 sm:mb-8 glass-card p-4 sm:p-5 rounded-2xl border-white/5">
                     <div>
-                        <h2 class="text-xl font-bold text-white px-2">Master Hours Overview</h2>
-                        <p class="text-zinc-400 text-sm px-2 mt-1">Reviewing submissions by week.</p>
+                        <div class="flex items-center gap-3 px-2">
+                            <h2 class="text-xl font-bold text-white">Master Hours Overview</h2>
+                            <div id="weekStatusIndicator"></div>
+                        </div>
+                        <p class="text-zinc-400 text-sm px-2 mt-1">Reviewing submissions by week vs required minimums.</p>
                     </div>
                     <div class="flex flex-wrap gap-2 w-full md:w-auto">
                         <select id="adminYearFilter" class="bg-zinc-800 border border-zinc-700 text-white py-2.5 px-4 rounded-xl text-sm font-medium outline-none cursor-pointer" onchange="renderDashboard()"></select>
@@ -310,8 +326,7 @@
                 <div id="admin-teamCards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-10"></div>
             </div>
 
-            <!-- ADMIN SETTINGS VIEW -->
-            <div id="settingsView" class="view max-w-6xl w-full mx-auto">
+            <div id="settingsView" class="view max-w-[90rem] w-full mx-auto">
                 <div class="glass-card rounded-3xl p-5 sm:p-10">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8 border-b border-zinc-800 pb-6">
                         <h2 class="text-2xl font-bold tracking-tight text-white">System Configuration</h2>
@@ -330,9 +345,29 @@
                             
                             <!-- Passwords & Config -->
                             <div>
-                                <div class="text-purple-400 text-xs font-bold tracking-wider uppercase mb-4 border-b border-zinc-800 pb-2">Security</div>
-                                <div class="form-group mb-0">
+                                <div class="text-purple-400 text-xs font-bold tracking-wider uppercase mb-4 border-b border-zinc-800 pb-2">Security & Automation</div>
+                                <div class="flex flex-col gap-3">
                                     <input type="text" id="setNewPass" class="control-item no-save-pass" placeholder="Change admin password..." autocomplete="new-password" spellcheck="false" />
+                                    
+                                    <div class="flex items-center justify-between bg-zinc-900/50 p-3 rounded-xl border border-zinc-800" title="If fewer students than this submit hours, the system assumes it is a break week and pauses missing hour emails.">
+                                        <div class="flex flex-col">
+                                            <span class="text-sm font-bold text-white">Active Week Threshold</span>
+                                            <span class="text-xs text-zinc-500">Min. students submitting to trigger emails</span>
+                                        </div>
+                                        <input type="number" id="setSubmitThreshold" class="control-item !w-20 !py-1.5 !text-center !px-2" min="1" value="7" />
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Email Simulator -->
+                            <div>
+                                <div class="text-purple-400 text-xs font-bold tracking-wider uppercase mb-4 border-b border-zinc-800 pb-2">Email Automation Simulator</div>
+                                <div class="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800 flex flex-col gap-3">
+                                    <p class="text-xs text-zinc-400 leading-relaxed">Run a dry test to see exactly what the Google Script will do this coming Monday based on current data. No actual emails will be sent.</p>
+                                    <button class="w-full bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white font-bold py-2.5 rounded-xl transition-all flex justify-center items-center gap-2 text-sm" onclick="runEmailSimulation()">
+                                        <i data-lucide="play-circle" class="w-4 h-4"></i> Run Dry Test
+                                    </button>
+                                    <div id="simResults" class="hidden mt-2 p-3 rounded-lg border text-xs leading-relaxed max-h-[200px] overflow-y-auto whitespace-pre-line text-zinc-300"></div>
                                 </div>
                             </div>
 
@@ -343,10 +378,46 @@
                                     <span class="text-zinc-500" id="teamCount">0</span>
                                 </div>
                                 <div class="flex gap-2 mb-4">
-                                    <input type="text" id="newTeamInput" class="control-item !mb-0" placeholder="New Team Name..." />
-                                    <button class="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white px-4 rounded-xl transition-all" onclick="addTeam()">Add</button>
+                                    <input type="text" id="newTeamInput" class="control-item !mb-0 flex-1" placeholder="New Team Name..." />
+                                    <button class="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white px-4 rounded-xl transition-all shrink-0" onclick="addTeam()">Add</button>
                                 </div>
-                                <div id="settings-teamList" class="flex flex-col gap-2 max-h-[200px] overflow-y-auto pr-2"></div>
+                                <div id="settings-teamList" class="flex flex-col gap-2 max-h-[150px] overflow-y-auto pr-2"></div>
+                            </div>
+                            
+                            <!-- Positions -->
+                            <div>
+                                <div class="text-purple-400 text-xs font-bold tracking-wider uppercase mb-4 border-b border-zinc-800 pb-2 flex justify-between">
+                                    <span>Manage Positions & Minimums</span>
+                                    <span class="text-zinc-500" id="positionCount">0</span>
+                                </div>
+                                <div class="flex gap-2 mb-4">
+                                    <input type="text" id="newPosName" class="control-item !mb-0 w-[55%]" placeholder="Position (e.g. Director)" />
+                                    <input type="number" id="newPosHours" class="control-item !mb-0 w-[25%]" placeholder="Min Hrs" step="0.5" min="0" />
+                                    <button class="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white px-4 rounded-xl transition-all shrink-0 w-[20%]" onclick="addPosition()">Add</button>
+                                </div>
+                                <div id="settings-positionList" class="flex flex-col gap-2 max-h-[150px] overflow-y-auto pr-2"></div>
+                            </div>
+                            
+                            <!-- Staff -->
+                            <div>
+                                <div class="text-purple-400 text-xs font-bold tracking-wider uppercase mb-4 border-b border-zinc-800 pb-2 flex justify-between">
+                                    <span>Manage Staff Alerts</span>
+                                    <span class="text-zinc-500" id="staffCount">0</span>
+                                </div>
+                                <div class="flex flex-col gap-2 mb-4">
+                                    <div class="flex gap-2">
+                                        <input type="text" id="newStaffName" class="control-item !mb-0 flex-1" placeholder="Staff Name" />
+                                        <input type="email" id="newStaffEmail" class="control-item !mb-0 flex-1" placeholder="Staff Email" />
+                                    </div>
+                                    <div class="flex gap-2 items-start">
+                                        <select id="newStaffTeams" class="control-item !mb-0 flex-1" multiple size="3" title="Hold Ctrl/Cmd to select multiple teams">
+                                            <!-- populated dynamically -->
+                                        </select>
+                                        <button class="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white px-4 py-2 rounded-xl transition-all h-full shrink-0" onclick="addStaff()">Add</button>
+                                    </div>
+                                    <p class="text-[10px] text-zinc-500">Hold Ctrl (Windows) or Cmd (Mac) to select multiple teams.</p>
+                                </div>
+                                <div id="settings-staffList" class="flex flex-col gap-2 max-h-[200px] overflow-y-auto pr-2"></div>
                             </div>
 
                             <!-- Academic Years -->
@@ -357,29 +428,33 @@
                                 </div>
                                 <div class="flex gap-2 mb-4">
                                     <input type="text" id="newYearInput" class="control-item !mb-0" placeholder="e.g. 2025-2026" />
-                                    <button class="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white px-4 rounded-xl transition-all" onclick="addYear()">Add</button>
+                                    <button class="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white px-4 rounded-xl transition-all shrink-0" onclick="addYear()">Add</button>
                                 </div>
                                 <div id="settings-yearList" class="flex flex-col gap-2 max-h-[150px] overflow-y-auto pr-2"></div>
                             </div>
                         </div>
 
                         <!-- Right Column: Roster -->
-                        <div class="lg:col-span-7 bg-zinc-900/30 p-5 rounded-2xl border border-white/5">
+                        <div class="lg:col-span-7 bg-zinc-900/30 p-5 rounded-2xl border border-white/5 flex flex-col h-full">
                             <div class="flex justify-between items-center mb-4 border-b border-zinc-800 pb-2">
                                 <span class="text-purple-400 text-xs font-bold tracking-wider uppercase">Student Roster</span>
                                 <select id="settingsRosterYear" class="bg-zinc-800 border border-zinc-700 text-white py-1.5 px-3 rounded-lg text-xs font-bold outline-none cursor-pointer shadow-sm" onchange="changeRosterYear()"></select>
                             </div>
                             
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                                 <input type="number" id="newStudID" class="control-item !mb-0 !p-3 !text-sm" placeholder="ID Number" />
                                 <input type="text" id="newStudName" class="control-item !mb-0 !p-3 !text-sm" placeholder="Full Name" />
-                                <select id="newStudTeam" class="control-item !mb-0 !p-3 !text-sm"></select>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+                                <input type="email" id="newStudEmail" class="control-item !mb-0 !p-3 !text-sm" placeholder="Student Email" />
+                                <select id="newStudTeam" class="control-item !mb-0 !p-3 !text-sm"><option value="">Select Team...</option></select>
+                                <select id="newStudPosition" class="control-item !mb-0 !p-3 !text-sm"><option value="">Select Position...</option></select>
                             </div>
                             <button class="w-full mb-6 bg-gradient-to-r from-blue-600 to-purple-600 border border-purple-500/50 text-white font-bold py-3 rounded-xl hover:opacity-90 transition-all hover:-translate-y-0.5 shadow-md flex justify-center items-center gap-2 text-sm" onclick="addStudentToRoster()">
                                 <i data-lucide="user-plus" class="w-4 h-4"></i> Add to Roster
                             </button>
 
-                            <div id="admin-rosterList" class="flex flex-col gap-2 max-h-[400px] overflow-y-auto pr-2"></div>
+                            <div id="admin-rosterList" class="flex flex-col gap-2 flex-1 min-h-[400px] overflow-y-auto pr-2"></div>
                         </div>
                     </div>
                 </div>
@@ -417,7 +492,7 @@
                     <p class="text-purple-400 text-sm font-medium" id="detailModalTeam">Team Name</p>
                 </div>
                 <div class="flex items-center gap-2">
-                    <button id="deleteStudentBtn" class="text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-500/80 p-2.5 rounded-xl transition flex items-center justify-center gap-1.5 border border-rose-500/20" onclick="adminDeleteStudent()" title="Permanently Delete Student">
+                    <button id="deleteStudentBtn" class="text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-500/80 p-2.5 rounded-xl transition flex items-center justify-center gap-1.5 border border-rose-500/20" onclick="promptDeleteStudent()" title="Permanently Delete Student">
                         <i data-lucide="trash-2" class="w-5 h-5"></i>
                     </button>
                     <button class="text-zinc-400 hover:text-white bg-zinc-800 hover:bg-zinc-700 p-2.5 rounded-xl transition" onclick="closeStudentDetails()">
@@ -449,6 +524,22 @@
             <div id="detailModalLogs" class="flex-1 overflow-y-auto pr-2 flex flex-col gap-2"></div>
         </div>
     </div>
+    
+    <!-- Custom Confirm Modal -->
+    <div id="confirmModal" class="fixed inset-0 z-[2000] hidden items-center justify-center p-4">
+        <div class="absolute inset-0 bg-zinc-950/80 backdrop-blur-md" onclick="closeConfirmModal()"></div>
+        <div class="relative w-full max-w-sm glass-card rounded-3xl p-6 flex flex-col text-center shadow-2xl border-rose-500/30">
+            <div class="w-12 h-12 bg-rose-500/20 rounded-full flex items-center justify-center mx-auto mb-4 text-rose-400">
+                <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+            </div>
+            <h3 class="text-xl font-bold mb-2 text-white" id="confirmModalTitle">Are you sure?</h3>
+            <p class="text-zinc-400 text-sm mb-6" id="confirmModalMsg">This action cannot be undone.</p>
+            <div class="flex gap-3">
+                <button class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-3 rounded-xl transition" onclick="closeConfirmModal()">Cancel</button>
+                <button class="flex-1 bg-rose-600 hover:bg-rose-500 text-white font-bold py-3 rounded-xl transition" id="confirmModalActionBtn">Delete</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Toast Notification -->
     <div id="toast" class="glass-card !bg-zinc-900 !text-white font-bold shadow-xl border !border-purple-500/50">Update Successful</div>
@@ -461,7 +552,7 @@
     // Using the publishable key as this code runs in the client browser
     const SUPABASE_KEY = "sb_publishable_PCxlxywY7W6K3TmMrSnSsw_NPXKugoZ";
 
-    const CONFIG_CACHE_KEY = 'ts_config_v1';
+    const CONFIG_CACHE_KEY = 'ts_config_v2';
     const CONFIG_CACHE_TTL = 3600000; // 1 hour
 
     // Supabase REST helpers
@@ -518,6 +609,13 @@
         return str.toString().replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
     }
 
+    // Default Positions fallback
+    const DEFAULT_POSITIONS = [
+        { name: 'Director', minHours: 10 },
+        { name: 'Assistant Director', minHours: 8 },
+        { name: 'Team Member', minHours: 5 }
+    ];
+
     // Application State
     let state = {
         view: 'login',
@@ -528,9 +626,12 @@
         
         // Synced from Database
         teams: [],
+        positions: [],
+        staff: [],
         academicYears: [],
         activeYear: '',
         adminViewingYear: '',
+        submissionThreshold: 7,
         rosters: {},
         submissions: []
     };
@@ -539,7 +640,10 @@
     function applyConfig(result) {
         state.activeYear = result.activeYear;
         state.teams = result.teams;
+        state.positions = result.positions && result.positions.length > 0 ? result.positions : DEFAULT_POSITIONS;
+        state.staff = result.staff || [];
         state.academicYears = result.academicYears;
+        state.submissionThreshold = parseInt(result.submissionThreshold) || 7;
         document.getElementById('loginActiveYear').textContent = state.activeYear;
     }
 
@@ -572,7 +676,10 @@
             const config = {
                 activeYear:    map['ActiveYear'] || '',
                 teams:         JSON.parse(map['Teams']         || '[]'),
-                academicYears: JSON.parse(map['AcademicYears'] || '[]')
+                positions:     JSON.parse(map['Positions']     || '[]'),
+                staff:         JSON.parse(map['Staff']         || '[]'),
+                academicYears: JSON.parse(map['AcademicYears'] || '[]'),
+                submissionThreshold: map['SubmissionThreshold'] || '7'
             };
             applyConfig(config);
             localStorage.setItem(CONFIG_CACHE_KEY, JSON.stringify({ data: config, ts: Date.now() }));
@@ -621,7 +728,7 @@
             if (!rosterRows.length) { showToast('Student ID not found.', true); return; }
 
             const row = rosterRows[0];
-            state.currentUser = { id: row.student_id, name: row.name, team: row.team };
+            state.currentUser = { id: row.student_id, name: row.name, team: row.team, email: row.email, position: row.position };
             state.studentPastSubmissions = subRows.map(s => s.week_identifier);
             state.studentSubmissions = subRows.map(s => ({
                 academicYear:   s.academic_year,
@@ -634,7 +741,19 @@
             }));
 
             document.getElementById('ts-greeting').textContent = `Hello ${state.currentUser.name.split(' ')[0]},`;
-            document.getElementById('ts-team').textContent = state.currentUser.team;
+            document.getElementById('ts-team').textContent = state.currentUser.team || 'No Team';
+            document.getElementById('ts-position').textContent = state.currentUser.position || 'Student';
+
+            // Find required hours for this student's position
+            const userPosition = state.positions.find(p => p.name === state.currentUser.position);
+            const reqHours = userPosition ? userPosition.minHours : 0;
+            const reqHoursEl = document.getElementById('ts-reqHours');
+            if (reqHours > 0) {
+                reqHoursEl.textContent = `/ ${reqHours} required`;
+                reqHoursEl.style.display = 'inline-block';
+            } else {
+                reqHoursEl.style.display = 'none';
+            }
 
             // Use server draft as source of truth if available
             if (draftRows.length > 0) {
@@ -642,7 +761,7 @@
                 if (draftLogs.length > 0) localStorage.setItem(`ts_pending_${state.currentUser.id}`, JSON.stringify(draftLogs));
             }
 
-            // Clean up stale entries from previous weeks (Backend handles auto-submit now)
+            // Clean up stale entries from previous weeks
             const pendingRaw = localStorage.getItem(`ts_pending_${state.currentUser.id}`);
             if (pendingRaw) {
                 try {
@@ -806,6 +925,7 @@
         if(state.currentWeekEntries.length === 0) {
             list.innerHTML = `<div class="text-zinc-500 text-sm italic py-4 text-center border border-dashed border-zinc-800 rounded-xl">No pending hours logged.</div>`;
             totalEl.textContent = "0.0";
+            checkStudentProgress(0);
             return;
         }
 
@@ -829,7 +949,29 @@
             </div>`;
         }).join('');
         totalEl.textContent = total.toFixed(1);
+        checkStudentProgress(total);
         lucide.createIcons();
+    }
+    
+    function checkStudentProgress(totalHours) {
+        if (!state.currentUser) return;
+        const userPosition = state.positions.find(p => p.name === state.currentUser.position);
+        const reqHours = userPosition ? userPosition.minHours : 0;
+        
+        const totalEl = document.getElementById('ts-totalHours');
+        totalEl.classList.remove('text-transparent', 'bg-clip-text', 'bg-gradient-to-r', 'from-blue-400', 'to-purple-500', 'text-emerald-400', 'text-amber-400');
+        
+        if (reqHours > 0) {
+            if (totalHours >= reqHours) {
+                totalEl.classList.add('text-emerald-400');
+            } else if (totalHours > 0) {
+                totalEl.classList.add('text-amber-400');
+            } else {
+                totalEl.classList.add('text-transparent', 'bg-clip-text', 'bg-gradient-to-r', 'from-blue-400', 'to-purple-500');
+            }
+        } else {
+            totalEl.classList.add('text-transparent', 'bg-clip-text', 'bg-gradient-to-r', 'from-blue-400', 'to-purple-500');
+        }
     }
 
     function showHistory() {
@@ -943,7 +1085,8 @@
             const rosters = {};
             rosterRows.forEach(r => {
                 if (!rosters[r.academic_year]) rosters[r.academic_year] = [];
-                rosters[r.academic_year].push({ id: r.student_id, name: r.name, team: r.team });
+                // Load extended fields email and position if present
+                rosters[r.academic_year].push({ id: r.student_id, name: r.name, team: r.team, email: r.email, position: r.position });
             });
             state.rosters = rosters;
             state.adminViewingYear = state.activeYear;
@@ -970,6 +1113,8 @@
         const targetMonday = weekFilterVal === 'current' ? currentMonday : prevMonday;
         const targetSunday = weekFilterVal === 'current' ? currentSunday : prevSunday;
 
+        let totalActiveStudentsThisWeek = 0;
+
         state.teams.forEach(teamName => {
             const teamRoster = (state.rosters[yearFilterVal] || []).filter(r => r.team === teamName);
             let teamTotal = 0; let studentListHTML = "";
@@ -989,20 +1134,36 @@
                     });
                     
                     teamTotal += weekHours;
+                    if (weekHours > 0) totalActiveStudentsThisWeek++;
+                    
+                    // Determine Requirement Check
+                    const pos = state.positions.find(p => p.name === student.position);
+                    const reqHours = pos ? pos.minHours : 0;
                     const hasEverSubmitted = state.submissions.some(s => s.studentId === student.id);
-                    const statusClass = weekHours > 0
-                        ? "text-purple-400 bg-purple-900/20 border border-purple-500/20"
-                        : hasEverSubmitted
-                            ? "text-rose-400 bg-rose-900/20 border border-rose-500/20"
-                            : "text-zinc-500 bg-zinc-800/40 border border-zinc-700/50";
+                    
+                    let statusClass = "text-zinc-500 bg-zinc-800/40 border-zinc-700/50"; // default
+                    
+                    if (reqHours > 0) {
+                        if (weekHours >= reqHours) {
+                            statusClass = "text-emerald-400 bg-emerald-900/20 border border-emerald-500/20";
+                        } else if (weekHours > 0) {
+                            statusClass = "text-amber-400 bg-amber-900/20 border border-amber-500/20";
+                        } else if (hasEverSubmitted) {
+                            statusClass = "text-rose-400 bg-rose-900/20 border border-rose-500/20";
+                        }
+                    } else {
+                        // Fallback if no required hours defined
+                        if (weekHours > 0) statusClass = "text-purple-400 bg-purple-900/20 border border-purple-500/20";
+                        else if (hasEverSubmitted) statusClass = "text-rose-400 bg-rose-900/20 border border-rose-500/20";
+                    }
 
                     return `
                         <div class="flex justify-between items-center py-2 border-b border-zinc-800/50 last:border-0 cursor-pointer hover:bg-zinc-800/50 rounded-lg px-2 -mx-2 transition gap-2" onclick="viewStudentDetails('${student.id}')">
                             <div class="flex flex-col flex-1 min-w-0">
                                 <span class="text-sm font-medium truncate ${weekHours === 0 ? 'text-zinc-400' : 'text-zinc-200'}">${escapeHTML(student.name)}</span>
-                                <span class="text-[10px] text-zinc-500 truncate">ID: ${escapeHTML(student.id)}</span>
+                                <span class="text-[10px] text-zinc-500 truncate">${escapeHTML(student.position || 'Student')} &bull; ID: ${escapeHTML(student.id)}</span>
                             </div>
-                            <span class="text-sm font-bold px-2 py-1 rounded-md shrink-0 ${statusClass}">${weekHours.toFixed(1)} hrs</span>
+                            <span class="text-sm font-bold px-2 py-1 rounded-md shrink-0 ${statusClass}" title="${reqHours} required">${weekHours.toFixed(1)} hrs</span>
                         </div>
                     `;
                 }).join('');
@@ -1027,6 +1188,15 @@
             `;
             grid.appendChild(card);
         });
+        
+        // Update Week Status Indicator based on threshold
+        const indicator = document.getElementById('weekStatusIndicator');
+        if (totalActiveStudentsThisWeek >= state.submissionThreshold) {
+            indicator.innerHTML = `<span class="bg-emerald-900/30 text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 rounded-md text-[10px] uppercase font-bold tracking-wider flex items-center gap-1"><i data-lucide="check-circle" class="w-3 h-3"></i> Active Week (${totalActiveStudentsThisWeek}/${state.submissionThreshold})</span>`;
+        } else {
+            indicator.innerHTML = `<span class="bg-amber-900/30 text-amber-400 border border-amber-500/30 px-2.5 py-0.5 rounded-md text-[10px] uppercase font-bold tracking-wider flex items-center gap-1" title="Fewer than ${state.submissionThreshold} students submitted hours. System treats this as a break and pauses automated emails."><i data-lucide="pause-circle" class="w-3 h-3"></i> Break Week (${totalActiveStudentsThisWeek}/${state.submissionThreshold})</span>`;
+        }
+
         lucide.createIcons();
     }
 
@@ -1047,7 +1217,7 @@
 
         const studentSubs = state.submissions.filter(s => s.studentId === state.viewingStudentId && s.academicYear === document.getElementById('adminYearFilter').value);
         document.getElementById('detailModalName').textContent = rosterStudent.name;
-        document.getElementById('detailModalTeam').textContent = rosterStudent.team;
+        document.getElementById('detailModalTeam').textContent = `${rosterStudent.position || 'Student'} • ${rosterStudent.team}`;
 
         // Group existing logs
         const grouped = {};
@@ -1137,12 +1307,40 @@
         state.viewingStudentId = null;
     }
 
-    async function adminDeleteStudent() {
+    let confirmActionCallback = null;
+    function openConfirmModal(title, msg, btnText, callback) {
+        document.getElementById('confirmModalTitle').textContent = title;
+        document.getElementById('confirmModalMsg').innerHTML = msg;
+        document.getElementById('confirmModalActionBtn').textContent = btnText;
+        confirmActionCallback = callback;
+        document.getElementById('confirmModal').style.display = 'flex';
+        document.getElementById('confirmModal').classList.remove('hidden');
+    }
+    
+    function closeConfirmModal() {
+        document.getElementById('confirmModal').style.display = 'none';
+        document.getElementById('confirmModal').classList.add('hidden');
+        confirmActionCallback = null;
+    }
+    
+    document.getElementById('confirmModalActionBtn').addEventListener('click', () => {
+        if(confirmActionCallback) confirmActionCallback();
+        closeConfirmModal();
+    });
+
+    function promptDeleteStudent() {
         const studentId = state.viewingStudentId;
         if(!studentId) return;
+        
+        openConfirmModal(
+            "Delete Student?", 
+            "Are you sure you want to PERMANENTLY DELETE this student from the roster AND erase all their submitted hours?<br><br>This cannot be undone!", 
+            "Delete", 
+            () => adminDeleteStudent(studentId)
+        );
+    }
 
-        if(!confirm("⚠️ WARNING ⚠️\n\nAre you sure you want to PERMANENTLY DELETE this student from the roster AND erase all their submitted hours?\n\nThis cannot be undone!")) return;
-
+    async function adminDeleteStudent(studentId) {
         const btn = document.getElementById('deleteStudentBtn');
         const originalHTML = btn.innerHTML;
         btn.innerHTML = '<div class="loader !ml-0 !mr-0 !w-4 !h-4" style="display:block;border-color:#fff;border-bottom-color:transparent;"></div>';
@@ -1285,6 +1483,71 @@
         }
     }
 
+    // --- EMAIL SIMULATOR LOGIC ---
+    function runEmailSimulation() {
+        const resEl = document.getElementById('simResults');
+        resEl.classList.remove('hidden', 'bg-emerald-900/20', 'border-emerald-500/30', 'text-emerald-400', 'bg-amber-900/20', 'border-amber-500/30', 'text-amber-400', 'bg-rose-900/20', 'border-rose-500/30', 'text-rose-400');
+        resEl.textContent = "Running simulation...";
+        
+        // Artificial delay for UX
+        setTimeout(() => {
+            const threshold = state.submissionThreshold;
+            const targetYear = state.activeYear;
+            const currentRoster = state.rosters[targetYear] || [];
+            
+            // The automation always runs Monday morning and checks the PREVIOUS week.
+            const targetMonday = prevMonday;
+            const targetSunday = prevSunday;
+            
+            let activeCount = 0;
+            const studentsToEmail = [];
+
+            currentRoster.forEach(student => {
+                const sub = state.submissions.find(s => s.studentId === student.id && s.academicYear === targetYear);
+                let loggedHours = 0;
+                
+                // Calculate hours logged specifically for the simulated week
+                if (sub && sub.logs) {
+                    loggedHours = sub.logs
+                        .filter(l => {
+                            const d = new Date(l.date + 'T00:00:00');
+                            return d >= targetMonday && d <= targetSunday;
+                        })
+                        .reduce((sum, l) => sum + Number(l.hours), 0);
+                }
+                
+                if (loggedHours > 0) activeCount++;
+                
+                // Check if they need an email
+                if (!student.email || !student.position) return;
+                const pos = state.positions.find(p => p.name === student.position);
+                const reqHours = pos ? pos.minHours : 0;
+                
+                if (reqHours > 0 && loggedHours < reqHours) {
+                    studentsToEmail.push({ name: student.name, team: student.team, req: reqHours, logged: loggedHours });
+                }
+            });
+
+            if (activeCount < threshold) {
+                resEl.classList.add('bg-amber-900/20', 'border-amber-500/30', 'text-amber-400');
+                resEl.innerHTML = `<strong>BREAK WEEK MODE (Threshold Not Met)</strong><br/><br/>Active Students: ${activeCount} / ${threshold} required to trigger.<br/>Action: 0 emails would be sent.`;
+            } else {
+                if (studentsToEmail.length === 0) {
+                    resEl.classList.add('bg-emerald-900/20', 'border-emerald-500/30', 'text-emerald-400');
+                    resEl.innerHTML = `<strong>ACTIVE WEEK</strong><br/><br/>Active Students: ${activeCount} / ${threshold}<br/>Action: Everyone met their required hours! 0 emails would be sent.`;
+                } else {
+                    resEl.classList.add('bg-rose-900/20', 'border-rose-500/30', 'text-rose-400');
+                    let msg = `<strong>ACTIVE WEEK</strong><br/><br/>Active Students: ${activeCount} / ${threshold}<br/>Action: Emails WOULD be sent to ${studentsToEmail.length} students:<br/><br/>`;
+                    studentsToEmail.forEach(s => {
+                        msg += `&bull; ${s.name} (${s.team}): ${s.logged.toFixed(1)} / ${s.req} hrs<br/>`;
+                    });
+                    msg += `<br/><em>(Team Staff & Directors would be CC'd)</em>`;
+                    resEl.innerHTML = msg;
+                }
+            }
+        }, 500); 
+    }
+
     // --- SETTINGS (Network) ---
     function renderSettingsManager() {
         const teamList = document.getElementById('settings-teamList'); document.getElementById('teamCount').textContent = state.teams.length;
@@ -1292,6 +1555,24 @@
             <div class="flex items-center justify-between bg-zinc-900 p-2.5 rounded-xl border border-zinc-800">
                 <span class="text-sm text-zinc-300">${escapeHTML(t)}</span>
                 <button class="text-rose-500 hover:text-rose-400 p-1.5" onclick="removeTeam(${idx})"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>`).join('');
+
+        const posList = document.getElementById('settings-positionList'); document.getElementById('positionCount').textContent = state.positions.length;
+        posList.innerHTML = state.positions.map((p, idx) => `
+            <div class="flex items-center justify-between bg-zinc-900 p-2.5 rounded-xl border border-zinc-800">
+                <span class="text-sm text-zinc-300 flex items-center gap-2">${escapeHTML(p.name)} <span class="text-[10px] text-purple-400 bg-purple-900/30 px-2 py-0.5 rounded border border-purple-500/20">${p.minHours} hrs req.</span></span>
+                <button class="text-rose-500 hover:text-rose-400 p-1.5" onclick="removePosition(${idx})"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>`).join('');
+            
+        const staffList = document.getElementById('settings-staffList'); document.getElementById('staffCount').textContent = state.staff.length;
+        staffList.innerHTML = state.staff.map((s, idx) => `
+            <div class="flex flex-col bg-zinc-900 p-2.5 rounded-xl border border-zinc-800 gap-1">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-zinc-300 font-bold">${escapeHTML(s.name)}</span>
+                    <button class="text-rose-500 hover:text-rose-400 p-1" onclick="removeStaff(${idx})"><i data-lucide="x" class="w-4 h-4"></i></button>
+                </div>
+                <div class="text-[11px] text-zinc-400">${escapeHTML(s.email)}</div>
+                <div class="text-[10px] text-purple-400 mt-1 uppercase font-bold tracking-wider">${s.teams.join(', ')}</div>
             </div>`).join('');
 
         const yearList = document.getElementById('settings-yearList'); document.getElementById('yearCount').textContent = state.academicYears.length;
@@ -1303,21 +1584,62 @@
                 <button class="text-rose-500 hover:text-rose-400 p-1.5 ml-1" onclick="removeYear('${y}')" title="Remove Year"><i data-lucide="x" class="w-4 h-4"></i></button></div>
             </div>`).join('');
 
-        const teamSelect = document.getElementById('newStudTeam'); teamSelect.innerHTML = state.teams.map(t => `<option value="${escapeHTML(t)}">${escapeHTML(t)}</option>`).join('');
+        const teamSelects = ['newStudTeam'];
+        teamSelects.forEach(id => {
+            const select = document.getElementById(id);
+            select.innerHTML = '<option value="">Select Team...</option>' + state.teams.map(t => `<option value="${escapeHTML(t)}">${escapeHTML(t)}</option>`).join('');
+        });
+        
+        const staffTeamSelect = document.getElementById('newStaffTeams');
+        staffTeamSelect.innerHTML = state.teams.map(t => `<option value="${escapeHTML(t)}">${escapeHTML(t)}</option>`).join('');
+
+        const posSelect = document.getElementById('newStudPosition'); 
+        posSelect.innerHTML = '<option value="">Select Position...</option>' + state.positions.map(p => `<option value="${escapeHTML(p.name)}">${escapeHTML(p.name)}</option>`).join('');
+
         const rosterYearSelect = document.getElementById('settingsRosterYear'); rosterYearSelect.innerHTML = state.academicYears.map(y => `<option value="${escapeHTML(y)}">${escapeHTML(y)}</option>`).join('');
         rosterYearSelect.value = state.adminViewingYear;
 
         const dashYearSelect = document.getElementById('adminYearFilter');
         dashYearSelect.innerHTML = state.academicYears.map(y => `<option value="${escapeHTML(y)}">${escapeHTML(y)}</option>`).join('');
         dashYearSelect.value = state.activeYear; 
+        
+        document.getElementById('setSubmitThreshold').value = state.submissionThreshold;
 
         renderRoster(); lucide.createIcons();
     }
 
     function setActiveYear(year) { state.activeYear = year; document.getElementById('loginActiveYear').textContent = year; renderSettingsManager(); showToast(`Active Year changed to ${year}`); }
     function changeRosterYear() { state.adminViewingYear = document.getElementById('settingsRosterYear').value; renderRoster(); }
+    
     function addTeam() { const input = document.getElementById('newTeamInput'); const val = input.value.trim(); if(val && !state.teams.includes(val)) { state.teams.push(val); input.value = ""; renderSettingsManager(); renderDashboard(); showToast("Team Added"); } }
     function removeTeam(idx) { state.teams.splice(idx, 1); renderSettingsManager(); renderDashboard(); }
+    
+    function addPosition() { 
+        const nameInput = document.getElementById('newPosName'); const hoursInput = document.getElementById('newPosHours');
+        const nameVal = nameInput.value.trim(); const hoursVal = parseFloat(hoursInput.value);
+        if(nameVal && !isNaN(hoursVal) && hoursVal >= 0 && !state.positions.find(p => p.name === nameVal)) { 
+            state.positions.push({ name: nameVal, minHours: hoursVal }); 
+            nameInput.value = ""; hoursInput.value = ""; 
+            renderSettingsManager(); renderDashboard(); showToast("Position Added"); 
+        } 
+    }
+    function removePosition(idx) { state.positions.splice(idx, 1); renderSettingsManager(); renderDashboard(); }
+
+    function addStaff() {
+        const name = document.getElementById('newStaffName').value.trim();
+        const email = document.getElementById('newStaffEmail').value.trim();
+        const teamsSelect = document.getElementById('newStaffTeams');
+        const selectedTeams = Array.from(teamsSelect.selectedOptions).map(opt => opt.value);
+        
+        if (!name || !email || selectedTeams.length === 0) return showToast("Name, Email, and at least 1 Team required", true);
+        
+        state.staff.push({ id: Date.now(), name, email, teams: selectedTeams });
+        document.getElementById('newStaffName').value = ""; document.getElementById('newStaffEmail').value = "";
+        teamsSelect.selectedIndex = -1;
+        renderSettingsManager(); showToast("Staff Added");
+    }
+    function removeStaff(idx) { state.staff.splice(idx, 1); renderSettingsManager(); }
+
     function addYear() { const input = document.getElementById('newYearInput'); const val = input.value.trim(); if(val && !state.academicYears.includes(val)) { state.academicYears.push(val); state.rosters[val] = []; input.value = ""; renderSettingsManager(); showToast("Year Added"); } }
     function removeYear(yearStr) { if(state.activeYear === yearStr) return showToast("Cannot remove active year.", true); state.academicYears = state.academicYears.filter(y => y !== yearStr); delete state.rosters[yearStr]; if(state.adminViewingYear === yearStr) state.adminViewingYear = state.activeYear; renderSettingsManager(); }
 
@@ -1326,16 +1648,39 @@
         if(currentRoster.length === 0) { list.innerHTML = `<div class="text-zinc-500 text-sm italic py-4 text-center">No students found.</div>`; return; }
         list.innerHTML = currentRoster.map((s, idx) => `
             <div class="flex items-center justify-between bg-zinc-900/50 p-3 rounded-xl border border-zinc-800 gap-2 hover:bg-zinc-800/50 transition">
-                <div class="flex flex-col overflow-hidden"><span class="text-white font-medium text-sm truncate">${escapeHTML(s.name)}</span>
-                <span class="text-zinc-500 text-[11px] flex flex-wrap gap-1 sm:gap-2 uppercase font-bold tracking-wider mt-0.5"><span>ID: ${escapeHTML(s.id)}</span><span class="hidden sm:inline">&bull;</span><span class="text-purple-400/80 truncate">${escapeHTML(s.team)}</span></span></div>
+                <div class="flex flex-col overflow-hidden">
+                    <span class="text-white font-medium text-sm truncate">${escapeHTML(s.name)}</span>
+                    <span class="text-zinc-400 text-[10px] truncate">${escapeHTML(s.email || 'No email')}</span>
+                    <span class="text-zinc-500 text-[11px] flex flex-wrap gap-1 sm:gap-2 uppercase font-bold tracking-wider mt-1">
+                        <span>ID: ${escapeHTML(s.id)}</span><span class="hidden sm:inline">&bull;</span>
+                        <span class="text-purple-400/80 truncate">${escapeHTML(s.position || 'Student')}</span>
+                        <span class="hidden sm:inline">&bull;</span>
+                        <span class="text-purple-400/80 truncate">${escapeHTML(s.team)}</span>
+                    </span>
+                </div>
                 <button class="text-rose-500 bg-rose-500/10 hover:bg-rose-500/20 rounded-lg p-2 shrink-0 transition" onclick="removeStudent(${idx})"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
             </div>`).join(''); lucide.createIcons();
     }
+    
     function addStudentToRoster() {
-        const id = document.getElementById('newStudID').value.trim(); const name = document.getElementById('newStudName').value.trim(); const team = document.getElementById('newStudTeam').value;
-        if(!id || !name || !team) return showToast("Fill all fields", true); if(!state.rosters[state.adminViewingYear]) state.rosters[state.adminViewingYear] = [];
+        const id = document.getElementById('newStudID').value.trim(); 
+        const name = document.getElementById('newStudName').value.trim(); 
+        const email = document.getElementById('newStudEmail').value.trim();
+        const team = document.getElementById('newStudTeam').value;
+        const position = document.getElementById('newStudPosition').value;
+
+        if(!id || !name || !email || !team || !position) return showToast("Fill all fields", true); 
+        if(!state.rosters[state.adminViewingYear]) state.rosters[state.adminViewingYear] = [];
         if(state.rosters[state.adminViewingYear].find(s => s.id === id)) return showToast("ID exists", true);
-        state.rosters[state.adminViewingYear].push({ id, name, team }); document.getElementById('newStudID').value = ""; document.getElementById('newStudName').value = ""; renderRoster();
+        
+        state.rosters[state.adminViewingYear].push({ id, name, email, team, position }); 
+        
+        document.getElementById('newStudID').value = ""; 
+        document.getElementById('newStudName').value = ""; 
+        document.getElementById('newStudEmail').value = "";
+        document.getElementById('newStudTeam').value = "";
+        document.getElementById('newStudPosition').value = "";
+        renderRoster();
     }
     function removeStudent(idx) { state.rosters[state.adminViewingYear].splice(idx, 1); renderRoster(); }
 
@@ -1344,21 +1689,28 @@
         btn.disabled = true; loader.style.display = 'block';
 
         const newPass = document.getElementById('setNewPass').value.trim();
+        const thresholdVal = document.getElementById('setSubmitThreshold').value;
         
         try {
             const settingsRows = [
                 { key: 'ActiveYear',    value: state.activeYear },
                 { key: 'Teams',         value: JSON.stringify(state.teams) },
-                { key: 'AcademicYears', value: JSON.stringify(state.academicYears) }
+                { key: 'Positions',     value: JSON.stringify(state.positions) },
+                { key: 'Staff',         value: JSON.stringify(state.staff) },
+                { key: 'AcademicYears', value: JSON.stringify(state.academicYears) },
+                { key: 'SubmissionThreshold', value: thresholdVal.toString() }
             ];
             if (newPass) settingsRows.push({ key: 'AdminPassword', value: newPass });
             await sb.upsert('settings', settingsRows, 'key');
+            
+            state.submissionThreshold = parseInt(thresholdVal) || 7;
 
             // Replace roster: delete all then insert fresh
             await sb.delete('roster', 'id=gte.0');
             const newRows = [];
             for (const year in state.rosters) {
-                (state.rosters[year] || []).forEach(s => newRows.push({ academic_year: year, student_id: s.id, name: s.name, team: s.team }));
+                // Email and position must exist as text columns in Supabase for this not to fail
+                (state.rosters[year] || []).forEach(s => newRows.push({ academic_year: year, student_id: s.id, name: s.name, team: s.team, email: s.email, position: s.position }));
             }
             if (newRows.length > 0) await sb.insert('roster', newRows);
 
@@ -1387,11 +1739,11 @@
                         hasData = true;
                         sub.logs.forEach(log => {
                             const weekStr = formatWeekRange(getWeekIdentifier(log.date));
-                            exportData.push({ "Academic Year": yearFilterVal, "Team": student.team, "Student Name": student.name, "Student ID": student.id, "Week of": weekStr, "Date": log.date, "Hours": log.hours, "Task Description": log.task });
+                            exportData.push({ "Academic Year": yearFilterVal, "Team": student.team, "Student Name": student.name, "Student ID": student.id, "Email": student.email, "Position": student.position, "Week of": weekStr, "Date": log.date, "Hours": log.hours, "Task Description": log.task });
                         });
                     }
                 });
-                if (!hasData) exportData.push({ "Academic Year": yearFilterVal, "Team": student.team, "Student Name": student.name, "Student ID": student.id, "Week of": "N/A", "Date": "N/A", "Hours": 0, "Task Description": "No submissions recorded" });
+                if (!hasData) exportData.push({ "Academic Year": yearFilterVal, "Team": student.team, "Student Name": student.name, "Student ID": student.id, "Email": student.email, "Position": student.position, "Week of": "N/A", "Date": "N/A", "Hours": 0, "Task Description": "No submissions recorded" });
             });
         });
 
@@ -1403,7 +1755,7 @@
 
         if(exportData.length === 0) return showToast("No roster to export.", true);
         const ws = XLSX.utils.json_to_sheet(exportData);
-        ws['!cols'] = [{wch: 15}, {wch: 15}, {wch: 20}, {wch: 15}, {wch: 20}, {wch: 12}, {wch: 8}, {wch: 40}];
+        ws['!cols'] = [{wch: 15}, {wch: 15}, {wch: 20}, {wch: 15}, {wch: 25}, {wch: 15}, {wch: 20}, {wch: 12}, {wch: 8}, {wch: 40}];
         const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Master Timesheet");
         XLSX.writeFile(wb, `Timesheet_Report_${yearFilterVal}.xlsx`);
         showToast("Excel Exported Successfully!");
