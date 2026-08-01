@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Student Leader Timesheet</title>
+    <title>CAB Student Leader Timesheet - Night Glass</title>
     
     <!-- Fix for missing favicon 404 error -->
     <link rel="icon" href="data:," />
@@ -16,27 +16,32 @@
     
     <!-- SheetJS for Excel Generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <!-- GSAP for Smooth Animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Google Fonts -->
+    <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <script>
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
-                    fontFamily: { sans: ['Outfit', 'sans-serif'] },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
                     colors: {
-                        zinc: {
-                            900: '#18181b',
-                            950: '#09090b',
+                        night: {
+                            950: '#020617',
+                            900: '#0f172a',
+                            800: '#1e293b'
                         }
                     }
                 }
@@ -46,418 +51,529 @@
 
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #09090b; }
-        ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #71717a; }
-        .no-save-pass { -webkit-text-security: disc !important; text-security: disc !important; }
-        html { background-color: #09090b; }
 
-        .glass-card {
-            background: rgba(9, 9, 11, 0.65);
+        body {
+            font-family: "Inter", sans-serif;
+            background: #020617;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(15,23,42,0.5); }
+        ::-webkit-scrollbar-thumb { background: rgba(167,139,250,0.3); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(167,139,250,0.6); }
+
+        /* Security Input Masking */
+        .no-save-pass { -webkit-text-security: disc !important; text-security: disc !important; }
+
+        /* NIGHT GLASS IMAGE BACKGROUND */
+        .night-bg {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            background-image: url('https://i.imgur.com/J3ZEdiB.png');
+            background-size: cover;
+            background-position: center;
+            z-index: -2;
+            background-color: #020617;
+        }
+
+        /* Vignette effect */
+        .night-overlay {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at center, transparent 0%, #020617 150%);
+            opacity: 0.9;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* NIGHT GLASS CARDS */
+        .night-glass-card {
+            background: rgba(15, 23, 42, 0.45);
             backdrop-filter: blur(30px);
             -webkit-backdrop-filter: blur(30px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-        }
-        
-        .primary-card {
-            border: 1px solid rgba(168, 85, 247, 0.4);
-            box-shadow: 0 0 20px rgba(168, 85, 247, 0.05);
+            border: 1px solid rgba(167, 139, 250, 0.3);
+            box-shadow: 0 50px 100px rgba(0, 0, 0, 0.65), 0 0 80px rgba(124, 58, 237, 0.25);
         }
 
+        .night-glass-card-subtle {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(167, 139, 250, 0.25);
+        }
+
+        /* LOGO RADIAL GLOW & FLOAT EFFECT */
+        .logo-box {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .logo-box::before {
+            content: "";
+            position: absolute;
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(168, 85, 247, 0.65), rgba(99, 102, 241, 0.45), rgba(37, 99, 235, 0.2), transparent 75%);
+            filter: blur(28px);
+            animation: logoGlowPulse 4s infinite ease-in-out;
+            pointer-events: none;
+        }
+
+        @keyframes logoGlowPulse {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.22); opacity: 1; }
+        }
+
+        /* NIGHT GLASS BUTTONS */
+        .night-btn-primary {
+            background: linear-gradient(135deg, #a855f7, #6366f1, #2563eb);
+            color: white;
+            box-shadow: 0 15px 35px rgba(99, 102, 241, 0.45);
+            transition: all 0.3s ease;
+        }
+
+        .night-btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 45px rgba(99, 102, 241, 0.65);
+        }
+
+        .night-btn-link {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(167, 139, 250, 0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .night-btn-link:hover {
+            background: rgba(30, 41, 59, 0.8);
+            border-color: rgba(168, 85, 247, 0.7);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(124, 58, 237, 0.35);
+        }
+
+        /* VIEW SWITCHING LOGIC */
         .view { display: none; opacity: 0; transform: translateY(15px); transition: 0.4s ease; width: 100%; }
         .view.active { display: block; opacity: 1; transform: translateY(0); }
 
-        .control-item {
+        /* INPUT STYLES */
+        .control-input {
             width: 100%;
-            background: #18181b;
-            border: 1px solid #27272a;
+            background: rgba(15, 23, 42, 0.65);
+            border: 1px solid rgba(167, 139, 250, 0.45);
             color: #ffffff;
-            border-radius: 0.75rem;
-            padding: 0.75rem 1rem;
-            font-family: inherit;
-            font-size: 1rem;
+            border-radius: 1rem;
+            padding: 0.85rem 1.1rem;
+            margin-bottom: 0.85rem;
             outline: none;
-            transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+            transition: all 0.3s ease;
+            font-size: 0.925rem;
         }
-        @media (min-width: 640px) {
-            .control-item { padding: 1rem 1.25rem; }
-        }
-        @media (hover: hover) {
-            .control-item:hover {
-                border-color: rgba(168, 85, 247, 0.4);
-                transform: translateY(-2px);
-                box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
-            }
-        }
-        .control-item::placeholder { color: rgba(255, 255, 255, 0.5); }
-        .control-item:focus {
-            border-color: #a855f7;
-            background: #27272a;
-            box-shadow: 0 0 15px rgba(168, 85, 247, 0.15);
+
+        .control-input::placeholder { color: rgba(255, 255, 255, 0.5); }
+
+        .control-input:focus {
+            border-color: #60a5fa;
+            background: rgba(15, 23, 42, 0.85);
+            box-shadow: 0 0 25px rgba(96, 165, 250, 0.4);
+            transform: translateY(-1px);
         }
         
-        select.control-item { 
-            appearance: none; 
-            -webkit-appearance: none; 
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); 
-            background-repeat: no-repeat; 
-            background-position: right 1rem center; 
-            background-size: 16px; 
-            padding-right: 2.5rem; 
+        select.control-input {
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a78bfa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 1em;
         }
-        
-        select[multiple].control-item {
+
+        select[multiple].control-input {
             background-image: none;
             padding-right: 1rem;
             min-height: 80px;
         }
-        select[multiple].control-item option {
+        select[multiple].control-input option {
             padding: 0.5rem;
             margin-bottom: 2px;
             border-radius: 0.25rem;
         }
-        select[multiple].control-item option:checked {
-            background: linear-gradient(to right, #2563eb, #9333ea) !important;
+        select[multiple].control-input option:checked {
+            background: linear-gradient(to right, #6366f1, #a855f7) !important;
             color: white;
         }
+        
+        select.control-input option { background-color: #0f172a; color: #fff; }
 
-        select.control-item option { background: #18181b; color: white; }
-        input[type="date"].control-item {
+        input[type="date"].control-input {
             width: 100%;
             min-width: 0;
             box-sizing: border-box;
             -webkit-appearance: none;
             appearance: none;
+            color-scheme: dark;
         }
-        input[type="date"].control-item::-webkit-date-and-time-value { text-align: left; }
-        input[type="date"].control-item::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; margin-left: auto; }
+        input[type="date"].control-input::-webkit-date-and-time-value { text-align: left; }
+        input[type="date"].control-input::-webkit-calendar-picker-indicator { filter: invert(1) sepia(1) saturate(5) hue-rotate(240deg); cursor: pointer; margin-left: auto; }
 
-        .form-label { display: block; margin-bottom: 0.75rem; color: #ffffff; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; line-height: 1.4; }
+        /* Form Labels */
+        .form-label { display: block; margin-bottom: 0.75rem; color: rgba(216, 180, 254, 0.9); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; line-height: 1.4; }
         .form-group { margin-bottom: 1.5rem; }
 
-        .loader { display: none; width: 18px; height: 18px; border: 2px solid #fff; border-bottom-color: transparent; border-radius: 50%; animation: rotation 1s linear infinite; margin-left: 10px; }
-        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* Loaders & Toasts */
+        .loader { display: none; width: 18px; height: 18px; border: 2.5px solid #fff; border-bottom-color: transparent; border-radius: 50%; animation: smooth-spin 0.8s linear infinite; margin-left: 10px; }
+        @keyframes smooth-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        
         @keyframes savedFade { 0% { opacity:0; transform:translateY(4px); } 15% { opacity:1; transform:translateY(0); } 75% { opacity:1; } 100% { opacity:0; } }
         .saved-flash { animation: savedFade 2s ease forwards; }
 
-        #toast { position: fixed; bottom: max(30px, calc(env(safe-area-inset-bottom, 0px) + 15px)); left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; padding: 16px 24px; border-radius: 100px; z-index: 2000; display: none; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
-        .pdf-mode { background: #09090b !important; color: white !important; }
-        
-        body {
-            background-color: #07060f;
-            background-image: url('https://i.imgur.com/4DfFmUh.png');
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-            background-repeat: no-repeat;
+        #toast { 
+            position: fixed; 
+            bottom: max(30px, calc(env(safe-area-inset-bottom, 0px) + 15px)); 
+            left: 50%; 
+            transform: translateX(-50%); 
+            width: 90%; max-width: 400px; 
+            padding: 16px 24px; 
+            border-radius: 100px; 
+            z-index: 2000; 
+            display: none; 
+            text-align: center; 
         }
+
     </style>
 </head>
-<body class="text-zinc-100 min-h-[100dvh] relative overflow-x-hidden selection:bg-purple-500/30 font-sans">
+<body class="text-white min-h-[100dvh] w-full relative overflow-x-hidden selection:bg-purple-500/30 font-sans flex flex-col items-center justify-start antialiased custom-scroll">
 
-    <!-- Dark Overlay -->
-    <div class="fixed inset-0 bg-zinc-950/70 z-[-1]"></div>
+    <!-- Fullscreen Background Image -->
+    <div class="night-bg"></div>
+    <div class="night-overlay"></div>
 
-    <main class="relative z-10 w-full max-w-7xl mx-auto px-3 py-4 sm:p-8 min-h-[100dvh] flex flex-col">
+    <main class="relative z-10 w-full max-w-7xl mx-auto px-3 py-4 sm:p-8 flex-1 flex flex-col items-center justify-center min-h-[100dvh]">
 
         <div class="flex-1 w-full flex flex-col items-center justify-center py-8 sm:py-10">
 
-            <div id="loginView" class="view active mx-auto w-full" style="max-width: min(22rem, calc(100% - 2.5rem));">
-                <div class="glass-card primary-card rounded-3xl px-6 py-8 sm:p-8 text-center">
-                    <img src="https://i.imgur.com/p2qZOL5.png" alt="CAB Logo" class="h-16 sm:h-20 w-auto mx-auto mb-5 sm:mb-6 object-contain" />
-                    <h3 class="text-2xl sm:text-3xl font-extrabold mb-2 sm:mb-3 tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">Timesheet</h3>
-                    <p class="text-zinc-400 mb-6 sm:mb-8 font-medium text-sm leading-relaxed">Enter your Student ID for <span id="loginActiveYear" class="text-purple-400 font-bold">...</span>.</p>
+            <!-- LOGIN VIEW -->
+            <div id="loginView" class="view active mx-auto w-full" style="max-width: min(24rem, calc(100% - 2.5rem));">
+                <div class="night-glass-card rounded-[36px] px-6 py-8 sm:p-10 text-center border-purple-400/40">
+                    <div class="logo-box mb-8">
+                        <img src="https://i.imgur.com/p2qZOL5.png" alt="CAB Logo" class="h-20 sm:h-24 w-auto mx-auto object-contain card-logo drop-shadow-[0_15px_30px_rgba(0,0,0,0.8)]" />
+                    </div>
+                    <h3 class="text-3xl sm:text-4xl font-extrabold mb-3 tracking-tight text-white drop-shadow-md">Timesheet</h3>
+                    <p class="text-purple-200/80 mb-8 font-medium text-sm leading-relaxed max-w-lg mx-auto">Enter your Student ID for <span id="loginActiveYear" class="text-purple-300 font-bold">...</span>.</p>
 
-                    <div class="mb-5 text-center">
+                    <div class="mb-6 text-center">
                         <label for="loginStudentID" class="form-label">Student ID</label>
-                        <input type="number" id="loginStudentID" class="control-item text-center text-xl tracking-widest" placeholder="e.g. 123456" autocomplete="off" onkeyup="if(event.key==='Enter') studentLogin()"/>
+                        <input type="number" id="loginStudentID" class="control-input text-center text-xl tracking-widest !py-4" placeholder="e.g. 123456" autocomplete="off" onkeyup="if(event.key==='Enter') studentLogin()"/>
                     </div>
 
-                    <button class="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold py-3.5 rounded-xl flex justify-center items-center gap-2 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] shadow-[0_0_20px_rgba(168,85,247,0.3)] hover:shadow-[0_0_30px_rgba(168,85,247,0.6)] text-base border border-purple-500/50" id="loginBtn" onclick="studentLogin()">
-                        <span>Access Timesheet</span>
+                    <button class="w-full night-btn-primary font-bold py-4 rounded-2xl flex justify-center items-center gap-2 text-base tracking-wide uppercase shadow-[0_0_20px_rgba(168,85,247,0.3)]" id="loginBtn" onclick="studentLogin()">
+                        <span class="text-white">Access Timesheet</span>
                         <div class="loader" id="loginLoader"></div>
                     </button>
 
-                    <div class="mt-5 pt-4 border-t border-zinc-800 flex flex-col items-center gap-1">
-                        <span class="text-zinc-600 text-xs tracking-wider">© <span id="year"></span> Canyon Activities Board</span>
-                        <button class="opacity-50 hover:opacity-100 transition-opacity uppercase tracking-widest bg-transparent border-none text-[10px] cursor-pointer text-zinc-500 p-1" onclick="showGate()">Staff Access</button>
+                    <div class="mt-8 pt-6 border-t border-purple-500/20 flex flex-col items-center gap-2">
+                        <span class="text-purple-300/50 text-[11px] tracking-wide">© <span id="year"></span> Canyon Activities Board</span>
+                        <button class="opacity-60 hover:opacity-100 transition-all uppercase tracking-widest bg-transparent border-none text-[10px] cursor-pointer text-purple-400 hover:text-purple-300 p-1" onclick="showGate()">Staff Access</button>
                     </div>
                 </div>
             </div>
 
+            <!-- TIMESHEET VIEW -->
             <div id="timesheetView" class="view max-w-2xl w-full mx-auto">
-                <div class="glass-card primary-card rounded-2xl sm:rounded-3xl p-4 sm:p-8">
+                <div class="night-glass-card rounded-[36px] p-6 sm:p-10 border-purple-400/40">
 
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-zinc-800 pb-4 sm:pb-6 mb-4 sm:mb-6 gap-3">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-purple-500/20 pb-6 mb-6 gap-4">
                         <div>
-                            <h3 class="text-xl sm:text-2xl font-extrabold tracking-tight text-white" id="ts-greeting">Hello Student,</h3>
-                            <p class="text-purple-400 font-medium text-sm mt-0.5"><span id="ts-position">Position</span> &bull; <span id="ts-team">Team Name</span></p>
+                            <h3 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white drop-shadow-md" id="ts-greeting">Hello Student,</h3>
+                            <p class="text-purple-300 font-medium text-sm mt-1"><span id="ts-position">Position</span> &bull; <span id="ts-team">Team Name</span></p>
                         </div>
                         <div class="sm:text-right">
-                            <div class="text-zinc-500 text-xs font-bold uppercase tracking-wider mb-1" id="ts-hoursLabel">Total Pending</div>
-                            <div class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 flex items-baseline gap-1 justify-end">
+                            <div class="text-purple-200/70 text-[10px] font-bold uppercase tracking-widest mb-1" id="ts-hoursLabel">Total Pending</div>
+                            <div class="text-4xl font-black text-white drop-shadow-md flex items-baseline gap-1 justify-start sm:justify-end">
                                 <span id="ts-totalHours">0.0</span>
-                                <span class="text-sm font-medium text-zinc-500" id="ts-reqHours">/ 0.0 required</span>
+                                <span class="text-xs font-semibold text-purple-300/70" id="ts-reqHours">/ 0.0 required</span>
                             </div>
                         </div>
                     </div>
 
-                    <div class="mb-5 sm:mb-8">
-                        <div class="text-zinc-400 text-xs font-bold tracking-wider uppercase mb-3 flex justify-between items-center">
+                    <div class="mb-8">
+                        <div class="text-purple-300 text-xs font-bold tracking-wider uppercase mb-4 flex justify-between items-center">
                             <span>Logged Hours</span>
                             <div class="flex items-center gap-2">
-                                <span id="autosaveIndicator" class="hidden text-emerald-400 text-xs font-bold flex items-center gap-1">
+                                <span id="autosaveIndicator" class="hidden text-emerald-400 text-[10px] font-bold flex items-center gap-1 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
                                     <i data-lucide="check" class="w-3 h-3"></i> Saved
                                 </span>
-                                <span id="ts-weekLabel" class="text-zinc-400">Pending Submit</span>
+                                <span id="ts-weekLabel" class="text-purple-200/50 bg-slate-900/50 px-2 py-0.5 rounded border border-purple-400/20">Pending Submit</span>
                             </div>
                         </div>
-                        <div id="ts-entriesList" class="flex flex-col gap-2 sm:gap-3 max-h-[220px] sm:max-h-[300px] overflow-y-auto pr-1"></div>
+                        <div id="ts-entriesList" class="flex flex-col gap-3 max-h-[250px] sm:max-h-[350px] overflow-y-auto pr-2 custom-scroll"></div>
                     </div>
 
-                    <div id="entryFormBox" class="bg-zinc-900/50 rounded-xl sm:rounded-2xl p-3 sm:p-5 border border-zinc-800/50 mb-4 sm:mb-8 transition-colors duration-300 overflow-hidden">
-                        <div class="flex justify-between items-center mb-4">
-                            <h4 id="formModeTitle" class="text-sm font-bold text-white uppercase tracking-wider">Log New Hours</h4>
-                            <button id="cancelEditBtn" class="hidden text-xs text-rose-400 hover:text-rose-300 transition" onclick="cancelEdit()">Cancel Edit</button>
+                    <div id="entryFormBox" class="night-glass-card-subtle rounded-2xl sm:rounded-[24px] p-4 sm:p-6 border-purple-400/30 mb-6 sm:mb-8 transition-all duration-300 overflow-hidden relative">
+                        <div class="flex justify-between items-center mb-5">
+                            <h4 id="formModeTitle" class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2"><i data-lucide="clock" class="w-4 h-4 text-purple-400"></i> Log New Hours</h4>
+                            <button id="cancelEditBtn" class="hidden text-xs text-rose-400 hover:text-rose-300 transition font-semibold flex items-center gap-1 bg-slate-900/50 px-2 py-1 rounded" onclick="cancelEdit()"><i data-lucide="x" class="w-3 h-3"></i> Cancel</button>
                         </div>
                         
-                        <div class="flex flex-col gap-3 mb-4">
-                            <div class="form-group !mb-0">
+                        <div class="flex flex-col sm:flex-row gap-4 mb-4">
+                            <div class="form-group !mb-0 flex-1">
                                 <label for="entryDate" class="form-label">Date</label>
-                                <input type="date" id="entryDate" class="control-item" />
+                                <input type="date" id="entryDate" class="control-input" />
                             </div>
-                            <div class="form-group !mb-0">
+                            <div class="form-group !mb-0 sm:w-1/3">
                                 <label for="entryHours" class="form-label">Hours</label>
-                                <input type="number" id="entryHours" class="control-item" step="0.25" min="0" placeholder="e.g. 2.5" />
+                                <input type="number" id="entryHours" class="control-input" step="0.25" min="0" placeholder="e.g. 2.5" />
                             </div>
                         </div>
                         <div class="form-group">
                             <label for="entryTask" class="form-label">Task Description</label>
-                            <input type="text" id="entryTask" class="control-item" placeholder="What did you work on?" />
+                            <input type="text" id="entryTask" class="control-input" placeholder="What did you work on?" />
                         </div>
-                        <button id="saveEntryBtn" class="w-full bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white font-bold py-3 rounded-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-lg flex justify-center items-center gap-2" onclick="saveTimeEntry()">
-                            <i data-lucide="plus" class="w-4 h-4" id="saveEntryIcon"></i> <span id="saveEntryText">Add to Week</span>
+                        <button id="saveEntryBtn" class="w-full night-btn-link text-white font-bold py-3.5 rounded-xl transition-all flex justify-center items-center gap-2 hover:bg-slate-800 border-purple-400/50 shadow-md" onclick="saveTimeEntry()">
+                            <i data-lucide="plus" class="w-4 h-4 text-purple-400" id="saveEntryIcon"></i> <span id="saveEntryText">Add to Week</span>
                         </button>
                     </div>
 
                     <!-- Shown when selected week is already submitted -->
-                    <div id="submittedNotice" class="hidden bg-emerald-950/40 rounded-2xl p-5 border border-emerald-500/30 mb-6 sm:mb-8 text-center">
-                        <div class="w-10 h-10 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                            <i data-lucide="check-circle" class="w-5 h-5 text-emerald-400"></i>
+                    <div id="submittedNotice" class="hidden night-glass-card-subtle !bg-emerald-950/40 rounded-[24px] p-6 !border-emerald-500/40 mb-8 text-center shadow-lg">
+                        <div class="w-12 h-12 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-500/30">
+                            <i data-lucide="check-circle" class="w-6 h-6 text-emerald-400"></i>
                         </div>
-                        <div class="text-emerald-400 font-bold text-sm mb-1">Hours Submitted</div>
-                        <div class="text-zinc-400 text-xs leading-relaxed">This week's timesheet has already been submitted and recorded.</div>
+                        <div class="text-emerald-400 font-bold text-base mb-2 tracking-wide uppercase">Hours Submitted</div>
+                        <div class="text-emerald-100/70 text-sm leading-relaxed max-w-sm mx-auto">This week's timesheet has already been officially submitted and recorded.</div>
                     </div>
 
-                    <div class="border-t border-zinc-800 pt-5 sm:pt-6 text-center">
-                        <p class="text-xs text-zinc-400 leading-relaxed px-2"><span class="text-emerald-400 font-semibold">Hours auto-save as you add them.</span> Hours are due <span class="text-purple-400 font-semibold">Sunday at 11:59 PM (AZ time)</span> and are automatically submitted at the start of each new week.</p>
+                    <div class="border-t border-purple-500/20 pt-6 text-center">
+                        <p class="text-[11px] text-purple-200/60 leading-relaxed px-4"><span class="text-emerald-400 font-semibold">Hours auto-save as you add them.</span> Hours are due <span class="text-purple-400 font-semibold">Sunday at 11:59 PM (AZ time)</span> and are automatically submitted at the start of each new week.</p>
                     </div>
                     
-                    <div class="flex justify-between items-center mt-6">
-                        <button class="text-zinc-500 hover:text-zinc-300 text-sm font-medium transition" onclick="logout()">Not you? Switch account</button>
-                        <button class="text-purple-400 hover:text-purple-300 text-sm font-medium transition flex items-center gap-1.5" onclick="showHistory()">
-                            <i data-lucide="clock" class="w-4 h-4"></i> My History
+                    <div class="flex justify-between items-center mt-8 px-2">
+                        <button class="text-purple-300/60 hover:text-white text-xs font-semibold transition tracking-wide" onclick="logout()">Not you? Switch account</button>
+                        <button class="night-btn-link text-white text-xs font-semibold transition flex items-center gap-2 px-4 py-2 rounded-xl" onclick="showHistory()">
+                            <i data-lucide="history" class="w-4 h-4 text-purple-400"></i> My History
                         </button>
                     </div>
                 </div>
             </div>
 
-            <div id="successView" class="view mx-auto w-full" style="max-width: min(22rem, calc(100% - 2.5rem));">
-                <div class="glass-card primary-card rounded-3xl px-6 py-8 sm:p-8 text-center">
-                    <div class="w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-5 text-white shadow-[0_0_30px_rgba(168,85,247,0.5)] border border-purple-400/30">
-                        <i data-lucide="check" class="w-8 h-8"></i>
+            <!-- SUCCESS VIEW -->
+            <div id="successView" class="view mx-auto w-full" style="max-width: min(24rem, calc(100% - 2.5rem));">
+                <div class="night-glass-card rounded-[36px] p-10 text-center border-purple-400/40">
+                    <div class="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 bg-gradient-to-br from-purple-500 to-blue-600 border border-purple-400/50 shadow-[0_0_40px_rgba(168,85,247,0.5)]">
+                        <i data-lucide="check" class="w-12 h-12 text-white"></i>
                     </div>
-                    <h2 class="text-2xl sm:text-3xl font-bold mb-2 tracking-tight text-white">Timesheet Submitted!</h2>
-                    <p class="text-zinc-400 mb-6 text-sm leading-relaxed">Your hours have been officially recorded.</p>
+                    <h2 class="text-3xl sm:text-4xl font-extrabold mb-3 tracking-tight text-white">Submitted!</h2>
+                    <p class="text-purple-200/80 mb-10 text-sm leading-relaxed max-w-xs mx-auto">Your hours have been officially recorded for the week.</p>
 
-                    <button class="w-full bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white font-bold py-3.5 rounded-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-lg text-base" onclick="logout()">
+                    <button class="w-full night-btn-link text-white font-bold py-4 rounded-2xl transition-all text-sm tracking-wide shadow-md" onclick="logout()">
                         Return to Login
                     </button>
                 </div>
             </div>
 
+            <!-- HISTORY VIEW -->
             <div id="historyView" class="view max-w-2xl w-full mx-auto">
-                <div class="glass-card primary-card rounded-2xl sm:rounded-3xl p-4 sm:p-8">
-                    <div class="flex justify-between items-center border-b border-zinc-800 pb-4 mb-5">
+                <div class="night-glass-card rounded-[36px] p-6 sm:p-10 border-purple-400/40">
+                    <div class="flex justify-between items-center border-b border-purple-500/20 pb-6 mb-6">
                         <div>
-                            <h3 class="text-xl font-extrabold text-white">My Hours History</h3>
-                            <p class="text-purple-400 text-sm mt-0.5" id="history-team"></p>
+                            <h3 class="text-2xl font-extrabold text-white tracking-tight">My Hours History</h3>
+                            <p class="text-purple-300 text-xs font-bold tracking-wider mt-1 uppercase" id="history-team"></p>
                         </div>
-                        <button onclick="switchView('timesheet')" class="text-zinc-400 hover:text-white bg-zinc-800 hover:bg-zinc-700 p-2 rounded-xl transition flex items-center gap-1.5 text-sm font-medium px-3">
-                            <i data-lucide="arrow-left" class="w-4 h-4"></i> Back
+                        <button onclick="switchView('timesheet')" class="night-btn-link text-purple-200 hover:text-white px-4 py-2 rounded-xl transition flex items-center gap-2 text-xs font-bold">
+                            <i data-lucide="arrow-left" class="w-4 h-4 text-purple-400"></i> Back
                         </button>
                     </div>
-                    <div class="flex justify-between items-center bg-zinc-900/50 p-3 rounded-xl border border-zinc-800 mb-5">
-                        <span class="text-zinc-400 text-xs font-bold uppercase tracking-wider">All-Time Total</span>
-                        <span class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500" id="history-total">0.0</span>
+                    <div class="flex justify-between items-center night-glass-card-subtle p-4 rounded-[20px] border-purple-400/30 mb-8 shadow-inner">
+                        <span class="text-purple-200/80 text-[10px] font-bold uppercase tracking-widest">All-Time Total</span>
+                        <span class="text-3xl font-black text-white drop-shadow-md" id="history-total">0.0</span>
                     </div>
-                    <div id="history-list" class="flex flex-col gap-3 max-h-[60vh] overflow-y-auto pr-1"></div>
+                    <div id="history-list" class="flex flex-col gap-4 max-h-[60vh] overflow-y-auto pr-2 custom-scroll"></div>
                 </div>
             </div>
 
+            <!-- DASHBOARD VIEW -->
             <div id="dashboardView" class="view max-w-7xl w-full mx-auto">
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 sm:mb-8 glass-card p-4 sm:p-5 rounded-2xl border-white/5">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8 night-glass-card p-5 sm:p-6 rounded-[28px] border-purple-400/40 shadow-xl">
                     <div>
                         <div class="flex items-center gap-3 px-2">
-                            <h2 class="text-xl font-bold text-white">Master Hours Overview</h2>
+                            <h2 class="text-2xl font-extrabold text-white tracking-tight">Master Overview</h2>
                             <div id="weekStatusIndicator"></div>
                         </div>
-                        <p class="text-zinc-400 text-sm px-2 mt-1">Reviewing submissions by week vs required minimums.</p>
+                        <p class="text-purple-200/60 text-xs font-medium tracking-wide px-2 mt-2 uppercase">Reviewing submissions vs minimums.</p>
                     </div>
-                    <div class="flex flex-wrap gap-2 w-full md:w-auto">
-                        <select id="adminYearFilter" class="bg-zinc-800 border border-zinc-700 text-white py-2.5 px-4 rounded-xl text-sm font-medium outline-none cursor-pointer" onchange="renderDashboard()"></select>
-                        <select id="adminWeekFilter" class="bg-zinc-800 border border-zinc-700 text-white py-2.5 px-4 rounded-xl text-sm font-medium outline-none cursor-pointer" onchange="renderDashboard()">
-                            <option value="current">Current Week (Mon-Sun)</option>
-                            <option value="previous">Previous Week (Mon-Sun)</option>
+                    <div class="flex flex-wrap gap-3 w-full md:w-auto items-center">
+                        <select id="adminYearFilter" class="control-input !mb-0 !w-auto py-2.5 px-4 rounded-xl text-xs font-bold shrink-0" onchange="renderDashboard()"></select>
+                        <select id="adminWeekFilter" class="control-input !mb-0 !w-auto py-2.5 px-4 rounded-xl text-xs font-bold shrink-0" onchange="renderDashboard()">
+                            <option value="current">Current Week</option>
+                            <option value="previous">Previous Week</option>
                         </select>
-                        <button onclick="downloadExcel()" class="flex-1 md:flex-none justify-center bg-emerald-900/40 hover:bg-emerald-800/60 border border-emerald-500/50 text-emerald-400 py-2.5 px-4 rounded-xl text-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg flex items-center gap-2 font-medium">
-                            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Export Excel
+                        <div class="h-6 w-px bg-purple-500/30 hidden md:block mx-1"></div>
+                        <button onclick="downloadExcel()" class="flex-1 md:flex-none justify-center night-btn-link !bg-emerald-900/30 hover:!bg-emerald-800/50 !border-emerald-500/40 text-emerald-300 py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center gap-2">
+                            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Export
                         </button>
-                        <button onclick="switchView('settings')" class="flex-1 md:flex-none justify-center bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white py-2.5 px-4 rounded-xl text-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg flex items-center gap-2 font-medium">
-                            <i data-lucide="settings" class="w-4 h-4"></i> Setup & Roster
+                        <button onclick="switchView('settings')" class="flex-1 md:flex-none justify-center night-btn-link text-white py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center gap-2">
+                            <i data-lucide="settings" class="w-4 h-4 text-purple-400"></i> Setup
                         </button>
-                        <button onclick="logout()" class="w-full md:w-auto justify-center bg-gradient-to-r from-blue-600 to-purple-600 border border-purple-500/50 text-white py-2.5 px-6 rounded-xl text-sm font-medium hover:opacity-90 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_15px_rgba(168,85,247,0.4)] flex items-center gap-2">
-                            Exit Admin
+                        <button onclick="logout()" class="w-full md:w-auto justify-center night-btn-primary py-2.5 px-6 rounded-xl text-xs font-bold transition-all flex items-center gap-2">
+                            Exit
                         </button>
                     </div>
                 </div>
-                <div id="admin-teamCards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-10"></div>
+                <div id="admin-teamCards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10"></div>
             </div>
 
+            <!-- SETTINGS VIEW (ADMIN) -->
             <div id="settingsView" class="view max-w-[90rem] w-full mx-auto">
-                <div class="glass-card rounded-3xl p-5 sm:p-10">
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8 border-b border-zinc-800 pb-6">
-                        <h2 class="text-2xl font-bold tracking-tight text-white">System Configuration</h2>
-                        <div class="flex gap-2">
-                            <button id="saveChangesBtn" class="justify-center bg-emerald-900/40 hover:bg-emerald-800/60 border border-emerald-500/50 text-emerald-400 py-2.5 px-6 rounded-xl text-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg font-medium flex items-center gap-2" onclick="saveAdminChanges()">
+                <div class="night-glass-card rounded-[36px] p-6 sm:p-10 border-purple-400/40">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 border-b border-purple-500/20 pb-6">
+                        <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white flex items-center gap-3">
+                            <i data-lucide="sliders" class="w-6 h-6 text-purple-400"></i> System Configuration
+                        </h2>
+                        <div class="flex gap-3">
+                            <button id="saveChangesBtn" class="justify-center night-btn-primary py-3 px-6 rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg" onclick="saveAdminChanges()">
                                 <i data-lucide="save" class="w-4 h-4"></i> Save to Cloud <div class="loader" id="saveLoader"></div>
                             </button>
-                            <button class="justify-center bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 py-2.5 px-6 rounded-xl text-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg font-medium flex items-center gap-2" onclick="renderDashboard(); switchView('dashboard')">
-                                <i data-lucide="arrow-left" class="w-4 h-4"></i> Back
+                            <button class="justify-center night-btn-link text-white py-3 px-6 rounded-xl text-xs font-bold flex items-center gap-2" onclick="renderDashboard(); switchView('dashboard')">
+                                <i data-lucide="arrow-left" class="w-4 h-4 text-purple-400"></i> Back
                             </button>
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-10">
-                        <div class="lg:col-span-5 flex flex-col gap-8">
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-12">
+                        <!-- Left Column: Config -->
+                        <div class="lg:col-span-5 flex flex-col gap-10">
                             
                             <!-- Passwords & Config -->
                             <div>
-                                <div class="text-purple-400 text-xs font-bold tracking-wider uppercase mb-4 border-b border-zinc-800 pb-2">Security & Automation</div>
-                                <div class="flex flex-col gap-3">
-                                    <input type="text" id="setNewPass" class="control-item no-save-pass" placeholder="Change admin password..." autocomplete="new-password" spellcheck="false" />
+                                <div class="text-purple-300 text-xs font-bold tracking-wider uppercase mb-5 flex items-center gap-2"><i data-lucide="shield-check" class="w-4 h-4"></i> Security & Automation</div>
+                                <div class="flex flex-col gap-4">
+                                    <div class="form-group !mb-0">
+                                        <input type="text" id="setNewPass" class="control-input !mb-0 no-save-pass" placeholder="Change admin password..." autocomplete="new-password" spellcheck="false" />
+                                    </div>
                                     
-                                    <div class="flex items-center justify-between bg-zinc-900/50 p-3 rounded-xl border border-zinc-800" title="If fewer students than this submit hours, the system assumes it is a break week and pauses missing hour emails.">
-                                        <div class="flex flex-col">
-                                            <span class="text-sm font-bold text-white">Active Week Threshold</span>
-                                            <span class="text-xs text-zinc-500">Min. students submitting to trigger emails</span>
+                                    <div class="flex items-center justify-between night-glass-card-subtle p-4 rounded-2xl border-purple-400/30" title="If fewer students than this submit hours, the system assumes it is a break week and pauses missing hour emails.">
+                                        <div class="flex flex-col pr-4">
+                                            <span class="text-sm font-bold text-white mb-1">Active Week Threshold</span>
+                                            <span class="text-[10px] text-purple-200/60 leading-tight">Min. students submitting to trigger emails</span>
                                         </div>
-                                        <input type="number" id="setSubmitThreshold" class="control-item !w-20 !py-1.5 !text-center !px-2" min="1" value="7" />
+                                        <input type="number" id="setSubmitThreshold" class="control-input !mb-0 !w-20 !py-2 !text-center !px-2 font-bold" min="1" value="7" />
                                     </div>
                                 </div>
                             </div>
                             
                             <!-- Email Simulator -->
                             <div>
-                                <div class="text-purple-400 text-xs font-bold tracking-wider uppercase mb-4 border-b border-zinc-800 pb-2">Email Automation Simulator</div>
-                                <div class="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800 flex flex-col gap-3">
-                                    <p class="text-xs text-zinc-400 leading-relaxed">Run a dry test to see exactly what the Google Script will do this coming Monday based on current data. No actual emails will be sent.</p>
-                                    <button class="w-full bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white font-bold py-2.5 rounded-xl transition-all flex justify-center items-center gap-2 text-sm" onclick="runEmailSimulation()">
-                                        <i data-lucide="play-circle" class="w-4 h-4"></i> Run Dry Test
+                                <div class="text-purple-300 text-xs font-bold tracking-wider uppercase mb-5 flex items-center gap-2"><i data-lucide="mail-warning" class="w-4 h-4"></i> Automation Simulator</div>
+                                <div class="night-glass-card-subtle p-5 rounded-2xl border-purple-400/30 flex flex-col gap-4">
+                                    <p class="text-xs text-purple-200/70 leading-relaxed font-medium">Run a dry test to see exactly what the Google Script will do this coming Monday based on current data. No actual emails will be sent.</p>
+                                    <button class="w-full night-btn-link text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2 text-xs uppercase tracking-wide border-purple-400/50 hover:bg-slate-800" onclick="runEmailSimulation()">
+                                        <i data-lucide="play" class="w-4 h-4 text-purple-400"></i> Run Dry Test
                                     </button>
-                                    <div id="simResults" class="hidden mt-2 p-3 rounded-lg border text-xs leading-relaxed max-h-[200px] overflow-y-auto whitespace-pre-line text-zinc-300"></div>
+                                    <div id="simResults" class="hidden mt-2 p-4 rounded-xl border text-xs leading-relaxed max-h-[200px] overflow-y-auto whitespace-pre-line text-white shadow-inner font-mono"></div>
                                 </div>
                             </div>
 
                             <!-- Teams -->
                             <div>
-                                <div class="text-purple-400 text-xs font-bold tracking-wider uppercase mb-4 border-b border-zinc-800 pb-2 flex justify-between">
-                                    <span>Manage Teams</span>
-                                    <span class="text-zinc-500" id="teamCount">0</span>
+                                <div class="text-purple-300 text-xs font-bold tracking-wider uppercase mb-5 flex justify-between items-center">
+                                    <span class="flex items-center gap-2"><i data-lucide="users" class="w-4 h-4"></i> Manage Teams</span>
+                                    <span class="text-purple-200 bg-slate-900/50 px-2 py-0.5 rounded border border-purple-500/20" id="teamCount">0</span>
                                 </div>
-                                <div class="flex gap-2 mb-4">
-                                    <input type="text" id="newTeamInput" class="control-item !mb-0 flex-1" placeholder="New Team Name..." />
-                                    <button class="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white px-4 rounded-xl transition-all shrink-0" onclick="addTeam()">Add</button>
+                                <div class="flex gap-2 mb-4 night-glass-card-subtle p-2 rounded-2xl border-dashed border-purple-400/30">
+                                    <input type="text" id="newTeamInput" class="control-input !mb-0 flex-1 border-none !bg-transparent shadow-none focus:box-shadow-none text-sm" placeholder="New Team Name..." />
+                                    <button class="night-btn-link text-white px-5 rounded-xl transition-all shrink-0 text-xs font-bold" onclick="addTeam()">Add</button>
                                 </div>
-                                <div id="settings-teamList" class="flex flex-col gap-2 max-h-[150px] overflow-y-auto pr-2"></div>
+                                <div id="settings-teamList" class="flex flex-col gap-2 max-h-[180px] overflow-y-auto pr-2 custom-scroll"></div>
                             </div>
                             
                             <!-- Positions -->
                             <div>
-                                <div class="text-purple-400 text-xs font-bold tracking-wider uppercase mb-4 border-b border-zinc-800 pb-2 flex justify-between">
-                                    <span>Manage Positions & Minimums</span>
-                                    <span class="text-zinc-500" id="positionCount">0</span>
+                                <div class="text-purple-300 text-xs font-bold tracking-wider uppercase mb-5 flex justify-between items-center">
+                                    <span class="flex items-center gap-2"><i data-lucide="briefcase" class="w-4 h-4"></i> Roles & Minimums</span>
+                                    <span class="text-purple-200 bg-slate-900/50 px-2 py-0.5 rounded border border-purple-500/20" id="positionCount">0</span>
                                 </div>
-                                <div class="flex gap-2 mb-4">
-                                    <input type="text" id="newPosName" class="control-item !mb-0 w-[55%]" placeholder="Position (e.g. Director)" />
-                                    <input type="number" id="newPosHours" class="control-item !mb-0 w-[25%]" placeholder="Min Hrs" step="0.5" min="0" />
-                                    <button class="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white px-4 rounded-xl transition-all shrink-0 w-[20%]" onclick="addPosition()">Add</button>
+                                <div class="flex gap-2 mb-4 night-glass-card-subtle p-2 rounded-2xl border-dashed border-purple-400/30">
+                                    <input type="text" id="newPosName" class="control-input !mb-0 w-[50%] border-none !bg-transparent shadow-none text-sm" placeholder="Role (e.g. Director)" />
+                                    <div class="w-px bg-purple-500/30 my-2"></div>
+                                    <input type="number" id="newPosHours" class="control-input !mb-0 w-[25%] border-none !bg-transparent shadow-none text-sm px-2 text-center" placeholder="Min Hrs" step="0.5" min="0" />
+                                    <button class="night-btn-link text-white px-4 rounded-xl transition-all shrink-0 w-[25%] text-xs font-bold" onclick="addPosition()">Add</button>
                                 </div>
-                                <div id="settings-positionList" class="flex flex-col gap-2 max-h-[150px] overflow-y-auto pr-2"></div>
+                                <div id="settings-positionList" class="flex flex-col gap-2 max-h-[180px] overflow-y-auto pr-2 custom-scroll"></div>
                             </div>
                             
                             <!-- Staff -->
                             <div>
-                                <div class="text-purple-400 text-xs font-bold tracking-wider uppercase mb-4 border-b border-zinc-800 pb-2 flex justify-between">
-                                    <span>Manage Staff Alerts</span>
-                                    <span class="text-zinc-500" id="staffCount">0</span>
+                                <div class="text-purple-300 text-xs font-bold tracking-wider uppercase mb-5 flex justify-between items-center">
+                                    <span class="flex items-center gap-2"><i data-lucide="shield" class="w-4 h-4"></i> Staff Alerts</span>
+                                    <span class="text-purple-200 bg-slate-900/50 px-2 py-0.5 rounded border border-purple-500/20" id="staffCount">0</span>
                                 </div>
-                                <div class="flex flex-col gap-2 mb-4">
-                                    <div class="flex gap-2">
-                                        <input type="text" id="newStaffName" class="control-item !mb-0 flex-1" placeholder="Staff Name" />
-                                        <input type="email" id="newStaffEmail" class="control-item !mb-0 flex-1" placeholder="Staff Email" />
+                                <div class="night-glass-card-subtle p-4 rounded-2xl border-dashed border-purple-400/30 flex flex-col gap-3 mb-4">
+                                    <div class="flex flex-col sm:flex-row gap-3">
+                                        <input type="text" id="newStaffName" class="control-input !mb-0 flex-1 text-sm" placeholder="Staff Name" />
+                                        <input type="email" id="newStaffEmail" class="control-input !mb-0 flex-1 text-sm" placeholder="Staff Email" />
                                     </div>
-                                    <div class="flex gap-2 items-start">
-                                        <select id="newStaffTeams" class="control-item !mb-0 flex-1" multiple size="3" title="Hold Ctrl/Cmd to select multiple teams">
-                                            <!-- populated dynamically -->
-                                        </select>
-                                        <button class="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white px-4 py-2 rounded-xl transition-all h-full shrink-0" onclick="addStaff()">Add</button>
+                                    <div class="flex gap-3 items-start">
+                                        <div class="flex-1">
+                                            <label class="text-[9px] text-purple-300 uppercase font-bold tracking-widest pl-1 mb-1 block">Select Teams (Hold Ctrl/Cmd)</label>
+                                            <select id="newStaffTeams" class="control-input !mb-0 w-full text-sm custom-scroll" multiple size="3">
+                                                <!-- populated dynamically -->
+                                            </select>
+                                        </div>
+                                        <button class="night-btn-link text-white px-5 rounded-xl transition-all h-[80px] shrink-0 text-xs font-bold mt-[18px]" onclick="addStaff()">Add</button>
                                     </div>
-                                    <p class="text-[10px] text-zinc-500">Hold Ctrl (Windows) or Cmd (Mac) to select multiple teams.</p>
                                 </div>
-                                <div id="settings-staffList" class="flex flex-col gap-2 max-h-[200px] overflow-y-auto pr-2"></div>
+                                <div id="settings-staffList" class="flex flex-col gap-2 max-h-[220px] overflow-y-auto pr-2 custom-scroll"></div>
                             </div>
 
                             <!-- Academic Years -->
                             <div>
-                                <div class="text-purple-400 text-xs font-bold tracking-wider uppercase mb-4 border-b border-zinc-800 pb-2 flex justify-between">
-                                    <span>Manage Academic Years</span>
-                                    <span class="text-zinc-500" id="yearCount">0</span>
+                                <div class="text-purple-300 text-xs font-bold tracking-wider uppercase mb-5 flex justify-between items-center">
+                                    <span class="flex items-center gap-2"><i data-lucide="calendar-days" class="w-4 h-4"></i> Academic Years</span>
+                                    <span class="text-purple-200 bg-slate-900/50 px-2 py-0.5 rounded border border-purple-500/20" id="yearCount">0</span>
                                 </div>
-                                <div class="flex gap-2 mb-4">
-                                    <input type="text" id="newYearInput" class="control-item !mb-0" placeholder="e.g. 2025-2026" />
-                                    <button class="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white px-4 rounded-xl transition-all shrink-0" onclick="addYear()">Add</button>
+                                <div class="flex gap-2 mb-4 night-glass-card-subtle p-2 rounded-2xl border-dashed border-purple-400/30">
+                                    <input type="text" id="newYearInput" class="control-input !mb-0 flex-1 border-none !bg-transparent shadow-none text-sm" placeholder="e.g. 2025-2026" />
+                                    <button class="night-btn-link text-white px-5 rounded-xl transition-all shrink-0 text-xs font-bold" onclick="addYear()">Add</button>
                                 </div>
-                                <div id="settings-yearList" class="flex flex-col gap-2 max-h-[150px] overflow-y-auto pr-2"></div>
+                                <div id="settings-yearList" class="flex flex-col gap-2 max-h-[150px] overflow-y-auto pr-2 custom-scroll"></div>
                             </div>
                         </div>
 
                         <!-- Right Column: Roster -->
-                        <div class="lg:col-span-7 bg-zinc-900/30 p-5 rounded-2xl border border-white/5 flex flex-col h-full">
-                            <div class="flex justify-between items-center mb-4 border-b border-zinc-800 pb-2">
-                                <span class="text-purple-400 text-xs font-bold tracking-wider uppercase">Student Roster</span>
-                                <select id="settingsRosterYear" class="bg-zinc-800 border border-zinc-700 text-white py-1.5 px-3 rounded-lg text-xs font-bold outline-none cursor-pointer shadow-sm" onchange="changeRosterYear()"></select>
-                            </div>
-                            
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-                                <input type="number" id="newStudID" class="control-item !mb-0 !p-3 !text-sm" placeholder="ID Number" />
-                                <input type="text" id="newStudName" class="control-item !mb-0 !p-3 !text-sm" placeholder="Full Name" />
-                            </div>
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-                                <input type="email" id="newStudEmail" class="control-item !mb-0 !p-3 !text-sm" placeholder="Student Email" />
-                                <select id="newStudTeam" class="control-item !mb-0 !p-3 !text-sm"><option value="">Select Team...</option></select>
-                                <select id="newStudPosition" class="control-item !mb-0 !p-3 !text-sm"><option value="">Select Position...</option></select>
-                            </div>
-                            <div class="flex gap-2 mb-6">
-                                <button id="addStudBtn" class="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 border border-purple-500/50 text-white font-bold py-3 rounded-xl hover:opacity-90 transition-all shadow-md flex justify-center items-center gap-2 text-sm" onclick="addStudentToRoster()">
-                                    <i data-lucide="user-plus" class="w-4 h-4" id="addStudIcon"></i> <span id="addStudText">Add to Roster</span>
-                                </button>
-                                <button id="cancelStudEditBtn" class="hidden bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 font-bold py-3 px-6 rounded-xl transition" onclick="cancelRosterEdit()">Cancel</button>
-                            </div>
+                        <div class="lg:col-span-7 flex flex-col h-full">
+                            <div class="night-glass-card-subtle p-6 rounded-[28px] border-purple-400/30 flex flex-col h-full shadow-inner">
+                                <div class="flex justify-between items-center mb-6 border-b border-purple-500/20 pb-4">
+                                    <span class="text-purple-300 text-xs font-bold tracking-wider uppercase flex items-center gap-2"><i data-lucide="graduation-cap" class="w-4 h-4"></i> Student Roster</span>
+                                    <select id="settingsRosterYear" class="control-input !mb-0 !w-auto !py-1.5 !px-3 rounded-lg text-xs font-bold shadow-sm" onchange="changeRosterYear()"></select>
+                                </div>
+                                
+                                <div class="bg-slate-900/40 p-4 rounded-2xl border border-purple-400/20 mb-6">
+                                    <div class="text-[10px] text-purple-300 uppercase font-bold tracking-widest mb-3 flex justify-between items-center">
+                                        <span id="addStudFormTitle">Add New Student</span>
+                                        <button id="cancelStudEditBtn" class="hidden text-rose-400 hover:text-white transition flex items-center gap-1" onclick="cancelRosterEdit()"><i data-lucide="x" class="w-3 h-3"></i> Cancel Edit</button>
+                                    </div>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                                        <input type="number" id="newStudID" class="control-input !mb-0 text-sm" placeholder="ID Number" />
+                                        <input type="text" id="newStudName" class="control-input !mb-0 text-sm" placeholder="Full Name" />
+                                    </div>
+                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+                                        <input type="email" id="newStudEmail" class="control-input !mb-0 text-sm" placeholder="Student Email" />
+                                        <select id="newStudTeam" class="control-input !mb-0 text-sm"><option value="">Select Team...</option></select>
+                                        <select id="newStudPosition" class="control-input !mb-0 text-sm"><option value="">Select Position...</option></select>
+                                    </div>
+                                    <button id="addStudBtn" class="w-full night-btn-link text-white font-bold py-3 rounded-xl transition-all shadow-md flex justify-center items-center gap-2 text-sm border-purple-400/50 hover:bg-slate-800" onclick="addStudentToRoster()">
+                                        <i data-lucide="user-plus" class="w-4 h-4 text-purple-400" id="addStudIcon"></i> <span id="addStudText">Add to Roster</span>
+                                    </button>
+                                </div>
 
-                            <div id="admin-rosterList" class="flex flex-col gap-2 flex-1 min-h-[400px] overflow-y-auto pr-2"></div>
+                                <div class="text-[10px] text-purple-300/50 uppercase font-bold tracking-widest mb-2 px-1">Current Roster</div>
+                                <div id="admin-rosterList" class="flex flex-col gap-2 flex-1 min-h-[400px] overflow-y-auto pr-2 custom-scroll"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -469,17 +585,19 @@
 
     <!-- Admin Login Modal -->
     <div id="gateModal" class="fixed inset-0 z-[1000] hidden items-center justify-center p-4">
-        <div class="absolute inset-0 bg-zinc-950/80 backdrop-blur-md" onclick="hideGate()"></div>
-        <div class="relative w-full max-w-sm glass-card rounded-3xl p-8 flex flex-col items-center text-center shadow-2xl border-purple-500/30 transition-all duration-500 hover:shadow-[0_0_40px_rgba(168,85,247,0.2)] hover:-translate-y-2">
-            <div class="w-16 h-16 bg-zinc-900 rounded-2xl p-3 mb-4 flex items-center justify-center border border-zinc-800 transition-transform hover:rotate-12">
-                <i data-lucide="lock" class="w-8 h-8 text-zinc-400"></i>
+        <div id="gateBackdrop" class="absolute inset-0 bg-black/75 backdrop-blur-md" onclick="hideGate()"></div>
+        <div id="gateCard" class="relative w-full max-w-sm night-glass-card rounded-[32px] p-8 flex flex-col items-center text-center shadow-2xl border-purple-400/40 z-10 transition-all duration-300">
+            <div class="logo-box mb-5">
+                <div class="w-16 h-16 rounded-2xl bg-slate-900/50 border border-purple-400/30 flex items-center justify-center relative z-10 shadow-lg">
+                    <i data-lucide="lock" class="w-7 h-7 text-purple-300"></i>
+                </div>
             </div>
-            <h3 class="text-2xl font-bold mb-1 text-white">Staff Login</h3>
-            <p class="text-zinc-400 text-sm mb-6">Enter admin password to access system settings and master hours.</p>
+            <h3 class="text-2xl font-bold mb-1 text-white tracking-tight">Staff Login</h3>
+            <p class="text-purple-200/70 text-xs mb-6">Enter admin password to access system settings and master hours.</p>
             
-            <input type="password" id="adminPass" class="control-item text-center mb-6 no-save-pass" placeholder="Password" autocomplete="off" spellcheck="false" onkeyup="if(event.key==='Enter') verifyAdmin()"/>
+            <input type="password" id="adminPass" class="control-input text-center mb-6 no-save-pass" placeholder="Password" autocomplete="off" spellcheck="false" onkeyup="if(event.key==='Enter') verifyAdmin()"/>
             
-            <button class="w-full bg-gradient-to-r from-blue-600 to-purple-600 border border-purple-500/50 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] shadow-[0_0_15px_rgba(168,85,247,0.3)]" id="gateBtn" onclick="verifyAdmin()">
+            <button class="w-full night-btn-primary font-bold py-3.5 rounded-2xl flex justify-center items-center gap-2 text-sm shadow-lg" id="gateBtn" onclick="verifyAdmin()">
                 <span>Authorize</span> <div class="loader" id="gateLoader"></div>
             </button>
         </div>
@@ -487,65 +605,71 @@
 
     <!-- Student Detail Modal -->
     <div id="studentDetailModal" class="fixed inset-0 z-[1000] hidden items-center justify-center p-4">
-        <div class="absolute inset-0 bg-zinc-950/80 backdrop-blur-md" onclick="closeStudentDetails()"></div>
-        <div class="relative w-full max-w-lg glass-card rounded-3xl p-6 sm:p-8 flex flex-col shadow-2xl border-purple-500/30 transition-all duration-500 max-h-[90vh]">
-            <div class="flex justify-between items-start border-b border-zinc-800 pb-4 mb-4">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-md" onclick="closeStudentDetails()"></div>
+        <div class="relative w-full max-w-lg night-glass-card rounded-[36px] p-6 sm:p-8 flex flex-col shadow-2xl border-purple-400/50 max-h-[90vh] z-10">
+            
+            <div class="flex justify-between items-start border-b border-purple-500/20 pb-5 mb-5">
                 <div>
-                    <h3 class="text-2xl font-bold text-white" id="detailModalName">Student Name</h3>
-                    <p class="text-purple-400 text-sm font-medium" id="detailModalTeam">Team Name</p>
+                    <h3 class="text-2xl font-extrabold text-white tracking-tight" id="detailModalName">Student Name</h3>
+                    <p class="text-purple-300 text-sm font-semibold mt-1 bg-slate-900/50 px-2 py-0.5 rounded inline-block border border-purple-500/20" id="detailModalTeam">Team Name</p>
                 </div>
                 <div class="flex items-center gap-2">
-                    <button id="deleteStudentBtn" class="text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-500/80 p-2.5 rounded-xl transition flex items-center justify-center gap-1.5 border border-rose-500/20" onclick="promptDeleteStudent()" title="Permanently Delete Student">
-                        <i data-lucide="trash-2" class="w-5 h-5"></i>
+                    <button id="deleteStudentBtn" class="text-rose-400 hover:text-white bg-slate-900/50 hover:bg-rose-500/80 p-2.5 rounded-xl transition flex items-center justify-center gap-1.5 border border-rose-500/20 shadow-md" onclick="promptDeleteStudent()" title="Permanently Delete Student">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
                     </button>
-                    <button class="text-zinc-400 hover:text-white bg-zinc-800 hover:bg-zinc-700 p-2.5 rounded-xl transition" onclick="closeStudentDetails()">
-                        <i data-lucide="x" class="w-5 h-5"></i>
+                    <button class="text-purple-200 hover:text-white bg-slate-900/50 hover:bg-slate-800 border border-purple-400/30 p-2.5 rounded-xl transition shadow-md" onclick="closeStudentDetails()">
+                        <i data-lucide="x" class="w-4 h-4"></i>
                     </button>
                 </div>
             </div>
 
-            <div class="flex justify-between items-center bg-zinc-900/50 p-4 rounded-xl border border-zinc-800 mb-4">
-                <span class="text-zinc-400 text-xs font-bold uppercase tracking-wider" id="detailModalTotalLabel">All-Time Total Hours</span>
-                <span class="text-2xl font-black text-white" id="detailModalTotal">0.0</span>
+            <div class="flex justify-between items-center night-glass-card-subtle p-5 rounded-[20px] border-purple-400/30 mb-5 shadow-inner">
+                <span class="text-purple-200/80 text-[10px] font-bold uppercase tracking-widest">All-Time Total Hours</span>
+                <span class="text-3xl font-black text-white drop-shadow-md" id="detailModalTotal">0.0</span>
             </div>
 
             <!-- Admin inline edit/add panel -->
-            <div id="adminLogEditPanel" class="hidden bg-zinc-900/80 border border-purple-500/30 rounded-xl p-4 mb-4">
-                <div class="text-xs font-bold text-purple-400 uppercase tracking-wider mb-3" id="adminEditPanelTitle">Edit Entry</div>
-                <div class="flex flex-col gap-2">
-                    <input type="date" id="adminEditDate" class="control-item" style="min-width:0;max-width:100%;width:100%;" />
-                    <input type="number" id="adminEditHours" class="control-item" step="0.25" min="0" placeholder="Hours" />
-                    <input type="text" id="adminEditTask" class="control-item" placeholder="Task description" />
+            <div id="adminLogEditPanel" class="hidden night-glass-card-subtle border-purple-400/50 rounded-[20px] p-5 mb-5 shadow-lg relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-1 h-full bg-purple-500"></div>
+                <div class="text-[10px] font-bold text-purple-300 uppercase tracking-widest mb-4 pl-2" id="adminEditPanelTitle">Edit Entry</div>
+                <div class="flex flex-col sm:flex-row gap-3 mb-3">
+                    <input type="date" id="adminEditDate" class="control-input !mb-0 flex-1 text-sm" />
+                    <input type="number" id="adminEditHours" class="control-input !mb-0 sm:w-1/3 text-sm" step="0.25" min="0" placeholder="Hours" />
                 </div>
-                <div class="flex gap-2 mt-3">
-                    <button onclick="adminConfirmEdit()" class="flex-1 bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 rounded-xl text-sm transition">Save</button>
-                    <button onclick="adminCancelEdit()" class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold py-2 rounded-xl text-sm transition">Cancel</button>
+                <div class="mb-4">
+                    <input type="text" id="adminEditTask" class="control-input !mb-0 text-sm" placeholder="Task description" />
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="adminConfirmEdit()" class="flex-1 night-btn-primary font-bold py-2.5 rounded-xl text-xs uppercase tracking-wide">Save</button>
+                    <button onclick="adminCancelEdit()" class="flex-1 night-btn-link text-white font-bold py-2.5 rounded-xl text-xs uppercase tracking-wide border-purple-400/30">Cancel</button>
                 </div>
             </div>
 
-            <div class="text-purple-400 text-xs font-bold tracking-wider uppercase mb-3 px-1">Weekly Breakdown</div>
-            <div id="detailModalLogs" class="flex-1 overflow-y-auto pr-2 flex flex-col gap-2"></div>
+            <div class="text-purple-300/50 text-[10px] font-bold tracking-widest uppercase mb-3 px-2">Weekly Breakdown</div>
+            <div id="detailModalLogs" class="flex-1 overflow-y-auto pr-2 flex flex-col gap-3 custom-scroll"></div>
         </div>
     </div>
     
     <!-- Custom Confirm Modal -->
     <div id="confirmModal" class="fixed inset-0 z-[2000] hidden items-center justify-center p-4">
-        <div class="absolute inset-0 bg-zinc-950/80 backdrop-blur-md" onclick="closeConfirmModal()"></div>
-        <div class="relative w-full max-w-sm glass-card rounded-3xl p-6 flex flex-col text-center shadow-2xl border-rose-500/30">
-            <div class="w-12 h-12 bg-rose-500/20 rounded-full flex items-center justify-center mx-auto mb-4 text-rose-400">
-                <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-md" onclick="closeConfirmModal()"></div>
+        <div class="relative w-full max-w-sm night-glass-card rounded-[32px] p-8 flex flex-col text-center shadow-2xl border-rose-500/40 z-10">
+            <div class="w-14 h-14 bg-rose-500/20 rounded-full flex items-center justify-center mx-auto mb-5 text-rose-400 border border-rose-500/30">
+                <i data-lucide="alert-triangle" class="w-7 h-7"></i>
             </div>
-            <h3 class="text-xl font-bold mb-2 text-white" id="confirmModalTitle">Are you sure?</h3>
-            <p class="text-zinc-400 text-sm mb-6" id="confirmModalMsg">This action cannot be undone.</p>
+            <h3 class="text-2xl font-bold mb-2 text-white tracking-tight" id="confirmModalTitle">Are you sure?</h3>
+            <p class="text-purple-200/70 text-sm mb-8 leading-relaxed" id="confirmModalMsg">This action cannot be undone.</p>
             <div class="flex gap-3">
-                <button class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-3 rounded-xl transition" onclick="closeConfirmModal()">Cancel</button>
-                <button class="flex-1 bg-rose-600 hover:bg-rose-500 text-white font-bold py-3 rounded-xl transition" id="confirmModalActionBtn">Delete</button>
+                <button class="flex-1 night-btn-link text-white font-bold py-3.5 rounded-xl transition border-purple-400/30" onclick="closeConfirmModal()">Cancel</button>
+                <button class="flex-1 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-bold py-3.5 rounded-xl transition shadow-[0_0_15px_rgba(225,29,72,0.4)]" id="confirmModalActionBtn">Delete</button>
             </div>
         </div>
     </div>
 
     <!-- Toast Notification -->
-    <div id="toast" class="glass-card !bg-zinc-900 !text-white font-bold shadow-xl border !border-purple-500/50">Update Successful</div>
+    <div id="toast" class="night-glass-card-subtle !bg-slate-900/90 !text-white font-bold shadow-2xl border !border-purple-500/50 text-sm tracking-wide">
+        Update Successful
+    </div>
 
 <script>
     // ==========================================
@@ -653,6 +777,37 @@
     async function init() {
         document.getElementById('year').textContent = new Date().getFullYear();
         lucide.createIcons();
+        
+        // Immediately show login view so animations trigger visibly
+        switchView('login');
+        
+        // GSAP Entrance Animations with Elastic Logo Reveal
+        const tl = gsap.timeline();
+        tl.fromTo(".night-glass-card", 
+            { opacity: 0, y: 60 }, 
+            { opacity: 1, y: 0, duration: 1.1, ease: "power4.out" }
+        )
+        .fromTo(".logo-box img", {
+            scale: 0,
+            rotation: 360
+        }, {
+            scale: 1,
+            rotation: 0,
+            duration: 0.9,
+            ease: "elastic.out(1, 0.5)"
+        }, "-=0.6")
+        .fromTo(["#loginView h3", "#loginView p", "#loginView .mb-6", "#loginBtn", "#loginView .mt-8"], {
+            opacity: 0,
+            y: 20
+        }, {
+            opacity: 1,
+            y: 0,
+            stagger: 0.08,
+            duration: 0.5,
+            clearProps: "all"
+        }, "-=0.4");
+
+        gsap.to(".card-logo", { y: -6, duration: 2.2, repeat: -1, yoyo: true, ease: "sine.inOut" });
 
         const adminFilter = document.getElementById('adminWeekFilter');
         if (adminFilter && (todayDate.getDay() === 1 || todayDate.getDay() === 2)) adminFilter.value = 'previous';
@@ -666,7 +821,6 @@
                 if (Date.now() - ts < CONFIG_CACHE_TTL && data.activeYear) {
                     applyConfig(data);
                     usedCache = true;
-                    switchView('login');
                 }
             }
         } catch (e) { /* bad cache, ignore */ }
@@ -692,10 +846,6 @@
                 showToast("Connection error: " + e.message, true);
             }
         }
-
-        if (!usedCache) {
-            switchView('login');
-        }
     }
 
     function switchView(viewName) {
@@ -708,6 +858,7 @@
         if (target) {
             target.style.display = 'block';
             setTimeout(() => target.classList.add('active'), 10);
+            gsap.fromTo(target, { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.4 });
         }
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -718,7 +869,7 @@
 
         const btn = document.getElementById('loginBtn');
         const loader = document.getElementById('loginLoader');
-        btn.disabled = true; loader.style.display = 'block';
+        btn.disabled = true; loader.style.display = 'inline-block';
 
         try {
             const [rosterRows, subRows, draftRows] = await Promise.all([
@@ -816,7 +967,15 @@
         const submitted = isWeekSubmitted();
         document.getElementById('entryFormBox').classList.toggle('hidden', submitted);
         document.getElementById('submittedNotice').classList.toggle('hidden', !submitted);
-        document.getElementById('ts-weekLabel').textContent = submitted ? '✓ Submitted' : 'Current Week';
+        
+        const weekLabel = document.getElementById('ts-weekLabel');
+        if (submitted) {
+            weekLabel.innerHTML = `<i data-lucide="check-circle" class="w-3 h-3 inline"></i> Submitted`;
+            weekLabel.className = 'text-emerald-300 bg-emerald-900/30 px-2 py-0.5 rounded border border-emerald-500/30 text-[10px] uppercase font-bold tracking-wider';
+        } else {
+            weekLabel.textContent = 'Current Week';
+            weekLabel.className = 'text-purple-200/60 bg-slate-900/50 px-2 py-0.5 rounded border border-purple-400/20 text-[10px] uppercase font-bold tracking-wider';
+        }
         lucide.createIcons();
     }
 
@@ -877,12 +1036,19 @@
         document.getElementById('entryDate').value = entry.date;
         document.getElementById('entryHours').value = entry.hours;
         document.getElementById('entryTask').value = entry.task;
-        document.getElementById('formModeTitle').textContent = "Edit Logged Hours";
-        document.getElementById('formModeTitle').classList.add('text-purple-400');
-        document.getElementById('entryFormBox').classList.add('border-purple-500/50', 'bg-purple-900/10');
+        document.getElementById('formModeTitle').innerHTML = '<i data-lucide="edit-2" class="w-4 h-4 text-amber-400"></i> Edit Logged Hours';
+        document.getElementById('formModeTitle').classList.add('text-amber-400');
+        document.getElementById('entryFormBox').classList.add('border-amber-500/50', '!bg-amber-900/10');
+        
+        const saveBtn = document.getElementById('saveEntryBtn');
+        saveBtn.classList.remove('night-btn-link');
+        saveBtn.classList.add('bg-gradient-to-r', 'from-amber-600', 'to-orange-600', 'border-amber-500/50');
         document.getElementById('saveEntryText').textContent = "Update Entry";
         document.getElementById('saveEntryIcon').setAttribute('data-lucide', 'save');
+        document.getElementById('saveEntryIcon').classList.replace('text-purple-400', 'text-white');
+        
         document.getElementById('cancelEditBtn').classList.remove('hidden');
+        document.getElementById('cancelEditBtn').classList.add('flex');
         lucide.createIcons();
         document.getElementById('entryFormBox').scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
@@ -892,12 +1058,19 @@
         document.getElementById('entryDate').valueAsDate = new Date();
         document.getElementById('entryHours').value = "";
         document.getElementById('entryTask').value = "";
-        document.getElementById('formModeTitle').textContent = "Log New Hours";
-        document.getElementById('formModeTitle').classList.remove('text-purple-400');
-        document.getElementById('entryFormBox').classList.remove('border-purple-500/50', 'bg-purple-900/10');
+        document.getElementById('formModeTitle').innerHTML = '<i data-lucide="clock" class="w-4 h-4 text-purple-400"></i> Log New Hours';
+        document.getElementById('formModeTitle').classList.remove('text-amber-400');
+        document.getElementById('entryFormBox').classList.remove('border-amber-500/50', '!bg-amber-900/10');
+        
+        const saveBtn = document.getElementById('saveEntryBtn');
+        saveBtn.classList.add('night-btn-link');
+        saveBtn.classList.remove('bg-gradient-to-r', 'from-amber-600', 'to-orange-600', 'border-amber-500/50');
         document.getElementById('saveEntryText').textContent = "Add to Week";
         document.getElementById('saveEntryIcon').setAttribute('data-lucide', 'plus');
+        document.getElementById('saveEntryIcon').classList.replace('text-white', 'text-purple-400');
+
         document.getElementById('cancelEditBtn').classList.add('hidden');
+        document.getElementById('cancelEditBtn').classList.remove('flex');
         lucide.createIcons();
     }
 
@@ -925,7 +1098,7 @@
         const totalEl = document.getElementById('ts-totalHours');
         
         if(state.currentWeekEntries.length === 0) {
-            list.innerHTML = `<div class="text-zinc-500 text-sm italic py-4 text-center border border-dashed border-zinc-800 rounded-xl">No pending hours logged.</div>`;
+            list.innerHTML = `<div class="text-purple-200/50 text-xs italic py-6 text-center night-glass-card-subtle rounded-2xl border-dashed border-purple-400/20">No pending hours logged.</div>`;
             totalEl.textContent = "0.0";
             checkStudentProgress(0);
             return;
@@ -936,17 +1109,17 @@
             total += entry.hours;
             const dateStr = new Date(entry.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
             return `
-            <div class="flex items-center justify-between bg-zinc-900/80 p-3 rounded-xl border border-zinc-800 gap-3 transition-all hover:border-purple-500/30 group">
-                <div class="flex items-center gap-3 overflow-hidden flex-1">
-                    <div class="bg-zinc-800 text-purple-400 font-bold px-3 py-2 rounded-lg text-center min-w-[3rem] shrink-0">${entry.hours}</div>
+            <div class="flex items-center justify-between night-glass-card-subtle p-3 rounded-2xl border-purple-400/20 gap-3 transition-all hover:border-purple-400/50 group">
+                <div class="flex items-center gap-4 overflow-hidden flex-1 pl-1">
+                    <div class="bg-slate-900/60 text-purple-300 font-bold px-3 py-2 rounded-xl text-center min-w-[3.5rem] shrink-0 border border-purple-500/20 shadow-inner">${entry.hours}</div>
                     <div class="flex flex-col overflow-hidden">
-                        <div class="text-white font-medium text-sm truncate">${escapeHTML(entry.task)}</div>
-                        <div class="text-zinc-500 text-xs">${dateStr}</div>
+                        <div class="text-white font-medium text-sm truncate mb-0.5">${escapeHTML(entry.task)}</div>
+                        <div class="text-purple-300/60 text-[10px] uppercase font-bold tracking-wider">${dateStr}</div>
                     </div>
                 </div>
-                <div class="flex shrink-0 gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button class="text-blue-400 hover:text-blue-300 p-2 bg-zinc-800 rounded-lg transition" onclick="editEntry(${entry.id})" title="Edit"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
-                    <button class="text-rose-500 hover:text-rose-400 p-2 bg-zinc-800 rounded-lg transition" onclick="removeEntry(${entry.id})" title="Remove"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                <div class="flex shrink-0 gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity pr-1">
+                    <button class="text-blue-400 hover:text-white p-2.5 bg-slate-900/50 hover:bg-blue-600/40 rounded-xl transition border border-transparent hover:border-blue-500/30" onclick="editEntry(${entry.id})" title="Edit"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                    <button class="text-rose-400 hover:text-white p-2.5 bg-slate-900/50 hover:bg-rose-600/40 rounded-xl transition border border-transparent hover:border-rose-500/30" onclick="removeEntry(${entry.id})" title="Remove"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                 </div>
             </div>`;
         }).join('');
@@ -961,23 +1134,23 @@
         const reqHours = userPosition ? userPosition.minHours : 0;
         
         const totalEl = document.getElementById('ts-totalHours');
-        totalEl.classList.remove('text-transparent', 'bg-clip-text', 'bg-gradient-to-r', 'from-blue-400', 'to-purple-500', 'text-emerald-400', 'text-amber-400');
+        totalEl.classList.remove('text-emerald-400', 'text-amber-400', 'text-white', 'drop-shadow-md');
         
         if (reqHours > 0) {
             if (totalHours >= reqHours) {
-                totalEl.classList.add('text-emerald-400');
+                totalEl.classList.add('text-emerald-400', 'drop-shadow-[0_0_15px_rgba(52,211,153,0.3)]');
             } else if (totalHours > 0) {
-                totalEl.classList.add('text-amber-400');
+                totalEl.classList.add('text-amber-400', 'drop-shadow-[0_0_15px_rgba(251,191,36,0.3)]');
             } else {
-                totalEl.classList.add('text-transparent', 'bg-clip-text', 'bg-gradient-to-r', 'from-blue-400', 'to-purple-500');
+                totalEl.classList.add('text-white', 'drop-shadow-md');
             }
         } else {
-            totalEl.classList.add('text-transparent', 'bg-clip-text', 'bg-gradient-to-r', 'from-blue-400', 'to-purple-500');
+            totalEl.classList.add('text-white', 'drop-shadow-md');
         }
     }
 
     function showHistory() {
-        document.getElementById('history-team').textContent = state.currentUser.team;
+        document.getElementById('history-team').textContent = `${state.currentUser.position || 'Student'} • ${state.currentUser.team}`;
 
         const subs = state.studentSubmissions || [];
         // Group all logs by week
@@ -999,7 +1172,7 @@
         const list = document.getElementById('history-list');
 
         if (Object.keys(grouped).length === 0) {
-            list.innerHTML = `<div class="text-zinc-500 text-sm italic py-6 text-center">No submissions yet.</div>`;
+            list.innerHTML = `<div class="text-purple-200/50 text-xs italic py-8 text-center night-glass-card-subtle rounded-2xl border-dashed border-purple-400/20">No submissions found.</div>`;
             switchView('history');
             lucide.createIcons();
             return;
@@ -1014,24 +1187,24 @@
             const logsHtml = sortedLogs.map(log => {
                 const dateStr = new Date(log.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
                 return `
-                    <div class="flex items-center gap-3 bg-zinc-900/60 p-2.5 rounded-lg border border-zinc-800">
-                        <div class="bg-zinc-800 text-purple-400 font-bold px-2 py-1 rounded text-xs min-w-[2.5rem] text-center shrink-0">${log.hours}</div>
+                    <div class="flex items-center gap-3 bg-slate-900/40 p-3 rounded-xl border border-purple-500/10">
+                        <div class="bg-slate-900/80 text-purple-300 font-bold px-2 py-1.5 rounded-lg text-xs min-w-[2.5rem] text-center shrink-0 border border-purple-400/20 shadow-inner">${log.hours}</div>
                         <div class="flex flex-col overflow-hidden">
-                            <div class="text-zinc-300 font-medium text-xs truncate">${escapeHTML(log.task)}</div>
-                            <div class="text-zinc-500 text-[10px]">${dateStr}</div>
+                            <div class="text-white font-medium text-xs truncate mb-0.5">${escapeHTML(log.task)}</div>
+                            <div class="text-purple-300/50 text-[10px] uppercase font-bold tracking-wider">${dateStr}</div>
                         </div>
                     </div>`;
             }).join('');
             return `
-                <div class="bg-zinc-900/20 rounded-xl border border-zinc-800/50 overflow-hidden">
-                    <div class="flex justify-between items-center p-3 border-b border-zinc-800/50">
+                <div class="night-glass-card-subtle rounded-2xl border-purple-400/30 overflow-hidden mb-4 shadow-sm">
+                    <div class="flex justify-between items-center p-4 border-b border-purple-500/20 bg-slate-900/30">
                         <span class="text-sm font-bold text-white flex items-center gap-2">
-                            <i data-lucide="calendar" class="w-4 h-4 text-zinc-500 shrink-0"></i>
+                            <i data-lucide="calendar" class="w-4 h-4 text-purple-400 shrink-0"></i>
                             ${weekTitle}
                         </span>
-                        <span class="text-xs font-bold px-2 py-1 bg-purple-900/30 text-purple-400 rounded-md border border-purple-500/20 shrink-0">${weekData.hours.toFixed(1)} hrs</span>
+                        <span class="text-xs font-bold px-2.5 py-1 bg-purple-500/20 text-purple-300 rounded-lg border border-purple-400/30 shrink-0 shadow-inner">${weekData.hours.toFixed(1)} hrs</span>
                     </div>
-                    <div class="p-3 flex flex-col gap-2">${logsHtml}</div>
+                    <div class="p-4 flex flex-col gap-2">${logsHtml}</div>
                 </div>`;
         }).join('');
 
@@ -1044,14 +1217,21 @@
     }
 
     function showGate() { 
-        document.getElementById('gateModal').style.display = 'flex'; 
-        document.getElementById('gateModal').classList.remove('hidden');
+        const modal = document.getElementById('gateModal');
+        modal.style.display = 'flex'; 
+        modal.classList.remove('hidden');
+        gsap.fromTo("#gateBackdrop", { opacity: 0 }, { opacity: 1, duration: 0.3 });
+        gsap.fromTo("#gateCard", { scale: 0.8, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.35, ease: "back.out(1.5)" });
     }
     
     function hideGate() { 
-        document.getElementById('gateModal').style.display = 'none'; 
-        document.getElementById('gateModal').classList.add('hidden');
-        document.getElementById('adminPass').value = ""; 
+        gsap.to("#gateModal", {opacity: 0, duration: 0.2, onComplete: () => {
+            const modal = document.getElementById('gateModal');
+            modal.style.display = 'none'; 
+            modal.classList.add('hidden');
+            modal.style.opacity = '1';
+            document.getElementById('adminPass').value = ""; 
+        }});
     }
 
     async function verifyAdmin() {
@@ -1060,7 +1240,7 @@
 
         const btn = document.getElementById('gateBtn');
         const loader = document.getElementById('gateLoader');
-        btn.disabled = true; loader.style.display = 'block';
+        btn.disabled = true; loader.style.display = 'inline-block';
 
         try {
             const pwRows = await sb.select('settings', 'key=eq.AdminPassword');
@@ -1142,50 +1322,50 @@
                     const reqHours = pos ? pos.minHours : 0;
                     const hasEverSubmitted = state.submissions.some(s => s.studentId === student.id);
                     
-                    let statusClass = "text-zinc-500 bg-zinc-800/40 border-zinc-700/50"; // default
+                    let statusClass = "text-purple-200/50 bg-slate-900/50 border-purple-400/20"; // default
                     
                     if (reqHours > 0) {
                         if (weekHours >= reqHours) {
-                            statusClass = "text-emerald-400 bg-emerald-900/20 border border-emerald-500/20";
+                            statusClass = "text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 shadow-inner";
                         } else if (weekHours > 0) {
-                            statusClass = "text-amber-400 bg-amber-900/20 border border-amber-500/20";
+                            statusClass = "text-amber-400 bg-amber-500/10 border border-amber-500/20 shadow-inner";
                         } else if (hasEverSubmitted) {
-                            statusClass = "text-rose-400 bg-rose-900/20 border border-rose-500/20";
+                            statusClass = "text-rose-400 bg-rose-500/10 border border-rose-500/20 shadow-inner";
                         }
                     } else {
                         // Fallback if no required hours defined
-                        if (weekHours > 0) statusClass = "text-purple-400 bg-purple-900/20 border border-purple-500/20";
-                        else if (hasEverSubmitted) statusClass = "text-rose-400 bg-rose-900/20 border border-rose-500/20";
+                        if (weekHours > 0) statusClass = "text-blue-400 bg-blue-500/10 border border-blue-500/20 shadow-inner";
+                        else if (hasEverSubmitted) statusClass = "text-rose-400 bg-rose-500/10 border border-rose-500/20 shadow-inner";
                     }
 
                     return `
-                        <div class="flex justify-between items-center py-2 border-b border-zinc-800/50 last:border-0 cursor-pointer hover:bg-zinc-800/50 rounded-lg px-2 -mx-2 transition gap-2" onclick="viewStudentDetails('${student.id}')">
+                        <div class="flex justify-between items-center py-2.5 border-b border-purple-500/10 last:border-0 cursor-pointer hover:bg-slate-900/40 rounded-xl px-3 -mx-3 transition gap-3 group" onclick="viewStudentDetails('${student.id}')">
                             <div class="flex flex-col flex-1 min-w-0">
-                                <span class="text-sm font-medium truncate ${weekHours === 0 ? 'text-zinc-400' : 'text-zinc-200'}">${escapeHTML(student.name)}</span>
-                                <span class="text-[10px] text-zinc-500 truncate">${escapeHTML(student.position || 'Student')} &bull; ID: ${escapeHTML(student.id)}</span>
+                                <span class="text-sm font-semibold truncate group-hover:text-white transition-colors ${weekHours === 0 ? 'text-purple-200/60' : 'text-purple-100'}">${escapeHTML(student.name)}</span>
+                                <span class="text-[10px] text-purple-300/50 uppercase font-bold tracking-wider truncate mt-0.5">${escapeHTML(student.position || 'Student')} &bull; ID: ${escapeHTML(student.id)}</span>
                             </div>
-                            <span class="text-sm font-bold px-2 py-1 rounded-md shrink-0 ${statusClass}" title="${reqHours} required">${weekHours.toFixed(1)} hrs</span>
+                            <span class="text-xs font-bold px-2.5 py-1 rounded-lg shrink-0 ${statusClass}" title="${reqHours} required">${weekHours.toFixed(1)} hrs</span>
                         </div>
                     `;
                 }).join('');
             } else {
-                studentListHTML = `<div class="text-xs text-zinc-500 italic py-2">No students on roster for this team.</div>`;
+                studentListHTML = `<div class="text-[11px] text-purple-300/40 uppercase font-bold tracking-widest py-3 text-center">No students on roster</div>`;
             }
 
             const card = document.createElement('div');
-            card.className = "glass-card rounded-2xl border-white/5 flex flex-col transition hover:-translate-y-1 hover:border-purple-500/30 overflow-hidden";
+            card.className = "night-glass-card-subtle rounded-3xl border-purple-400/30 flex flex-col transition-all duration-300 hover:-translate-y-1 hover:border-purple-400/60 hover:shadow-[0_10px_30px_rgba(124,58,237,0.2)] overflow-hidden";
             card.innerHTML = `
-                <div class="p-4 sm:p-5 border-b border-zinc-800 bg-zinc-900/50 flex justify-between items-center gap-3">
+                <div class="p-5 border-b border-purple-500/20 bg-slate-900/30 flex justify-between items-center gap-3">
                     <div class="flex items-center gap-3 flex-1 min-w-0">
-                        <div class="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center border border-zinc-700 text-purple-400 shrink-0"><i data-lucide="users" class="w-4 h-4"></i></div>
-                        <span class="font-bold text-white break-words leading-tight">${escapeHTML(teamName)}</span>
+                        <div class="w-10 h-10 rounded-2xl bg-purple-500/20 flex items-center justify-center border border-purple-400/30 text-purple-300 shrink-0 shadow-inner"><i data-lucide="users" class="w-4 h-4"></i></div>
+                        <span class="font-extrabold text-white break-words leading-tight tracking-wide">${escapeHTML(teamName)}</span>
                     </div>
                     <div class="text-right shrink-0">
-                        <div class="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Week Total</div>
-                        <div class="text-xl font-black text-white leading-tight">${teamTotal.toFixed(1)}</div>
+                        <div class="text-[9px] text-purple-300 uppercase font-bold tracking-widest mb-0.5">Week Total</div>
+                        <div class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400 leading-none drop-shadow-sm">${teamTotal.toFixed(1)}</div>
                     </div>
                 </div>
-                <div class="p-4 flex-1 flex flex-col gap-1 max-h-[250px] overflow-y-auto">${studentListHTML}</div>
+                <div class="p-4 flex-1 flex flex-col gap-1 max-h-[280px] overflow-y-auto custom-scroll">${studentListHTML}</div>
             `;
             grid.appendChild(card);
         });
@@ -1193,9 +1373,9 @@
         // Update Week Status Indicator based on threshold
         const indicator = document.getElementById('weekStatusIndicator');
         if (totalActiveStudentsThisWeek >= state.submissionThreshold) {
-            indicator.innerHTML = `<span class="bg-emerald-900/30 text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 rounded-md text-[10px] uppercase font-bold tracking-wider flex items-center gap-1"><i data-lucide="check-circle" class="w-3 h-3"></i> Active Week (${totalActiveStudentsThisWeek}/${state.submissionThreshold})</span>`;
+            indicator.innerHTML = `<span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-lg text-[10px] uppercase font-bold tracking-widest flex items-center gap-1.5 shadow-inner"><i data-lucide="activity" class="w-3.5 h-3.5"></i> Active Week (${totalActiveStudentsThisWeek}/${state.submissionThreshold})</span>`;
         } else {
-            indicator.innerHTML = `<span class="bg-amber-900/30 text-amber-400 border border-amber-500/30 px-2.5 py-0.5 rounded-md text-[10px] uppercase font-bold tracking-wider flex items-center gap-1" title="Fewer than ${state.submissionThreshold} students submitted hours. System treats this as a break and pauses automated emails."><i data-lucide="pause-circle" class="w-3 h-3"></i> Break Week (${totalActiveStudentsThisWeek}/${state.submissionThreshold})</span>`;
+            indicator.innerHTML = `<span class="bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2.5 py-1 rounded-lg text-[10px] uppercase font-bold tracking-widest flex items-center gap-1.5 shadow-inner" title="Fewer than ${state.submissionThreshold} students submitted hours. System treats this as a break and pauses automated emails."><i data-lucide="moon" class="w-3.5 h-3.5"></i> Break Week (${totalActiveStudentsThisWeek}/${state.submissionThreshold})</span>`;
         }
 
         lucide.createIcons();
@@ -1203,8 +1383,10 @@
 
     function viewStudentDetails(studentId) {
         state.viewingStudentId = studentId;
-        document.getElementById('studentDetailModal').style.display = 'flex';
-        document.getElementById('studentDetailModal').classList.remove('hidden');
+        const modal = document.getElementById('studentDetailModal');
+        modal.style.display = 'flex';
+        modal.classList.remove('hidden');
+        gsap.fromTo(modal.querySelector('.night-glass-card'), { scale: 0.9, opacity: 0, y: 20 }, { scale: 1, opacity: 1, y: 0, duration: 0.4, ease: "back.out(1.2)" });
         renderStudentDetails();
     }
 
@@ -1255,10 +1437,10 @@
             const weekData = grouped[weekId];
 
             let statusBadge = '';
-            if (i === 0) statusBadge = '<span class="text-[9px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded uppercase tracking-wider ml-2">Current</span>';
-            else if (i === 1) statusBadge = '<span class="text-[9px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded uppercase tracking-wider ml-2">Prev</span>';
+            if (i === 0) statusBadge = '<span class="text-[9px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-500/30 uppercase font-bold tracking-widest ml-2">Current</span>';
+            else if (i === 1) statusBadge = '<span class="text-[9px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded border border-blue-500/30 uppercase font-bold tracking-widest ml-2">Prev</span>';
 
-            const addBtn = `<button onclick="adminStartAdd('${sid}','${weekId}')" class="w-full mt-2 text-[11px] text-zinc-500 hover:text-purple-400 py-1.5 border border-dashed border-zinc-700 hover:border-purple-500/40 rounded-lg transition flex items-center justify-center gap-1"><i data-lucide="plus" class="w-3 h-3"></i> Add Entry</button>`;
+            const addBtn = `<button onclick="adminStartAdd('${sid}','${weekId}')" class="w-full mt-3 text-[10px] font-bold tracking-widest uppercase text-purple-300/60 hover:text-purple-300 py-2 bg-slate-900/40 hover:bg-slate-800 border border-dashed border-purple-500/30 hover:border-purple-400/60 rounded-xl transition flex items-center justify-center gap-1.5"><i data-lucide="plus" class="w-3 h-3"></i> Add Entry</button>`;
 
             if (weekData && weekData.logs.length > 0) {
                 const sortedLogs = [...weekData.logs].sort((a,b) => new Date(b.date) - new Date(a.date));
@@ -1266,46 +1448,49 @@
                     const logKey = log.id ? log.id.toString() : `${log.date}_${log.hours}_${log.task}`;
                     const dateStr = new Date(log.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
                     return `
-                        <div class="bg-zinc-900/50 p-2.5 rounded-lg border border-zinc-800 flex items-center gap-2 ml-2 mb-2 hover:bg-zinc-800/50 transition group">
-                            <div class="bg-zinc-800 text-purple-400 font-bold px-2 py-1 rounded text-xs min-w-[2.5rem] text-center shrink-0">${log.hours}</div>
+                        <div class="bg-slate-900/60 p-2.5 rounded-xl border border-purple-500/20 flex items-center gap-3 ml-2 mb-2 hover:bg-slate-800/80 transition group shadow-inner">
+                            <div class="bg-slate-900/80 text-purple-300 font-bold px-2.5 py-1.5 rounded-lg text-xs min-w-[2.5rem] text-center shrink-0 border border-purple-500/20">${log.hours}</div>
                             <div class="flex flex-col overflow-hidden flex-1">
-                                <div class="text-zinc-300 font-medium text-xs truncate">${escapeHTML(log.task)}</div>
-                                <div class="text-zinc-500 text-[10px]">${dateStr}</div>
+                                <div class="text-white font-medium text-xs truncate mb-0.5">${escapeHTML(log.task)}</div>
+                                <div class="text-purple-300/50 text-[9px] uppercase font-bold tracking-widest">${dateStr}</div>
                             </div>
                             <div class="flex gap-1 shrink-0 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onclick="adminStartEdit('${sid}','${weekId}','${logKey}')" class="text-zinc-400 hover:text-blue-400 p-1.5 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition" title="Edit"><i data-lucide="edit-2" class="w-3 h-3"></i></button>
-                                <button onclick="adminDeleteLog('${sid}','${weekId}','${logKey}')" class="text-zinc-400 hover:text-rose-400 p-1.5 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition" title="Delete"><i data-lucide="trash-2" class="w-3 h-3"></i></button>
+                                <button onclick="adminStartEdit('${sid}','${weekId}','${logKey}')" class="text-blue-400 hover:text-white p-2 bg-slate-900/80 hover:bg-blue-600/40 rounded-lg transition border border-transparent hover:border-blue-500/30" title="Edit"><i data-lucide="edit-2" class="w-3.5 h-3.5"></i></button>
+                                <button onclick="adminDeleteLog('${sid}','${weekId}','${logKey}')" class="text-rose-400 hover:text-white p-2 bg-slate-900/80 hover:bg-rose-600/40 rounded-lg transition border border-transparent hover:border-rose-500/30" title="Delete"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
                             </div>
                         </div>`;
                 }).join('');
                 weeksHtml += `
-                    <div class="mb-4 bg-zinc-900/20 p-3 rounded-xl border border-zinc-800/50">
-                        <div class="flex justify-between items-center mb-3">
-                            <span class="text-sm font-bold text-white flex items-center flex-wrap gap-y-1"><i data-lucide="calendar" class="w-4 h-4 text-zinc-500 mr-2 shrink-0"></i> ${weekTitle} ${statusBadge}</span>
-                            <span class="text-xs font-bold px-2 py-1 bg-purple-900/30 text-purple-400 rounded-md border border-purple-500/20 shrink-0">${weekData.hours.toFixed(1)} hrs</span>
+                    <div class="mb-4 night-glass-card-subtle p-4 rounded-2xl border-purple-400/30">
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="text-sm font-bold text-white flex items-center flex-wrap gap-y-1"><i data-lucide="calendar" class="w-4 h-4 text-purple-400 mr-2 shrink-0"></i> ${weekTitle} ${statusBadge}</span>
+                            <span class="text-xs font-bold px-2.5 py-1 bg-purple-500/20 text-purple-300 rounded-lg border border-purple-400/30 shrink-0 shadow-inner">${weekData.hours.toFixed(1)} hrs</span>
                         </div>
-                        <div class="border-l-2 border-zinc-800/50 pl-2">${logsHtml}</div>
+                        <div class="border-l-2 border-purple-500/20 pl-3">${logsHtml}</div>
                         ${addBtn}
                     </div>`;
             } else {
                 weeksHtml += `
-                    <div class="mb-4 bg-zinc-900/20 p-3 rounded-xl border border-zinc-800/50 opacity-70">
+                    <div class="mb-4 bg-slate-900/40 p-4 rounded-2xl border border-purple-500/10">
                         <div class="flex justify-between items-center mb-2">
-                            <span class="text-sm font-bold text-zinc-400 flex items-center flex-wrap gap-y-1"><i data-lucide="calendar" class="w-4 h-4 text-zinc-600 mr-2 shrink-0"></i> ${weekTitle} ${statusBadge}</span>
-                            <span class="text-xs font-bold px-2 py-1 bg-rose-900/10 text-rose-400/80 rounded-md border border-rose-500/20 shrink-0">0.0 hrs</span>
+                            <span class="text-sm font-bold text-purple-200/50 flex items-center flex-wrap gap-y-1"><i data-lucide="calendar" class="w-4 h-4 text-purple-400/30 mr-2 shrink-0"></i> ${weekTitle} ${statusBadge}</span>
+                            <span class="text-[10px] font-bold px-2 py-1 bg-slate-900/60 text-purple-300/40 rounded-md border border-purple-500/10 shrink-0 uppercase tracking-widest">0.0 hrs</span>
                         </div>
                         ${addBtn}
                     </div>`;
             }
         }
-        logsContainer.innerHTML = weeksHtml || `<div class="text-zinc-500 text-sm italic py-6 text-center">No submissions recorded yet.</div>`;
+        logsContainer.innerHTML = weeksHtml || `<div class="text-purple-200/50 text-xs font-bold tracking-widest uppercase py-8 text-center night-glass-card-subtle rounded-2xl border-dashed border-purple-400/20">No submissions recorded yet.</div>`;
         lucide.createIcons();
     }
 
     function closeStudentDetails() {
-        document.getElementById('studentDetailModal').style.display = 'none';
-        document.getElementById('studentDetailModal').classList.add('hidden');
-        state.viewingStudentId = null;
+        const modal = document.getElementById('studentDetailModal');
+        gsap.to(modal.querySelector('.night-glass-card'), { scale: 0.9, opacity: 0, y: 20, duration: 0.3, onComplete: () => {
+            modal.style.display = 'none';
+            modal.classList.add('hidden');
+            state.viewingStudentId = null;
+        }});
     }
 
     let confirmActionCallback = null;
@@ -1314,14 +1499,19 @@
         document.getElementById('confirmModalMsg').innerHTML = msg;
         document.getElementById('confirmModalActionBtn').textContent = btnText;
         confirmActionCallback = callback;
-        document.getElementById('confirmModal').style.display = 'flex';
-        document.getElementById('confirmModal').classList.remove('hidden');
+        const modal = document.getElementById('confirmModal');
+        modal.style.display = 'flex';
+        modal.classList.remove('hidden');
+        gsap.fromTo(modal.querySelector('.night-glass-card'), { scale: 0.8, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.35, ease: "back.out(1.5)" });
     }
     
     function closeConfirmModal() {
-        document.getElementById('confirmModal').style.display = 'none';
-        document.getElementById('confirmModal').classList.add('hidden');
-        confirmActionCallback = null;
+        const modal = document.getElementById('confirmModal');
+        gsap.to(modal.querySelector('.night-glass-card'), { scale: 0.8, opacity: 0, duration: 0.2, onComplete: () => {
+            modal.style.display = 'none';
+            modal.classList.add('hidden');
+            confirmActionCallback = null;
+        }});
     }
     
     document.getElementById('confirmModalActionBtn').addEventListener('click', () => {
@@ -1336,7 +1526,7 @@
         openConfirmModal(
             "Delete Student?", 
             "Are you sure you want to PERMANENTLY DELETE this student from the roster AND erase all their submitted hours?<br><br>This cannot be undone!", 
-            "Delete", 
+            "Delete Permanently", 
             () => adminDeleteStudent(studentId)
         );
     }
@@ -1344,7 +1534,7 @@
     async function adminDeleteStudent(studentId) {
         const btn = document.getElementById('deleteStudentBtn');
         const originalHTML = btn.innerHTML;
-        btn.innerHTML = '<div class="loader !ml-0 !mr-0 !w-4 !h-4" style="display:block;border-color:#fff;border-bottom-color:transparent;"></div>';
+        btn.innerHTML = '<div class="loader !ml-0 !mr-0 !w-4 !h-4" style="display:inline-block;"></div>';
         btn.disabled = true;
 
         try {
@@ -1385,28 +1575,40 @@
         const log = sub.logs.find(l => (l.id ? l.id.toString() : `${l.date}_${l.hours}_${l.task}`) === logKey);
         if (!log) return;
         adminEditingCtx = { studentId, weekId, logKey, mode: 'edit' };
-        document.getElementById('adminEditPanelTitle').textContent = 'Edit Entry';
+        document.getElementById('adminEditPanelTitle').innerHTML = '<i data-lucide="edit-2" class="w-3.5 h-3.5 inline mr-1"></i> Edit Entry';
         document.getElementById('adminEditDate').value = log.date;
         document.getElementById('adminEditHours').value = log.hours;
         document.getElementById('adminEditTask').value = log.task;
-        document.getElementById('adminLogEditPanel').classList.remove('hidden');
+        
+        const panel = document.getElementById('adminLogEditPanel');
+        panel.classList.remove('hidden');
+        gsap.fromTo(panel, { height: 0, opacity: 0, marginBottom: 0 }, { height: "auto", opacity: 1, marginBottom: 20, duration: 0.3 });
+        
         document.getElementById('adminEditDate').focus();
+        lucide.createIcons();
     }
 
     function adminStartAdd(studentId, weekId) {
         adminEditingCtx = { studentId, weekId, logKey: null, mode: 'add' };
-        document.getElementById('adminEditPanelTitle').textContent = 'Add Entry';
+        document.getElementById('adminEditPanelTitle').innerHTML = '<i data-lucide="plus-circle" class="w-3.5 h-3.5 inline mr-1"></i> Add Entry';
         document.getElementById('adminEditDate').value = weekId;
         document.getElementById('adminEditHours').value = '';
         document.getElementById('adminEditTask').value = '';
-        document.getElementById('adminLogEditPanel').classList.remove('hidden');
+        
+        const panel = document.getElementById('adminLogEditPanel');
+        panel.classList.remove('hidden');
+        gsap.fromTo(panel, { height: 0, opacity: 0, marginBottom: 0 }, { height: "auto", opacity: 1, marginBottom: 20, duration: 0.3 });
+        
         document.getElementById('adminEditHours').focus();
+        lucide.createIcons();
     }
 
     function adminCancelEdit() {
         adminEditingCtx = null;
         const panel = document.getElementById('adminLogEditPanel');
-        if (panel) panel.classList.add('hidden');
+        if (panel && !panel.classList.contains('hidden')) {
+            gsap.to(panel, { height: 0, opacity: 0, marginBottom: 0, duration: 0.2, onComplete: () => panel.classList.add('hidden') });
+        }
     }
 
     async function adminConfirmEdit() {
@@ -1486,6 +1688,7 @@
     function runEmailSimulation() {
         const resEl = document.getElementById('simResults');
         resEl.classList.remove('hidden', 'bg-emerald-900/20', 'border-emerald-500/30', 'text-emerald-400', 'bg-amber-900/20', 'border-amber-500/30', 'text-amber-400', 'bg-rose-900/20', 'border-rose-500/30', 'text-rose-400');
+        resEl.classList.add('bg-slate-900/50', 'text-purple-300', 'border-purple-500/30');
         resEl.textContent = "Running simulation...";
         
         // Artificial delay for UX
@@ -1527,59 +1730,62 @@
                 }
             });
 
+            resEl.classList.remove('bg-slate-900/50', 'text-purple-300', 'border-purple-500/30');
+
             if (activeCount < threshold) {
                 resEl.classList.add('bg-amber-900/20', 'border-amber-500/30', 'text-amber-400');
-                resEl.innerHTML = `<strong>BREAK WEEK MODE (Threshold Not Met)</strong><br/><br/>Active Students: ${activeCount} / ${threshold} required to trigger.<br/>Action: 0 emails would be sent.`;
+                resEl.innerHTML = `<strong class="text-amber-300 flex items-center gap-1.5 mb-2"><i data-lucide="moon" class="w-4 h-4"></i> BREAK WEEK MODE (Threshold Not Met)</strong>Active Students: ${activeCount} / ${threshold} required to trigger.<br/>Action: 0 emails would be sent.`;
             } else {
                 if (studentsToEmail.length === 0) {
                     resEl.classList.add('bg-emerald-900/20', 'border-emerald-500/30', 'text-emerald-400');
-                    resEl.innerHTML = `<strong>ACTIVE WEEK</strong><br/><br/>Active Students: ${activeCount} / ${threshold}<br/>Action: Everyone met their required hours! 0 emails would be sent.`;
+                    resEl.innerHTML = `<strong class="text-emerald-300 flex items-center gap-1.5 mb-2"><i data-lucide="activity" class="w-4 h-4"></i> ACTIVE WEEK</strong>Active Students: ${activeCount} / ${threshold}<br/>Action: Everyone met their required hours! 0 emails would be sent.`;
                 } else {
                     resEl.classList.add('bg-rose-900/20', 'border-rose-500/30', 'text-rose-400');
-                    let msg = `<strong>ACTIVE WEEK</strong><br/><br/>Active Students: ${activeCount} / ${threshold}<br/>Action: Emails WOULD be sent to ${studentsToEmail.length} students:<br/><br/>`;
+                    let msg = `<strong class="text-rose-300 flex items-center gap-1.5 mb-2"><i data-lucide="mail-warning" class="w-4 h-4"></i> ACTIVE WEEK</strong>Active Students: ${activeCount} / ${threshold}<br/>Action: Emails WOULD be sent to ${studentsToEmail.length} students:<br/><br/>`;
                     studentsToEmail.forEach(s => {
-                        msg += `&bull; ${s.name} (${s.team}): ${s.logged.toFixed(1)} / ${s.req} hrs<br/>`;
+                        msg += `&bull; <span class="text-white">${s.name}</span> (${s.team}): ${s.logged.toFixed(1)} / ${s.req} hrs<br/>`;
                     });
-                    msg += `<br/><em>(Team Staff & Directors would be CC'd)</em>`;
+                    msg += `<br/><em class="text-rose-400/60">(Team Staff & Directors would be CC'd)</em>`;
                     resEl.innerHTML = msg;
                 }
             }
-        }, 500); 
+            lucide.createIcons();
+        }, 600); 
     }
 
     function renderSettingsManager() {
         const teamList = document.getElementById('settings-teamList'); document.getElementById('teamCount').textContent = state.teams.length;
         teamList.innerHTML = state.teams.map((t, idx) => `
-            <div class="flex items-center justify-between bg-zinc-900 p-2.5 rounded-xl border border-zinc-800">
-                <span class="text-sm text-zinc-300">${escapeHTML(t)}</span>
-                <button class="text-rose-500 hover:text-rose-400 p-1.5" onclick="removeTeam(${idx})"><i data-lucide="x" class="w-4 h-4"></i></button>
+            <div class="flex items-center justify-between night-glass-card-subtle p-2.5 rounded-xl border-purple-400/20 transition-all hover:border-purple-400/50">
+                <span class="text-sm font-bold text-white px-1">${escapeHTML(t)}</span>
+                <button class="text-rose-400 hover:text-white bg-slate-900/50 hover:bg-rose-600/40 p-2 rounded-lg transition" onclick="removeTeam(${idx})"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
             </div>`).join('');
 
         const posList = document.getElementById('settings-positionList'); document.getElementById('positionCount').textContent = state.positions.length;
         posList.innerHTML = state.positions.map((p, idx) => `
-            <div class="flex items-center justify-between bg-zinc-900 p-2.5 rounded-xl border border-zinc-800">
-                <span class="text-sm text-zinc-300 flex items-center gap-2">${escapeHTML(p.name)} <span class="text-[10px] text-purple-400 bg-purple-900/30 px-2 py-0.5 rounded border border-purple-500/20">${p.minHours} hrs req.</span></span>
-                <button class="text-rose-500 hover:text-rose-400 p-1.5" onclick="removePosition(${idx})"><i data-lucide="x" class="w-4 h-4"></i></button>
+            <div class="flex items-center justify-between night-glass-card-subtle p-2.5 rounded-xl border-purple-400/20 transition-all hover:border-purple-400/50">
+                <span class="text-sm font-bold text-white flex items-center gap-2 px-1">${escapeHTML(p.name)} <span class="text-[10px] text-purple-300 bg-purple-500/20 px-2 py-0.5 rounded border border-purple-400/30 uppercase tracking-widest">${p.minHours} hrs req.</span></span>
+                <button class="text-rose-400 hover:text-white bg-slate-900/50 hover:bg-rose-600/40 p-2 rounded-lg transition" onclick="removePosition(${idx})"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
             </div>`).join('');
             
         const staffList = document.getElementById('settings-staffList'); document.getElementById('staffCount').textContent = state.staff.length;
         staffList.innerHTML = state.staff.map((s, idx) => `
-            <div class="flex flex-col bg-zinc-900 p-2.5 rounded-xl border border-zinc-800 gap-1">
+            <div class="flex flex-col night-glass-card-subtle p-3 rounded-xl border-purple-400/20 gap-1.5 transition-all hover:border-purple-400/50">
                 <div class="flex items-center justify-between">
-                    <span class="text-sm text-zinc-300 font-bold">${escapeHTML(s.name)}</span>
-                    <button class="text-rose-500 hover:text-rose-400 p-1" onclick="removeStaff(${idx})"><i data-lucide="x" class="w-4 h-4"></i></button>
+                    <span class="text-sm text-white font-bold">${escapeHTML(s.name)}</span>
+                    <button class="text-rose-400 hover:text-white bg-slate-900/50 hover:bg-rose-600/40 p-2 rounded-lg transition" onclick="removeStaff(${idx})"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
                 </div>
-                <div class="text-[11px] text-zinc-400">${escapeHTML(s.email)}</div>
-                <div class="text-[10px] text-purple-400 mt-1 uppercase font-bold tracking-wider">${s.teams.join(', ')}</div>
+                <div class="text-[11px] text-purple-200/70 font-medium">${escapeHTML(s.email)}</div>
+                <div class="text-[9px] text-purple-300 mt-1 uppercase font-bold tracking-widest bg-slate-900/50 px-2 py-1 rounded border border-purple-500/20 w-fit">${s.teams.join(', ')}</div>
             </div>`).join('');
 
         const yearList = document.getElementById('settings-yearList'); document.getElementById('yearCount').textContent = state.academicYears.length;
         yearList.innerHTML = state.academicYears.map(y => `
-            <div class="flex items-center justify-between bg-zinc-900 p-2.5 rounded-xl border ${state.activeYear === y ? 'border-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.2)]' : 'border-zinc-800'} transition-all">
-                <div class="flex items-center gap-2"><span class="text-sm ${state.activeYear === y ? 'text-purple-400 font-bold' : 'text-zinc-300'}">${escapeHTML(y)}</span>
-                ${state.activeYear === y ? '<span class="text-[10px] bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded uppercase font-bold tracking-wider">Active</span>' : ''}</div>
-                <div class="flex gap-1">${state.activeYear !== y ? `<button class="text-xs text-zinc-400 hover:text-white bg-zinc-800 hover:bg-zinc-700 px-2 py-1 rounded transition border border-zinc-700" onclick="setActiveYear('${y}')">Set Active</button>` : ''}
-                <button class="text-rose-500 hover:text-rose-400 p-1.5 ml-1" onclick="removeYear('${y}')" title="Remove Year"><i data-lucide="x" class="w-4 h-4"></i></button></div>
+            <div class="flex items-center justify-between p-2.5 rounded-xl transition-all ${state.activeYear === y ? 'night-glass-card border-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.3)]' : 'night-glass-card-subtle border-purple-400/20 hover:border-purple-400/50'}">
+                <div class="flex items-center gap-3 px-1"><span class="text-sm font-bold text-white">${escapeHTML(y)}</span>
+                ${state.activeYear === y ? '<span class="text-[9px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/30 uppercase font-bold tracking-widest">Active</span>' : ''}</div>
+                <div class="flex gap-2">${state.activeYear !== y ? `<button class="text-[10px] text-white font-bold tracking-widest uppercase bg-purple-600/30 hover:bg-purple-500/50 px-2.5 py-1.5 rounded transition border border-purple-400/40" onclick="setActiveYear('${y}')">Set Active</button>` : ''}
+                <button class="text-rose-400 hover:text-white bg-slate-900/50 hover:bg-rose-600/40 p-1.5 rounded-lg transition" onclick="removeYear('${y}')" title="Remove Year"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>
             </div>`).join('');
 
         const teamSelects = ['newStudTeam'];
@@ -1643,22 +1849,21 @@
 
     function renderRoster() {
         const list = document.getElementById('admin-rosterList'); const currentRoster = state.rosters[state.adminViewingYear] || [];
-        if(currentRoster.length === 0) { list.innerHTML = `<div class="text-zinc-500 text-sm italic py-4 text-center">No students found.</div>`; return; }
+        if(currentRoster.length === 0) { list.innerHTML = `<div class="text-purple-200/50 text-[11px] font-bold tracking-widest uppercase italic py-8 text-center night-glass-card-subtle rounded-2xl border-dashed border-purple-400/20 mt-2">No students found for this year.</div>`; return; }
         list.innerHTML = currentRoster.map((s, idx) => `
-            <div class="flex items-center justify-between bg-zinc-900/50 p-3 rounded-xl border border-zinc-800 gap-2 hover:bg-zinc-800/50 transition">
-                <div class="flex flex-col overflow-hidden">
-                    <span class="text-white font-medium text-sm truncate">${escapeHTML(s.name)}</span>
-                    <span class="text-zinc-400 text-[10px] truncate">${escapeHTML(s.email || 'No email')}</span>
-                    <span class="text-zinc-500 text-[11px] flex flex-wrap gap-1 sm:gap-2 uppercase font-bold tracking-wider mt-1">
-                        <span>ID: ${escapeHTML(s.id)}</span><span class="hidden sm:inline">&bull;</span>
-                        <span class="text-purple-400/80 truncate">${escapeHTML(s.position || 'Student')}</span>
-                        <span class="hidden sm:inline">&bull;</span>
-                        <span class="text-purple-400/80 truncate">${escapeHTML(s.team)}</span>
+            <div class="flex items-center justify-between bg-slate-900/40 p-3 rounded-2xl border border-purple-500/20 gap-3 hover:bg-slate-800/50 transition">
+                <div class="flex flex-col overflow-hidden pl-1">
+                    <span class="text-white font-bold text-sm truncate mb-0.5">${escapeHTML(s.name)}</span>
+                    <span class="text-purple-200/60 text-[10px] font-medium truncate mb-1">${escapeHTML(s.email || 'No email provided')}</span>
+                    <span class="text-purple-300 text-[9px] flex flex-wrap gap-2 uppercase font-bold tracking-widest items-center">
+                        <span class="bg-slate-900 px-1.5 py-0.5 rounded border border-purple-500/20">ID: ${escapeHTML(s.id)}</span>
+                        <span class="bg-purple-900/30 px-1.5 py-0.5 rounded border border-purple-500/30 text-purple-200 truncate">${escapeHTML(s.position || 'Student')}</span>
+                        <span class="bg-blue-900/30 px-1.5 py-0.5 rounded border border-blue-500/30 text-blue-200 truncate">${escapeHTML(s.team)}</span>
                     </span>
                 </div>
-                <div class="flex gap-1 shrink-0">
-                    <button class="text-blue-400 hover:text-blue-300 bg-blue-500/10 p-2 rounded-lg transition" onclick="startEditRoster(${idx})"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
-                    <button class="text-rose-500 bg-rose-500/10 hover:bg-rose-500/20 rounded-lg p-2 transition" onclick="removeStudent(${idx})"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                <div class="flex gap-1.5 shrink-0 pr-1">
+                    <button class="text-blue-400 hover:text-white bg-slate-900/80 hover:bg-blue-600/40 p-2.5 rounded-xl transition border border-transparent hover:border-blue-500/30" onclick="startEditRoster(${idx})"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                    <button class="text-rose-400 hover:text-white bg-slate-900/80 hover:bg-rose-600/40 p-2.5 rounded-xl transition border border-transparent hover:border-rose-500/30" onclick="removeStudent(${idx})"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                 </div>
             </div>`).join(''); lucide.createIcons();
     }
@@ -1671,11 +1876,18 @@
         document.getElementById('newStudEmail').value = s.email || '';
         document.getElementById('newStudTeam').value = s.team;
         document.getElementById('newStudPosition').value = s.position || '';
+        
+        document.getElementById('addStudFormTitle').innerHTML = '<span class="text-amber-400">Edit Student</span>';
         document.getElementById('addStudText').textContent = "Update Student";
         document.getElementById('addStudIcon').setAttribute('data-lucide', 'save');
+        const btn = document.getElementById('addStudBtn');
+        btn.classList.remove('night-btn-link');
+        btn.classList.add('bg-gradient-to-r', 'from-amber-600', 'to-orange-600', 'border-amber-500/50');
+        
         document.getElementById('cancelStudEditBtn').classList.remove('hidden');
+        document.getElementById('cancelStudEditBtn').classList.add('flex');
         lucide.createIcons();
-        document.getElementById('newStudID').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        document.getElementById('addStudFormTitle').scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
     function cancelRosterEdit() {
@@ -1685,9 +1897,16 @@
         document.getElementById('newStudEmail').value = "";
         document.getElementById('newStudTeam').value = "";
         document.getElementById('newStudPosition').value = "";
+        
+        document.getElementById('addStudFormTitle').textContent = 'Add New Student';
         document.getElementById('addStudText').textContent = "Add to Roster";
         document.getElementById('addStudIcon').setAttribute('data-lucide', 'user-plus');
+        const btn = document.getElementById('addStudBtn');
+        btn.classList.add('night-btn-link');
+        btn.classList.remove('bg-gradient-to-r', 'from-amber-600', 'to-orange-600', 'border-amber-500/50');
+        
         document.getElementById('cancelStudEditBtn').classList.add('hidden');
+        document.getElementById('cancelStudEditBtn').classList.remove('flex');
         lucide.createIcons();
     }
 
@@ -1725,7 +1944,7 @@
 
     async function saveAdminChanges() {
         const btn = document.getElementById('saveChangesBtn'); const loader = document.getElementById('saveLoader');
-        btn.disabled = true; loader.style.display = 'block';
+        btn.disabled = true; loader.style.display = 'inline-block';
 
         const newPass = document.getElementById('setNewPass').value.trim();
         const thresholdVal = document.getElementById('setSubmitThreshold').value;
@@ -1810,8 +2029,13 @@
             t.classList.remove('!border-rose-500/50');
             t.classList.add('!border-purple-500/50');
         }
+        
         t.style.display = 'block'; 
-        setTimeout(() => t.style.display = 'none', 3500); 
+        gsap.fromTo(t, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.3 });
+        
+        setTimeout(() => {
+            gsap.to(t, { opacity: 0, y: 20, duration: 0.3, onComplete: () => t.style.display = 'none' });
+        }, 3500); 
     }
 
     function fireConfetti() {
@@ -1823,8 +2047,8 @@
             const timeLeft = animationEnd - Date.now();
             if (timeLeft <= 0) return clearInterval(interval);
             const particleCount = 50 * (timeLeft / duration);
-            confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }, colors: ['#0A84FF', '#BF5AF2', '#34d399'] }));
-            confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }, colors: ['#0A84FF', '#BF5AF2', '#34d399'] }));
+            confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }, colors: ['#a855f7', '#6366f1', '#2563eb'] }));
+            confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }, colors: ['#a855f7', '#6366f1', '#2563eb'] }));
         }, 250);
     }
 
