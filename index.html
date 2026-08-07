@@ -761,7 +761,8 @@
         adminViewingYear: '',
         submissionThreshold: 7,
         rosters: {},
-        submissions: []
+        submissions: [],
+        drafts: []
     };
 
     function applyConfig(result) {
@@ -1247,9 +1248,10 @@
             if (!pwRows.length || pwRows[0].value !== pass) { showToast('Incorrect Password', true); return; }
 
             state.adminPassword = pass;
-            const [subRows, rosterRows] = await Promise.all([
+            const [subRows, rosterRows, draftRows] = await Promise.all([
                 sb.select('submissions'),
-                sb.select('roster')
+                sb.select('roster'),
+                sb.select('drafts')
             ]);
 
             state.submissions = subRows.map(s => ({
@@ -1262,6 +1264,12 @@
                 totalHours:     s.total_hours,
                 hours:          s.total_hours,
                 logs:           JSON.parse(s.logs_json || '[]')
+            }));
+            state.drafts = draftRows.map(d => ({
+                studentId:      d.student_id,
+                weekIdentifier: d.week_identifier,
+                logs:           JSON.parse(d.logs_json || '[]'),
+                lastUpdated:    d.last_updated
             }));
             const rosters = {};
             rosterRows.forEach(r => {
@@ -1313,10 +1321,17 @@
                         });
                         weekHours += weekLogs.reduce((sum, l) => sum + l.hours, 0);
                     });
-                    
+
+                    // Draft hours the student has logged but not yet submitted (current week only)
+                    let pendingHours = 0;
+                    if (weekFilterVal === 'current') {
+                        const draft = (state.drafts || []).find(d => d.studentId === student.id && d.weekIdentifier === CURRENT_WEEK_ID_AZ);
+                        if (draft) pendingHours = draft.logs.reduce((sum, l) => sum + Number(l.hours), 0);
+                    }
+
                     teamTotal += weekHours;
                     if (weekHours > 0) totalActiveStudentsThisWeek++;
-                    
+
                     // Determine Requirement Check
                     const pos = state.positions.find(p => p.name === student.position);
                     const reqHours = pos ? pos.minHours : 0;
@@ -1344,7 +1359,10 @@
                                 <span class="text-sm font-semibold truncate group-hover:text-white transition-colors ${weekHours === 0 ? 'text-purple-200/60' : 'text-purple-100'}">${escapeHTML(student.name)}</span>
                                 <span class="text-[10px] text-purple-300/50 uppercase font-bold tracking-wider truncate mt-0.5">${escapeHTML(student.position || 'Student')} &bull; ID: ${escapeHTML(student.id)}</span>
                             </div>
-                            <span class="text-xs font-bold px-2.5 py-1 rounded-lg shrink-0 ${statusClass}" title="${reqHours} required">${weekHours.toFixed(1)} hrs</span>
+                            <div class="flex flex-col items-end gap-1 shrink-0">
+                                <span class="text-xs font-bold px-2.5 py-1 rounded-lg shrink-0 ${statusClass}" title="${reqHours} required">${weekHours.toFixed(1)} hrs</span>
+                                ${pendingHours > 0 ? `<span class="text-[9px] font-bold px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20 uppercase tracking-widest" title="Logged but not yet submitted">+${pendingHours.toFixed(1)} pending</span>` : ''}
+                            </div>
                         </div>
                     `;
                 }).join('');
@@ -1427,6 +1445,35 @@
         const sid = rosterStudent.id;
         const academicYear = document.getElementById('adminYearFilter').value;
 
+        // Pending (drafted but not yet submitted) hours for the current week
+        const draftEntry = (state.drafts || []).find(d => d.studentId === sid && d.weekIdentifier === CURRENT_WEEK_ID_AZ);
+        const pendingLogs = draftEntry ? draftEntry.logs : [];
+        const pendingHours = pendingLogs.reduce((sum, l) => sum + Number(l.hours), 0);
+
+        let pendingHtml = '';
+        if (pendingHours > 0) {
+            const sortedPending = [...pendingLogs].sort((a, b) => new Date(b.date) - new Date(a.date));
+            const pendingLogsHtml = sortedPending.map(log => {
+                const dateStr = new Date(log.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                return `
+                    <div class="bg-slate-900/60 p-2.5 rounded-xl border border-amber-500/20 flex items-center gap-3 ml-2 mb-2 shadow-inner">
+                        <div class="bg-slate-900/80 text-amber-300 font-bold px-2.5 py-1.5 rounded-lg text-xs min-w-[2.5rem] text-center shrink-0 border border-amber-500/20">${log.hours}</div>
+                        <div class="flex flex-col overflow-hidden flex-1">
+                            <div class="text-white font-medium text-xs truncate mb-0.5">${escapeHTML(log.task)}</div>
+                            <div class="text-amber-300/50 text-[9px] uppercase font-bold tracking-widest">${dateStr}</div>
+                        </div>
+                    </div>`;
+            }).join('');
+            pendingHtml = `
+                <div class="mb-4 night-glass-card-subtle p-4 rounded-2xl border-amber-400/40 bg-amber-500/5">
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="text-sm font-bold text-white flex items-center flex-wrap gap-y-1"><i data-lucide="clock" class="w-4 h-4 text-amber-400 mr-2 shrink-0"></i> Pending <span class="text-[9px] bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded border border-amber-500/30 uppercase font-bold tracking-widest ml-2">Not Yet Submitted</span></span>
+                        <span class="text-xs font-bold px-2.5 py-1 bg-amber-500/20 text-amber-300 rounded-lg border border-amber-400/30 shrink-0 shadow-inner">${pendingHours.toFixed(1)} hrs</span>
+                    </div>
+                    <div class="border-l-2 border-amber-500/20 pl-3">${pendingLogsHtml}</div>
+                </div>`;
+        }
+
         let weeksHtml = '';
         for (let i = 0; i < 26; i++) {
             const targetMon = new Date(currentMonday); targetMon.setDate(targetMon.getDate() - (i * 7));
@@ -1480,7 +1527,7 @@
                     </div>`;
             }
         }
-        logsContainer.innerHTML = weeksHtml || `<div class="text-purple-200/50 text-xs font-bold tracking-widest uppercase py-8 text-center night-glass-card-subtle rounded-2xl border-dashed border-purple-400/20">No submissions recorded yet.</div>`;
+        logsContainer.innerHTML = pendingHtml + (weeksHtml || `<div class="text-purple-200/50 text-xs font-bold tracking-widest uppercase py-8 text-center night-glass-card-subtle rounded-2xl border-dashed border-purple-400/20">No submissions recorded yet.</div>`);
         lucide.createIcons();
     }
 
@@ -1550,6 +1597,7 @@
                 state.rosters[year] = state.rosters[year].filter(s => s.id !== studentId);
             }
             state.submissions = state.submissions.filter(s => s.studentId !== studentId);
+            state.drafts = state.drafts.filter(d => d.studentId !== studentId);
 
             showToast('Student completely deleted.');
             
