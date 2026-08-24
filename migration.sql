@@ -16,6 +16,13 @@ create table if not exists roster (
   unique (academic_year, student_id)
 );
 
+-- Email/position are read and written by the admin roster editor
+-- (saveAdminChanges in index.html) and are also what the Gotcha app's
+-- "Sync Roster" reads student_id/name/team from — added here so a fresh
+-- database has them without a manual ALTER TABLE step.
+alter table roster add column if not exists email    text;
+alter table roster add column if not exists position text;
+
 create table if not exists submissions (
   id            bigserial primary key,
   academic_year text    not null,
