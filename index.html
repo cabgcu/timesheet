@@ -629,7 +629,7 @@
             </div>
 
             <!-- Admin inline edit/add panel -->
-            <div id="adminLogEditPanel" class="hidden night-glass-card-subtle border-purple-400/50 rounded-[20px] p-5 mb-5 shadow-lg relative overflow-hidden">
+            <div id="adminLogEditPanel" class="hidden night-glass-card-subtle border-purple-400/50 rounded-[20px] p-5 mb-5 shadow-lg relative">
                 <div class="absolute top-0 left-0 w-1 h-full bg-purple-500"></div>
                 <div class="text-[10px] font-bold text-purple-300 uppercase tracking-widest mb-4 pl-2" id="adminEditPanelTitle">Edit Entry</div>
                 <div class="flex flex-col sm:flex-row gap-3 mb-3">
@@ -1679,7 +1679,11 @@
         
         const panel = document.getElementById('adminLogEditPanel');
         panel.classList.remove('hidden');
-        gsap.fromTo(panel, { height: 0, opacity: 0, marginBottom: 0 }, { height: "auto", opacity: 1, marginBottom: 20, duration: 0.3 });
+        // overflow is only clipped for the duration of the grow animation, then released —
+        // permanently combining overflow:hidden with this panel's backdrop-filter causes
+        // Safari to corrupt/clip the panel's contents even after the animation finishes.
+        panel.style.overflow = 'hidden';
+        gsap.fromTo(panel, { height: 0, opacity: 0, marginBottom: 0 }, { height: "auto", opacity: 1, marginBottom: 20, duration: 0.3, onComplete: () => { panel.style.overflow = ''; } });
         panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
         document.getElementById('adminEditDate').focus();
@@ -1695,7 +1699,8 @@
 
         const panel = document.getElementById('adminLogEditPanel');
         panel.classList.remove('hidden');
-        gsap.fromTo(panel, { height: 0, opacity: 0, marginBottom: 0 }, { height: "auto", opacity: 1, marginBottom: 20, duration: 0.3 });
+        panel.style.overflow = 'hidden';
+        gsap.fromTo(panel, { height: 0, opacity: 0, marginBottom: 0 }, { height: "auto", opacity: 1, marginBottom: 20, duration: 0.3, onComplete: () => { panel.style.overflow = ''; } });
         panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
         document.getElementById('adminEditHours').focus();
@@ -1706,7 +1711,8 @@
         adminEditingCtx = null;
         const panel = document.getElementById('adminLogEditPanel');
         if (panel && !panel.classList.contains('hidden')) {
-            gsap.to(panel, { height: 0, opacity: 0, marginBottom: 0, duration: 0.2, onComplete: () => panel.classList.add('hidden') });
+            panel.style.overflow = 'hidden';
+            gsap.to(panel, { height: 0, opacity: 0, marginBottom: 0, duration: 0.2, onComplete: () => { panel.classList.add('hidden'); panel.style.overflow = ''; } });
         }
     }
 
