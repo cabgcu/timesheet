@@ -876,7 +876,7 @@
             const [rosterRows, subRows, draftRows] = await Promise.all([
                 sb.select('roster',      `student_id=eq.${encodeURIComponent(idInput)}`),
                 sb.select('submissions', `student_id=eq.${encodeURIComponent(idInput)}`),
-                sb.select('drafts',      `student_id=eq.${encodeURIComponent(idInput)}&week_identifier=eq.${CURRENT_WEEK_ID_AZ}`)
+                sb.select('drafts',      `student_id=eq.${encodeURIComponent(idInput)}`)
             ]);
 
             if (!rosterRows.length) { showToast('Student ID not found.', true); return; }
@@ -909,9 +909,33 @@
                 reqHoursEl.style.display = 'none';
             }
 
+            // Any draft for a week other than the current one is stale — it was left behind
+            // by a previous week's deadline passing. Turn it into an official submission
+            // (or drop it if it was already submitted) instead of leaving it orphaned.
+            const currentDraft = draftRows.find(d => d.week_identifier === CURRENT_WEEK_ID_AZ);
+            const staleDrafts = draftRows.filter(d => d.week_identifier !== CURRENT_WEEK_ID_AZ);
+            for (const draft of staleDrafts) {
+                const logs = JSON.parse(draft.logs_json || '[]');
+                if (!state.studentPastSubmissions.includes(draft.week_identifier) && logs.length > 0) {
+                    await autoSubmitWeekDraft(draft.week_identifier, logs);
+                    state.studentPastSubmissions.push(draft.week_identifier);
+                    state.studentSubmissions.push({
+                        academicYear:   state.activeYear,
+                        studentId:      state.currentUser.id,
+                        studentName:    state.currentUser.name,
+                        team:           state.currentUser.team,
+                        weekIdentifier: draft.week_identifier,
+                        totalHours:     logs.reduce((s, l) => s + Number(l.hours), 0),
+                        logs
+                    });
+                } else {
+                    await sb.delete('drafts', `student_id=eq.${encodeURIComponent(idInput)}&week_identifier=eq.${encodeURIComponent(draft.week_identifier)}`).catch(() => {});
+                }
+            }
+
             // Use server draft as source of truth if available
-            if (draftRows.length > 0) {
-                const draftLogs = JSON.parse(draftRows[0].logs_json || '[]');
+            if (currentDraft) {
+                const draftLogs = JSON.parse(currentDraft.logs_json || '[]');
                 if (draftLogs.length > 0) localStorage.setItem(`ts_pending_${state.currentUser.id}`, JSON.stringify(draftLogs));
             }
 
@@ -984,7 +1008,11 @@
     setInterval(async () => {
         if (!state.currentUser) return;
         if (getWeekIdentifier(getAZDateStr()) !== CURRENT_WEEK_ID_AZ) {
-            // Week rolled over! Clear local state and reload. Backend cron handles the submission.
+            // Week rolled over! Auto-submit whatever was pending for the week that just
+            // ended, then clear local state and reload so the app re-inits on the new week.
+            if (!isWeekSubmitted() && state.currentWeekEntries.length > 0) {
+                await autoSubmitWeekDraft(CURRENT_WEEK_ID_AZ, state.currentWeekEntries);
+            }
             state.currentWeekEntries = [];
             localStorage.removeItem(`ts_pending_${state.currentUser.id}`);
             window.location.reload();
@@ -1092,6 +1120,27 @@
             logs_json:       JSON.stringify(state.currentWeekEntries),
             last_updated:    new Date().toISOString()
         }, 'student_id,week_identifier').catch(() => {});
+    }
+
+    // Converts an unsubmitted draft for a past week into an official submission,
+    // then removes the now-redundant draft row. This is what actually fulfills the
+    // "automatically submitted at the start of each new week" promise shown to students.
+    async function autoSubmitWeekDraft(weekId, entries) {
+        if (!state.currentUser || !entries || entries.length === 0) return;
+        try {
+            await sb.upsert('submissions', {
+                academic_year:   state.activeYear,
+                student_id:      state.currentUser.id,
+                student_name:    state.currentUser.name,
+                team:            state.currentUser.team,
+                week_identifier: weekId,
+                total_hours:     entries.reduce((s, e) => s + Number(e.hours), 0),
+                logs_json:       JSON.stringify(entries)
+            }, 'academic_year,student_id,week_identifier');
+            await sb.delete('drafts', `student_id=eq.${encodeURIComponent(state.currentUser.id)}&week_identifier=eq.${encodeURIComponent(weekId)}`);
+        } catch (e) {
+            console.error('autoSubmitWeekDraft error:', e);
+        }
     }
 
     function renderTimesheetEntries() {
