@@ -606,7 +606,7 @@
     <!-- Student Detail Modal -->
     <div id="studentDetailModal" class="fixed inset-0 z-[1000] hidden items-center justify-center p-4">
         <div class="absolute inset-0 bg-black/80 backdrop-blur-md" onclick="closeStudentDetails()"></div>
-        <div class="relative w-full max-w-lg night-glass-card rounded-[36px] p-6 sm:p-8 flex flex-col shadow-2xl border-purple-400/50 max-h-[90vh] z-10">
+        <div class="relative w-full max-w-lg night-glass-card rounded-[36px] p-6 sm:p-8 flex flex-col shadow-2xl border-purple-400/50 max-h-[90vh] overflow-y-auto custom-scroll z-10">
             
             <div class="flex justify-between items-start border-b border-purple-500/20 pb-5 mb-5">
                 <div>
@@ -646,7 +646,7 @@
             </div>
 
             <div class="text-purple-300/50 text-[10px] font-bold tracking-widest uppercase mb-3 px-2">Weekly Breakdown</div>
-            <div id="detailModalLogs" class="flex-1 overflow-y-auto pr-2 flex flex-col gap-3 custom-scroll"></div>
+            <div id="detailModalLogs" class="flex flex-col gap-3 pr-2"></div>
         </div>
     </div>
     
@@ -1680,7 +1680,8 @@
         const panel = document.getElementById('adminLogEditPanel');
         panel.classList.remove('hidden');
         gsap.fromTo(panel, { height: 0, opacity: 0, marginBottom: 0 }, { height: "auto", opacity: 1, marginBottom: 20, duration: 0.3 });
-        
+        panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
         document.getElementById('adminEditDate').focus();
         lucide.createIcons();
     }
@@ -1691,11 +1692,12 @@
         document.getElementById('adminEditDate').value = weekId;
         document.getElementById('adminEditHours').value = '';
         document.getElementById('adminEditTask').value = '';
-        
+
         const panel = document.getElementById('adminLogEditPanel');
         panel.classList.remove('hidden');
         gsap.fromTo(panel, { height: 0, opacity: 0, marginBottom: 0 }, { height: "auto", opacity: 1, marginBottom: 20, duration: 0.3 });
-        
+        panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
         document.getElementById('adminEditHours').focus();
         lucide.createIcons();
     }
