@@ -907,6 +907,14 @@
                 showToast("Connection error: " + e.message, true);
             }
         }
+
+        // If this device already logged in before, skip straight to their timesheet
+        // instead of making them re-enter their Student ID every visit.
+        const rememberedId = localStorage.getItem(REMEMBERED_STUDENT_KEY);
+        if (rememberedId) {
+            document.getElementById('loginStudentID').value = rememberedId;
+            studentLogin(rememberedId);
+        }
     }
 
     function switchView(viewName) {
@@ -924,8 +932,10 @@
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    async function studentLogin() {
-        const idInput = document.getElementById('loginStudentID').value.trim();
+    const REMEMBERED_STUDENT_KEY = 'ts_remembered_student_id';
+
+    async function studentLogin(idOverride) {
+        const idInput = (idOverride != null ? idOverride : document.getElementById('loginStudentID').value).trim();
         if(!idInput) return showToast("Please enter your Student ID", true);
 
         const btn = document.getElementById('loginBtn');
@@ -939,7 +949,15 @@
                 sb.select('drafts',      `student_id=eq.${encodeURIComponent(idInput)}`)
             ]);
 
-            if (!rosterRows.length) { showToast('Student ID not found.', true); return; }
+            if (!rosterRows.length) {
+                // A remembered ID that no longer matches a roster entry (removed student,
+                // fresh year, etc.) should stop being replayed on every future visit.
+                if (idOverride != null) localStorage.removeItem(REMEMBERED_STUDENT_KEY);
+                showToast('Student ID not found.', true);
+                return;
+            }
+
+            localStorage.setItem(REMEMBERED_STUDENT_KEY, idInput);
 
             const row = rosterRows[0];
             state.currentUser = { id: row.student_id, name: row.name, team: row.team, email: row.email, position: row.position };
@@ -1339,6 +1357,7 @@
         state.isTeamLead = false; state.teamRoster = []; state.teamSubmissions = []; state.teamDrafts = []; state.viewingTeamMemberId = null;
         const teamBtn = document.getElementById('teamHoursBtn');
         if (teamBtn) { teamBtn.classList.add('hidden'); teamBtn.classList.remove('flex'); }
+        localStorage.removeItem(REMEMBERED_STUDENT_KEY);
         switchView('login');
     }
 
