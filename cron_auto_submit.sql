@@ -22,30 +22,59 @@ as $$
 declare
   active_year    text;
   current_monday date;
+  d              record;
+  r_name         text;
+  r_team         text;
+  existing_logs  jsonb;
+  merged_logs    jsonb;
+  merged_total   numeric;
 begin
   select value into active_year from settings where key = 'ActiveYear';
   -- America/Phoenix has no DST, so this is a stable "Monday of the current week" cutoff.
   current_monday := date_trunc('week', (now() at time zone 'America/Phoenix'))::date;
 
-  -- Convert any draft older than the current week into an official submission.
-  -- ON CONFLICT DO NOTHING: if a submission already exists for that week
-  -- (e.g. an admin entered it manually), the existing record wins.
-  insert into submissions (academic_year, student_id, student_name, team, week_identifier, total_hours, logs_json)
-  select
-    coalesce(active_year, ''),
-    d.student_id,
-    coalesce(r.name, ''),
-    coalesce(r.team, ''),
-    d.week_identifier,
-    coalesce((select sum((elem->>'hours')::numeric) from jsonb_array_elements(d.logs_json::jsonb) elem), 0),
-    d.logs_json
-  from drafts d
-  left join roster r
-    on r.student_id = d.student_id
-   and r.academic_year = coalesce(active_year, '')
-  where d.week_identifier::date < current_monday
-    and jsonb_array_length(d.logs_json::jsonb) > 0
-  on conflict (academic_year, student_id, week_identifier) do nothing;
+  -- Convert every draft older than the current week into an official submission.
+  -- If a submission for that week already exists (e.g. an admin added an entry
+  -- while the week was still in progress), merge the draft's logs into it instead
+  -- of discarding them — ON CONFLICT DO NOTHING used to let the admin's smaller
+  -- entry silently win, dropping everything the student had actually logged and
+  -- wrongly flagging them as under their minimum hours.
+  for d in
+    select student_id, week_identifier, logs_json
+    from drafts
+    where week_identifier::date < current_monday
+      and jsonb_array_length(logs_json::jsonb) > 0
+  loop
+    select name, team into r_name, r_team
+    from roster
+    where student_id = d.student_id
+      and academic_year = coalesce(active_year, '');
+
+    select logs_json::jsonb into existing_logs
+    from submissions
+    where academic_year = coalesce(active_year, '')
+      and student_id = d.student_id
+      and week_identifier = d.week_identifier;
+
+    merged_logs := coalesce(existing_logs, '[]'::jsonb) || d.logs_json::jsonb;
+
+    select coalesce(sum((elem->>'hours')::numeric), 0) into merged_total
+    from jsonb_array_elements(merged_logs) elem;
+
+    insert into submissions (academic_year, student_id, student_name, team, week_identifier, total_hours, logs_json)
+    values (
+      coalesce(active_year, ''),
+      d.student_id,
+      coalesce(r_name, ''),
+      coalesce(r_team, ''),
+      d.week_identifier,
+      merged_total,
+      merged_logs::text
+    )
+    on conflict (academic_year, student_id, week_identifier) do update
+      set total_hours = excluded.total_hours,
+          logs_json    = excluded.logs_json;
+  end loop;
 
   -- Every stale draft is now either migrated above or was empty/redundant — clear it.
   delete from drafts
