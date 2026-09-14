@@ -63,20 +63,24 @@
         ::-webkit-scrollbar-thumb { background: rgba(167,139,250,0.3); border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: rgba(167,139,250,0.6); }
 
-        /* Nested overflow-y:auto lists (history, team hours, etc.) sit inside
-           .night-glass-card, which uses backdrop-filter. On iOS Safari that
-           combination is a known WebKit bug: an overflow-y:auto element
-           directly inside a backdrop-filter ancestor doesn't just scroll
-           less smoothly, it can ignore touch-scroll gestures entirely —
-           the swipe falls through and scrolls the page instead, leaving the
-           list itself stuck. -webkit-overflow-scrolling alone doesn't fix
-           this; forcing the list onto its own compositing layer (separate
-           from the blurred ancestor) does. */
         .custom-scroll {
             -webkit-overflow-scrolling: touch;
             overscroll-behavior: contain;
-            -webkit-transform: translateZ(0);
-            transform: translateZ(0);
+        }
+
+        /* These lists are display:flex;flex-direction:column so gap-* works
+           between cards. Their card children use overflow-hidden (for
+           rounded corners), and per the flexbox spec a flex item with
+           non-visible overflow gets an automatic minimum size of 0 — so
+           instead of the list overflowing and scrolling, flexbox was
+           silently squishing each card down to fit the max-height box,
+           clipping everything past that point via the card's own
+           overflow-hidden with nothing left to scroll to. flex-shrink:0
+           keeps every card at its real height so the list actually
+           overflows and .custom-scroll's overflow-y:auto has something to
+           scroll. */
+        .custom-scroll > * {
+            flex-shrink: 0;
         }
 
         /* Security Input Masking */
