@@ -747,7 +747,10 @@
         },
         async upsert(table, data, onConflict = '') {
             const url = `${SUPABASE_URL}/rest/v1/${table}${onConflict ? '?on_conflict=' + onConflict : ''}`;
-            const res = await fetch(url, { method: 'POST', headers: sb._h({ 'Prefer': 'resolution=merge-duplicates,return=minimal' }), body: JSON.stringify(data) });
+            // keepalive so a draft save started right before the tab closes (e.g. a student
+            // logs Friday's hours then closes the browser) isn't cancelled mid-flight and
+            // silently dropped from what the Monday-midnight auto-submit picks up.
+            const res = await fetch(url, { method: 'POST', keepalive: true, headers: sb._h({ 'Prefer': 'resolution=merge-duplicates,return=minimal' }), body: JSON.stringify(data) });
             if (!res.ok) throw new Error(await res.text());
         },
         async insert(table, data) {
@@ -1202,12 +1205,22 @@
         renderTimesheetEntries();
     }
 
+    // Chained so back-to-back edits (e.g. adding two entries within the same second)
+    // always hit the server in order — an earlier, in-flight save finishing after a
+    // later one would otherwise overwrite the newer full entry list with a stale one.
+    let draftSaveQueue = Promise.resolve();
     function saveDraftToServer() {
         if (!state.currentUser) return;
-        sb.upsert('drafts', {
+        const entriesSnapshot = [...state.currentWeekEntries];
+        draftSaveQueue = draftSaveQueue.then(() => doSaveDraft(entriesSnapshot));
+    }
+
+    function doSaveDraft(entries) {
+        if (!state.currentUser) return Promise.resolve();
+        return sb.upsert('drafts', {
             student_id:      state.currentUser.id,
             week_identifier: CURRENT_WEEK_ID_AZ,
-            logs_json:       JSON.stringify(state.currentWeekEntries),
+            logs_json:       JSON.stringify(entries),
             last_updated:    new Date().toISOString()
         }, 'student_id,week_identifier').catch(() => {});
     }
