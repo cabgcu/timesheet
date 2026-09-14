@@ -63,6 +63,15 @@
         ::-webkit-scrollbar-thumb { background: rgba(167,139,250,0.3); border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: rgba(167,139,250,0.6); }
 
+        /* Nested overflow-y:auto lists (history, team hours, etc.) sit inside
+           .night-glass-card, which uses backdrop-filter — on iOS Safari that
+           combination can make the inner list ignore touch-scroll gestures
+           entirely without this. */
+        .custom-scroll {
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+        }
+
         /* Security Input Masking */
         .no-save-pass { -webkit-text-security: disc !important; text-security: disc !important; }
 
