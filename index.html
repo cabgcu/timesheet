@@ -64,12 +64,19 @@
         ::-webkit-scrollbar-thumb:hover { background: rgba(167,139,250,0.6); }
 
         /* Nested overflow-y:auto lists (history, team hours, etc.) sit inside
-           .night-glass-card, which uses backdrop-filter — on iOS Safari that
-           combination can make the inner list ignore touch-scroll gestures
-           entirely without this. */
+           .night-glass-card, which uses backdrop-filter. On iOS Safari that
+           combination is a known WebKit bug: an overflow-y:auto element
+           directly inside a backdrop-filter ancestor doesn't just scroll
+           less smoothly, it can ignore touch-scroll gestures entirely —
+           the swipe falls through and scrolls the page instead, leaving the
+           list itself stuck. -webkit-overflow-scrolling alone doesn't fix
+           this; forcing the list onto its own compositing layer (separate
+           from the blurred ancestor) does. */
         .custom-scroll {
             -webkit-overflow-scrolling: touch;
             overscroll-behavior: contain;
+            -webkit-transform: translateZ(0);
+            transform: translateZ(0);
         }
 
         /* Security Input Masking */
