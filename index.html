@@ -2119,18 +2119,22 @@
             const studentsToEmail = [];
 
             currentRoster.forEach(student => {
-                const sub = state.submissions.find(s => s.studentId === student.id && s.academicYear === targetYear);
+                // A student has one submission row per week (not one total), so every
+                // week they've ever submitted must be checked and summed — grabbing just
+                // the first match via find() would usually land on the wrong week and
+                // read 0 hours for someone who actually met the minimum last week.
+                const studentSubs = state.submissions.filter(s => s.studentId === student.id && s.academicYear === targetYear);
                 let loggedHours = 0;
-                
-                // Calculate hours logged specifically for the simulated week
-                if (sub && sub.logs) {
-                    loggedHours = sub.logs
+
+                studentSubs.forEach(sub => {
+                    if (!sub.logs) return;
+                    loggedHours += sub.logs
                         .filter(l => {
                             const d = new Date(l.date + 'T00:00:00');
                             return d >= targetMonday && d <= targetSunday;
                         })
                         .reduce((sum, l) => sum + Number(l.hours), 0);
-                }
+                });
                 
                 if (loggedHours > 0) activeCount++;
                 
