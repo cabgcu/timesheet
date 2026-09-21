@@ -26,8 +26,11 @@ declare
   r_name         text;
   r_team         text;
   existing_logs  jsonb;
+  existing_keys  text[];
   merged_logs    jsonb;
   merged_total   numeric;
+  new_elem       jsonb;
+  new_key        text;
 begin
   select value into active_year from settings where key = 'ActiveYear';
   -- America/Phoenix has no DST, so this is a stable "Monday of the current week" cutoff.
@@ -39,6 +42,12 @@ begin
   -- of discarding them — ON CONFLICT DO NOTHING used to let the admin's smaller
   -- entry silently win, dropping everything the student had actually logged and
   -- wrongly flagging them as under their minimum hours.
+  --
+  -- The merge is deduped by entry id (falling back to date+hours+task for older
+  -- entries that predate ids): the client performs this same draft->submission
+  -- conversion itself on week rollover and can race this job, or a previous run
+  -- can leave a draft undeleted, and a naive concatenation would then double-count
+  -- every entry the student already had migrated.
   for d in
     select student_id, week_identifier, logs_json
     from drafts
@@ -56,7 +65,20 @@ begin
       and student_id = d.student_id
       and week_identifier = d.week_identifier;
 
-    merged_logs := coalesce(existing_logs, '[]'::jsonb) || d.logs_json::jsonb;
+    existing_logs := coalesce(existing_logs, '[]'::jsonb);
+
+    select coalesce(array_agg(coalesce(elem->>'id', (elem->>'date') || '_' || (elem->>'hours') || '_' || (elem->>'task'))), '{}')
+    into existing_keys
+    from jsonb_array_elements(existing_logs) elem;
+
+    merged_logs := existing_logs;
+    for new_elem in select * from jsonb_array_elements(d.logs_json::jsonb) loop
+      new_key := coalesce(new_elem->>'id', (new_elem->>'date') || '_' || (new_elem->>'hours') || '_' || (new_elem->>'task'));
+      if not (new_key = any (existing_keys)) then
+        merged_logs := merged_logs || jsonb_build_array(new_elem);
+        existing_keys := existing_keys || new_key;
+      end if;
+    end loop;
 
     select coalesce(sum((elem->>'hours')::numeric), 0) into merged_total
     from jsonb_array_elements(merged_logs) elem;
