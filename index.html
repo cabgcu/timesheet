@@ -1870,7 +1870,11 @@
             if (weekData && weekData.logs.length > 0) {
                 const sortedLogs = [...weekData.logs].sort((a,b) => new Date(b.date) - new Date(a.date));
                 const logsHtml = sortedLogs.map(log => {
-                    const logKey = log.id ? log.id.toString() : `${log.date}_${log.hours}_${log.task}`;
+                    // Index into weekData.logs (which shares log object references with sub.logs,
+                    // in the same order) rather than a content-derived key — duplicate entries
+                    // (same id/date/hours/task, e.g. from the auto-submit merge bug) would
+                    // otherwise share a key and both get edited/deleted when only one was clicked.
+                    const logIdx = weekData.logs.indexOf(log);
                     const dateStr = new Date(log.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
                     return `
                         <div class="bg-slate-900/60 p-2.5 rounded-xl border border-purple-500/20 flex items-center gap-3 ml-2 mb-2 hover:bg-slate-800/80 transition group shadow-inner">
@@ -1880,8 +1884,8 @@
                                 <div class="text-purple-300/50 text-[9px] uppercase font-bold tracking-widest">${dateStr}</div>
                             </div>
                             <div class="flex gap-1 shrink-0 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onclick="adminStartEdit('${sid}','${weekId}','${logKey}')" class="text-blue-400 hover:text-white p-2 bg-slate-900/80 hover:bg-blue-600/40 rounded-lg transition border border-transparent hover:border-blue-500/30" title="Edit"><i data-lucide="edit-2" class="w-3.5 h-3.5"></i></button>
-                                <button onclick="adminDeleteLog('${sid}','${weekId}','${logKey}')" class="text-rose-400 hover:text-white p-2 bg-slate-900/80 hover:bg-rose-600/40 rounded-lg transition border border-transparent hover:border-rose-500/30" title="Delete"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                                <button onclick="adminStartEdit('${sid}','${weekId}',${logIdx})" class="text-blue-400 hover:text-white p-2 bg-slate-900/80 hover:bg-blue-600/40 rounded-lg transition border border-transparent hover:border-blue-500/30" title="Edit"><i data-lucide="edit-2" class="w-3.5 h-3.5"></i></button>
+                                <button onclick="adminDeleteLog('${sid}','${weekId}',${logIdx})" class="text-rose-400 hover:text-white p-2 bg-slate-900/80 hover:bg-rose-600/40 rounded-lg transition border border-transparent hover:border-rose-500/30" title="Delete"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
                             </div>
                         </div>`;
                 }).join('');
@@ -1995,12 +1999,11 @@
 
     let adminEditingCtx = null;
 
-    function adminStartEdit(studentId, weekId, logKey) {
+    function adminStartEdit(studentId, weekId, logIdx) {
         const sub = state.submissions.find(s => s.studentId === studentId && s.weekIdentifier === weekId);
-        if (!sub || !sub.logs) return;
-        const log = sub.logs.find(l => (l.id ? l.id.toString() : `${l.date}_${l.hours}_${l.task}`) === logKey);
-        if (!log) return;
-        adminEditingCtx = { studentId, weekId, logKey, mode: 'edit' };
+        if (!sub || !sub.logs || logIdx < 0 || logIdx >= sub.logs.length) return;
+        const log = sub.logs[logIdx];
+        adminEditingCtx = { studentId, weekId, logIdx, mode: 'edit' };
         document.getElementById('adminEditPanelTitle').innerHTML = '<i data-lucide="edit-2" class="w-3.5 h-3.5 inline mr-1"></i> Edit Entry';
         document.getElementById('adminEditDate').value = log.date;
         document.getElementById('adminEditHours').value = log.hours;
@@ -2020,7 +2023,7 @@
     }
 
     function adminStartAdd(studentId, weekId) {
-        adminEditingCtx = { studentId, weekId, logKey: null, mode: 'add' };
+        adminEditingCtx = { studentId, weekId, logIdx: null, mode: 'add' };
         document.getElementById('adminEditPanelTitle').innerHTML = '<i data-lucide="plus-circle" class="w-3.5 h-3.5 inline mr-1"></i> Add Entry';
         document.getElementById('adminEditDate').value = weekId;
         document.getElementById('adminEditHours').value = '';
@@ -2052,7 +2055,7 @@
         const task = document.getElementById('adminEditTask').value.trim();
         if (!date || isNaN(hours) || hours <= 0 || !task) return showToast('Fill all fields', true);
 
-        const { studentId, weekId, logKey, mode } = adminEditingCtx;
+        const { studentId, weekId, logIdx, mode } = adminEditingCtx;
         const academicYear = document.getElementById('adminYearFilter').value;
 
         let sub = state.submissions.find(s => s.studentId === studentId && s.weekIdentifier === weekId && s.academicYear === academicYear);
@@ -2071,9 +2074,7 @@
                 state.submissions.push(sub);
             }
         } else {
-            if (!sub || !sub.logs) return showToast('Entry not found', true);
-            const logIdx = sub.logs.findIndex(l => (l.id ? l.id.toString() : `${l.date}_${l.hours}_${l.task}`) === logKey);
-            if (logIdx === -1) return showToast('Entry not found', true);
+            if (!sub || !sub.logs || logIdx < 0 || logIdx >= sub.logs.length) return showToast('Entry not found', true);
             sub.logs[logIdx] = { ...sub.logs[logIdx], date, hours, task };
             sub.totalHours = sub.logs.reduce((s, l) => s + Number(l.hours), 0);
         }
@@ -2082,11 +2083,11 @@
         await adminSaveSubmission(academicYear, studentId, weekId, sub.logs);
     }
 
-    async function adminDeleteLog(studentId, weekId, logKey) {
+    async function adminDeleteLog(studentId, weekId, logIdx) {
         const academicYear = document.getElementById('adminYearFilter').value;
-        const sub = state.submissions.find(s => s.studentId === studentId && s.academicYear === academicYear && s.logs && s.logs.some(l => (l.id ? l.id.toString() : `${l.date}_${l.hours}_${l.task}`) === logKey));
-        if (!sub || !sub.logs) { showToast('Entry not found', true); return; }
-        sub.logs = sub.logs.filter(l => (l.id ? l.id.toString() : `${l.date}_${l.hours}_${l.task}`) !== logKey);
+        const sub = state.submissions.find(s => s.studentId === studentId && s.academicYear === academicYear && s.weekIdentifier === weekId);
+        if (!sub || !sub.logs || logIdx < 0 || logIdx >= sub.logs.length) { showToast('Entry not found', true); return; }
+        sub.logs = sub.logs.filter((_, idx) => idx !== logIdx);
         sub.totalHours = sub.logs.reduce((s, l) => s + Number(l.hours), 0);
         if (sub.logs.length === 0) state.submissions = state.submissions.filter(s => s !== sub);
         await adminSaveSubmission(academicYear, studentId, sub.weekIdentifier, sub.logs);
