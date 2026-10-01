@@ -36,6 +36,8 @@ create table if not exists submissions (
   unique (academic_year, student_id, week_identifier)
 );
 
+-- Legacy: hours used to wait here as a "pending" draft until the week ended.
+-- The app now writes straight to submissions and no longer uses this table.
 create table if not exists drafts (
   id              bigserial primary key,
   student_id      text not null,
