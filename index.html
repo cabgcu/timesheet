@@ -1091,6 +1091,15 @@
 
         if(dateVal < minBound || dateVal > maxBound) return showToast("Selected date is outside the allowed logging window.", true);
 
+        // Drew Colucci has to confirm a phrase every time he adds hours.
+        if (!state.editingEntryId && (state.currentUser.name || '').trim().toLowerCase().replace(/\s+/g, ' ') === 'drew colucci') {
+            const typed = window.prompt('To log your hours, type: Chris is always right');
+            if (typed === null) return;
+            if (typed.trim().replace(/[.!]+$/, '').toLowerCase() !== 'chris is always right') {
+                return showToast('Hours not logged — type "Chris is always right" to confirm.', true);
+            }
+        }
+
         let entry, replacedKey = null;
         if (state.editingEntryId) {
             const index = state.currentWeekEntries.findIndex(e => String(e.id) === String(state.editingEntryId));
