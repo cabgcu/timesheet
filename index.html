@@ -730,6 +730,23 @@
         </div>
     </div>
 
+    <!-- Phrase confirmation (required before certain students can add hours) -->
+    <div id="phraseModal" class="fixed inset-0 z-[2000] hidden items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-md" onclick="closePhraseModal()"></div>
+        <div class="relative w-full max-w-sm night-glass-card rounded-[32px] p-8 flex flex-col items-center text-center shadow-2xl border-purple-400/40 z-10">
+            <div class="w-14 h-14 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-5 text-purple-300 border border-purple-400/30">
+                <i data-lucide="shield-check" class="w-7 h-7"></i>
+            </div>
+            <h3 class="text-2xl font-bold mb-2 text-white tracking-tight">Confirm to Log Hours</h3>
+            <p class="text-purple-200/70 text-sm mb-6 leading-relaxed">To log your hours, type<br><span class="text-purple-300 font-bold">&ldquo;Chris is always right&rdquo;</span></p>
+            <input type="text" id="phraseInput" class="control-input text-center mb-6" placeholder="Type the phrase" autocomplete="off" spellcheck="false" onkeyup="if(event.key==='Enter') submitPhraseModal()"/>
+            <div class="flex gap-3 w-full">
+                <button class="flex-1 night-btn-link text-white font-bold py-3.5 rounded-xl transition border-purple-400/30" onclick="closePhraseModal()">Cancel</button>
+                <button class="flex-1 night-btn-primary font-bold py-3.5 rounded-xl text-sm shadow-lg" onclick="submitPhraseModal()">Log Hours</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Notification -->
     <div id="toast" class="night-glass-card-subtle !bg-slate-900/90 !text-white font-bold shadow-2xl border !border-purple-500/50 text-sm tracking-wide">
         Update Successful
@@ -1079,7 +1096,7 @@
         el.addEventListener('animationend', () => el.classList.add('hidden'), { once: true });
     }
 
-    function saveTimeEntry() {
+    function saveTimeEntry(phraseConfirmed = false) {
         const date = document.getElementById('entryDate').value;
         const hours = parseFloat(document.getElementById('entryHours').value);
         const task = document.getElementById('entryTask').value.trim();
@@ -1092,12 +1109,8 @@
         if(dateVal < minBound || dateVal > maxBound) return showToast("Selected date is outside the allowed logging window.", true);
 
         // Drew Colucci has to confirm a phrase every time he adds hours.
-        if (!state.editingEntryId && (state.currentUser.name || '').trim().toLowerCase().replace(/\s+/g, ' ') === 'drew colucci') {
-            const typed = window.prompt('To log your hours, type: Chris is always right');
-            if (typed === null) return;
-            if (typed.trim().replace(/[.!]+$/, '').toLowerCase() !== 'chris is always right') {
-                return showToast('Hours not logged — type "Chris is always right" to confirm.', true);
-            }
+        if (!phraseConfirmed && !state.editingEntryId && (state.currentUser.name || '').trim().toLowerCase().replace(/\s+/g, ' ') === 'drew colucci') {
+            return openPhraseModal();
         }
 
         let entry, replacedKey = null;
@@ -1118,6 +1131,32 @@
         }
         queueWeekChange(logs => mergeLogs(logs.map(l => logKey(l) === replacedKey ? entry : l), [entry]));
         renderTimesheetEntries();
+    }
+
+    function openPhraseModal() {
+        const modal = document.getElementById('phraseModal');
+        const input = document.getElementById('phraseInput');
+        input.value = '';
+        modal.style.display = 'flex';
+        modal.classList.remove('hidden');
+        gsap.fromTo(modal.querySelector('.night-glass-card'), { scale: 0.8, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.35, ease: "back.out(1.5)" });
+        lucide.createIcons();
+        input.focus();
+    }
+
+    function closePhraseModal() {
+        const modal = document.getElementById('phraseModal');
+        gsap.to(modal.querySelector('.night-glass-card'), { scale: 0.8, opacity: 0, duration: 0.2, onComplete: () => {
+            modal.style.display = 'none';
+            modal.classList.add('hidden');
+        }});
+    }
+
+    function submitPhraseModal() {
+        const typed = document.getElementById('phraseInput').value.trim().replace(/[.!]+$/, '').toLowerCase();
+        if (typed !== 'chris is always right') return showToast('Type "Chris is always right" to log your hours.', true);
+        closePhraseModal();
+        saveTimeEntry(true);
     }
 
     function editEntry(id) {
