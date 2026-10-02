@@ -730,23 +730,6 @@
         </div>
     </div>
 
-    <!-- Phrase confirmation (required before certain students can add hours) -->
-    <div id="phraseModal" class="fixed inset-0 z-[2000] hidden items-center justify-center p-4">
-        <div class="absolute inset-0 bg-black/80 backdrop-blur-md" onclick="closePhraseModal()"></div>
-        <div class="relative w-full max-w-sm night-glass-card rounded-[32px] p-8 flex flex-col items-center text-center shadow-2xl border-purple-400/40 z-10">
-            <div class="w-14 h-14 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-5 text-purple-300 border border-purple-400/30">
-                <i data-lucide="shield-check" class="w-7 h-7"></i>
-            </div>
-            <h3 class="text-2xl font-bold mb-2 text-white tracking-tight">Confirm to Log Hours</h3>
-            <p class="text-purple-200/70 text-sm mb-6 leading-relaxed">To log your hours, type<br><span class="text-purple-300 font-bold">&ldquo;Chris is always right&rdquo;</span></p>
-            <input type="text" id="phraseInput" class="control-input text-center mb-6" placeholder="Type the phrase" autocomplete="off" spellcheck="false" onkeyup="if(event.key==='Enter') submitPhraseModal()"/>
-            <div class="flex gap-3 w-full">
-                <button class="flex-1 night-btn-link text-white font-bold py-3.5 rounded-xl transition border-purple-400/30" onclick="closePhraseModal()">Cancel</button>
-                <button class="flex-1 night-btn-primary font-bold py-3.5 rounded-xl text-sm shadow-lg" onclick="submitPhraseModal()">Log Hours</button>
-            </div>
-        </div>
-    </div>
-
     <!-- Toast Notification -->
     <div id="toast" class="night-glass-card-subtle !bg-slate-900/90 !text-white font-bold shadow-2xl border !border-purple-500/50 text-sm tracking-wide">
         Update Successful
@@ -1048,7 +1031,6 @@
 
             initTimesheetView();
             switchView('timesheet');
-            startDrewFloater();
             document.getElementById('loginStudentID').value = '';
         } catch (e) {
             console.error('studentLogin error:', e);
@@ -1097,7 +1079,7 @@
         el.addEventListener('animationend', () => el.classList.add('hidden'), { once: true });
     }
 
-    function saveTimeEntry(phraseConfirmed = false) {
+    function saveTimeEntry() {
         const date = document.getElementById('entryDate').value;
         const hours = parseFloat(document.getElementById('entryHours').value);
         const task = document.getElementById('entryTask').value.trim();
@@ -1108,11 +1090,6 @@
         const maxBound = new Date(document.getElementById('entryDate').max + 'T00:00:00').getTime();
 
         if(dateVal < minBound || dateVal > maxBound) return showToast("Selected date is outside the allowed logging window.", true);
-
-        // Drew Colucci has to confirm a phrase every time he adds hours.
-        if (!phraseConfirmed && !state.editingEntryId && isDrew()) {
-            return openPhraseModal();
-        }
 
         let entry, replacedKey = null;
         if (state.editingEntryId) {
@@ -1132,73 +1109,6 @@
         }
         queueWeekChange(logs => mergeLogs(logs.map(l => logKey(l) === replacedKey ? entry : l), [entry]));
         renderTimesheetEntries();
-    }
-
-    function isDrew() {
-        return !!state.currentUser && (state.currentUser.name || '').trim().toLowerCase().replace(/\s+/g, ' ') === 'drew colucci';
-    }
-
-    // Drew also gets a small image that slowly drifts around the screen, bouncing off the
-    // edges. It's semi-transparent and ignores clicks/taps so it never blocks the app.
-    const DREW_FLOATER_SRC = 'https://i.imgur.com/9PNWooU.jpeg';
-    let drewFloater = null;
-    function startDrewFloater() {
-        if (drewFloater || !isDrew()) return;
-        const img = document.createElement('img');
-        img.src = DREW_FLOATER_SRC;
-        img.id = 'drewFloater';
-        img.alt = '';
-        img.setAttribute('aria-hidden', 'true');
-        img.style.cssText = 'position:fixed;top:0;left:0;width:88px;height:auto;z-index:900;pointer-events:none;opacity:0.85;border-radius:18px;border:1px solid rgba(192,132,252,0.4);box-shadow:0 8px 24px rgba(0,0,0,0.4);will-change:transform;';
-        img.onerror = () => stopDrewFloater();
-        document.body.appendChild(img);
-
-        let x = Math.random() * (window.innerWidth - 88), y = Math.random() * (window.innerHeight - 88);
-        let vx = 45 * (Math.random() < 0.5 ? -1 : 1), vy = 35 * (Math.random() < 0.5 ? -1 : 1); // px per second
-        let last = performance.now(), spin = 0;
-        const tick = now => {
-            if (!drewFloater) return;
-            const dt = Math.min((now - last) / 1000, 0.1); last = now;
-            const w = img.offsetWidth || 88, h = img.offsetHeight || 88;
-            x += vx * dt; y += vy * dt; spin += dt;
-            if (x <= 0) { x = 0; vx = Math.abs(vx); } else if (x >= window.innerWidth - w) { x = window.innerWidth - w; vx = -Math.abs(vx); }
-            if (y <= 0) { y = 0; vy = Math.abs(vy); } else if (y >= window.innerHeight - h) { y = window.innerHeight - h; vy = -Math.abs(vy); }
-            img.style.transform = `translate(${x}px, ${y}px) rotate(${Math.sin(spin) * 8}deg)`;
-            drewFloater.raf = requestAnimationFrame(tick);
-        };
-        drewFloater = { img, raf: requestAnimationFrame(tick) };
-    }
-    function stopDrewFloater() {
-        if (!drewFloater) return;
-        cancelAnimationFrame(drewFloater.raf);
-        drewFloater.img.remove();
-        drewFloater = null;
-    }
-
-    function openPhraseModal() {
-        const modal = document.getElementById('phraseModal');
-        const input = document.getElementById('phraseInput');
-        input.value = '';
-        modal.style.display = 'flex';
-        modal.classList.remove('hidden');
-        gsap.fromTo(modal.querySelector('.night-glass-card'), { scale: 0.8, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.35, ease: "back.out(1.5)" });
-        lucide.createIcons();
-        input.focus();
-    }
-
-    function closePhraseModal() {
-        const modal = document.getElementById('phraseModal');
-        gsap.to(modal.querySelector('.night-glass-card'), { scale: 0.8, opacity: 0, duration: 0.2, onComplete: () => {
-            modal.style.display = 'none';
-            modal.classList.add('hidden');
-        }});
-    }
-
-    function submitPhraseModal() {
-        const typed = document.getElementById('phraseInput').value.trim().replace(/[.!]+$/, '').toLowerCase();
-        if (typed !== 'chris is always right') return showToast('Type "Chris is always right" to log your hours.', true);
-        closePhraseModal();
-        saveTimeEntry(true);
     }
 
     function editEntry(id) {
@@ -1461,7 +1371,6 @@
     }
 
     function logout() {
-        stopDrewFloater();
         state.currentUser = null; state.currentWeekEntries = []; state.editingEntryId = null;
         state.isTeamLead = false; state.teamRoster = []; state.teamSubmissions = []; state.viewingTeamMemberId = null;
         const teamBtn = document.getElementById('teamHoursBtn');
