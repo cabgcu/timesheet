@@ -2,6 +2,8 @@
 <html lang="en" class="dark">
 <head>
     <meta charset="UTF-8" />
+    <!-- imgur blocks hotlinked images (especially on mobile) when a Referer is sent -->
+    <meta name="referrer" content="no-referrer">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -738,7 +740,7 @@
                 <p class="text-purple-200 text-sm font-bold">Score <span class="text-purple-300">35</span> to log your hours</p>
                 <button class="night-btn-link text-white font-bold py-2 px-4 rounded-xl transition border-purple-400/30 text-sm" onclick="closeFlappyModal()">Cancel</button>
             </div>
-            <iframe id="flappyFrame" title="Flappy Drew" class="rounded-[10px] border-0 bg-[#222]" style="width:min(400px, 92vw);height:min(600px, 80vh);"></iframe>
+            <iframe id="flappyFrame" title="Flappy Drew" referrerpolicy="no-referrer" class="rounded-[10px] border-0 bg-[#222]" style="width:min(400px, 92vw);height:min(600px, 80vh);"></iframe>
         </div>
     </div>
 
@@ -942,6 +944,7 @@
 
     // Load Bird Image
     const birdImage = new Image();
+    birdImage.referrerPolicy = 'no-referrer'; // imgur blocks hotlinks that send a Referer
     birdImage.src = 'https://i.imgur.com/KDU1UUI.png';
     // Fallback if image fails to load
     let imageLoaded = false;
@@ -1761,7 +1764,7 @@
         modal.style.display = 'flex';
         modal.classList.remove('hidden');
         // Load a fresh game each time so it starts from the PLAY screen.
-        frame.srcdoc = '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Flappy Drew</title></head><body>'
+        frame.srcdoc = '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="referrer" content="no-referrer"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>Flappy Drew</title></head><body>'
             + document.getElementById('flappyDrewSrc').innerHTML + '</body></html>';
         frame.onload = () => frame.focus();
     }
