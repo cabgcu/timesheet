@@ -13,8 +13,6 @@
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="https://i.imgur.com/ZAdO6Qa.png" />
     <link rel="apple-touch-icon" href="https://i.imgur.com/ZAdO6Qa.png" />
-    <link rel="manifest" href="manifest.webmanifest" />
-    <meta name="theme-color" content="#131316" />
     
     <!-- Canvas Confetti -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -317,9 +315,6 @@
                     </button>
 
                     <div class="mt-8 pt-6 border-t border-purple-500/20 flex flex-col items-center gap-2">
-                        <button class="install-btn hidden night-btn-link text-white text-xs font-semibold px-4 py-2 rounded-xl items-center gap-2 mb-2" onclick="installApp()">
-                            <i data-lucide="smartphone" class="w-4 h-4 text-purple-400"></i> Add to Home Screen
-                        </button>
                         <span class="text-purple-300/50 text-[11px] tracking-wide">© <span id="year"></span> Canyon Activities Board</span>
                         <button class="opacity-60 hover:opacity-100 transition-all uppercase tracking-widest bg-transparent border-none text-[10px] cursor-pointer text-purple-400 hover:text-purple-300 p-1" onclick="showGate()">Staff Access</button>
                     </div>
@@ -412,13 +407,7 @@
                     
                     <div class="flex justify-between items-center mt-8 px-2 gap-3 flex-wrap">
                         <button class="text-purple-300/60 hover:text-white text-xs font-semibold transition tracking-wide" onclick="logout()">Not you? Switch account</button>
-                        <div class="flex items-center gap-2 flex-wrap justify-end">
-                            <button class="install-btn hidden night-btn-link text-white text-xs font-semibold transition items-center gap-2 px-4 py-2 rounded-xl" onclick="installApp()">
-                                <i data-lucide="smartphone" class="w-4 h-4 text-purple-400"></i> Install
-                            </button>
-                            <button class="night-btn-link text-white text-xs font-semibold transition flex items-center gap-2 px-4 py-2 rounded-xl" onclick="openReminderModal()">
-                                <i data-lucide="bell" class="w-4 h-4 text-purple-400"></i> Reminder
-                            </button>
+                        <div class="flex items-center gap-2">
                             <button id="teamHoursBtn" class="hidden night-btn-link text-white text-xs font-semibold transition items-center gap-2 px-4 py-2 rounded-xl" onclick="showTeamView()">
                                 <i data-lucide="users" class="w-4 h-4 text-purple-400"></i> Team Hours
                             </button>
@@ -792,37 +781,6 @@
 
             <div class="text-purple-300/50 text-[10px] font-bold tracking-widest uppercase mb-3 px-2">Weekly Breakdown</div>
             <div id="teamMemberModalLogs" class="flex flex-col gap-3 pr-2"></div>
-        </div>
-    </div>
-
-    <!-- Weekly Reminder Modal (adds a repeating event to the student's own calendar) -->
-    <div id="reminderModal" class="fixed inset-0 z-[1000] hidden items-center justify-center p-4">
-        <div class="absolute inset-0 modal-backdrop" onclick="closeModal('reminderModal')"></div>
-        <div class="relative w-full max-w-sm night-glass-card rounded-3xl p-6 sm:p-8 flex flex-col shadow-2xl border-purple-400/50 z-10">
-            <div class="flex justify-between items-start mb-4">
-                <h3 class="text-xl font-bold text-white tracking-tight flex items-center gap-2"><i data-lucide="bell" class="w-5 h-5 text-purple-400"></i> Weekly Reminder</h3>
-                <button class="text-purple-200 hover:text-white bg-slate-900/50 hover:bg-white/10 border border-purple-400/30 p-2 rounded-xl transition" onclick="closeModal('reminderModal')"><i data-lucide="x" class="w-4 h-4"></i></button>
-            </div>
-            <p class="text-purple-200/70 text-xs leading-relaxed mb-5">Pick when you'd like a nudge to log your hours. It's added to your own calendar and repeats every week.</p>
-            <div class="grid grid-cols-2 gap-3 mb-5">
-                <div>
-                    <label for="reminderDay" class="form-label">Day</label>
-                    <select id="reminderDay" class="control-input !mb-0">
-                        <option value="MO">Monday</option><option value="TU">Tuesday</option><option value="WE">Wednesday</option>
-                        <option value="TH">Thursday</option><option value="FR">Friday</option><option value="SA">Saturday</option>
-                        <option value="SU" selected>Sunday</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="reminderTime" class="form-label">Time</label>
-                    <input type="time" id="reminderTime" class="control-input !mb-0" value="18:00" style="color-scheme: dark;" />
-                </div>
-            </div>
-            <div class="flex flex-col gap-2.5">
-                <button class="w-full night-btn-primary font-bold py-3 rounded-xl text-sm flex items-center justify-center gap-2" onclick="downloadReminder()"><i data-lucide="calendar-plus" class="w-4 h-4"></i> Add to Calendar</button>
-                <button class="w-full night-btn-link text-white font-bold py-3 rounded-xl text-sm flex items-center justify-center gap-2" onclick="openGoogleReminder()">Use Google Calendar instead</button>
-            </div>
-            <p class="text-purple-300/50 text-[10px] leading-relaxed mt-4 text-center">"Add to Calendar" works with Apple, Outlook and most phone calendars.</p>
         </div>
     </div>
 
@@ -1592,7 +1550,7 @@
         return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
     }
 
-    // Generic open/close for the simple pop-ups (reminder, note, new year)
+    // Generic open/close for the simple pop-ups (new year)
     function openModal(id) {
         const modal = document.getElementById(id);
         modal.style.display = 'flex';
@@ -1654,7 +1612,6 @@
 
     async function init() {
         document.getElementById('year').textContent = new Date().getFullYear();
-        updateInstallButtons();
         lucide.createIcons();
         
         // Immediately show login view so animations trigger visibly
@@ -2320,73 +2277,6 @@
         hoursEl.focus();
     }
 
-    // ---------- Weekly reminder (calendar event the student adds themselves) ----------
-    const REMINDER_DAYS = { SU: 0, MO: 1, TU: 2, WE: 3, TH: 4, FR: 5, SA: 6 };
-
-    function openReminderModal() { openModal('reminderModal'); }
-
-    // Next occurrence of the chosen weekday + time, in the device's local time.
-    function nextReminderStart() {
-        const day = document.getElementById('reminderDay').value;
-        const [h, m] = (document.getElementById('reminderTime').value || '18:00').split(':').map(Number);
-        const now = new Date();
-        const d = new Date(now); d.setHours(h, m, 0, 0);
-        let add = (REMINDER_DAYS[day] - d.getDay() + 7) % 7;
-        if (add === 0 && d <= now) add = 7;
-        d.setDate(d.getDate() + add);
-        return { day, start: d, end: new Date(d.getTime() + 15 * 60000) };
-    }
-
-    // YYYYMMDDTHHMMSS in local ("floating") time, so the event stays at that clock time.
-    function calStamp(d) {
-        const p = n => String(n).padStart(2, '0');
-        return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}T${p(d.getHours())}${p(d.getMinutes())}00`;
-    }
-
-    function appUrl() { return /^https?:/.test(location.href) ? location.href.split('#')[0] : ''; }
-
-    function downloadReminder() {
-        const { day, start, end } = nextReminderStart();
-        const esc = s => s.replace(/[\\,;]/g, m => '\\' + m);
-        const url = appUrl();
-        const ics = [
-            'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Canyon Activities Board//Timesheet//EN', 'CALSCALE:GREGORIAN',
-            'BEGIN:VEVENT',
-            `UID:cab-timesheet-${Date.now()}@cab`,
-            `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z`,
-            `DTSTART:${calStamp(start)}`, `DTEND:${calStamp(end)}`,
-            `RRULE:FREQ=WEEKLY;BYDAY=${day}`,
-            'SUMMARY:Log your CAB hours',
-            `DESCRIPTION:${esc('Add this week\'s hours to the CAB timesheet before Sunday 11:59 PM.' + (url ? ' ' + url : ''))}`,
-            ...(url ? [`URL:${url}`] : []),
-            'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:Log your CAB hours', 'TRIGGER:PT0M', 'END:VALARM',
-            'END:VEVENT', 'END:VCALENDAR'
-        ].join('\r\n');
-        const dataUri = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
-        // iOS Safari opens the "Add to Calendar" sheet when navigating to the file itself.
-        if (/iPad|iPhone|iPod/.test(navigator.userAgent)) { window.location.href = dataUri; }
-        else {
-            const a = document.createElement('a');
-            a.href = dataUri; a.download = 'cab-hours-reminder.ics';
-            document.body.appendChild(a); a.click(); a.remove();
-        }
-        closeModal('reminderModal');
-        showToast('Reminder created — open it to add it to your calendar.');
-    }
-
-    function openGoogleReminder() {
-        const { day, start, end } = nextReminderStart();
-        const url = appUrl();
-        const params = new URLSearchParams({
-            action: 'TEMPLATE',
-            text: 'Log your CAB hours',
-            dates: `${calStamp(start)}/${calStamp(end)}`,
-            details: 'Add this week\'s hours to the CAB timesheet before Sunday 11:59 PM.' + (url ? '\n' + url : ''),
-            recur: `RRULE:FREQ=WEEKLY;BYDAY=${day}`
-        });
-        window.open('https://calendar.google.com/calendar/render?' + params.toString(), '_blank', 'noopener');
-        closeModal('reminderModal');
-    }
 
     function showHistory() {
         document.getElementById('history-team').textContent = `${state.currentUser.position || 'Student'} • ${state.currentUser.team}`;
@@ -2851,6 +2741,8 @@
             </div>
             ${noEmail ? `<p class="text-[11px] text-amber-400/80 mt-3">${noEmail} of them ${noEmail === 1 ? 'has' : 'have'} no email on the roster and won't be included.</p>` : ''}`;
     }
+
+    function appUrl() { return /^https?:/.test(location.href) ? location.href.split('#')[0] : ''; }
 
     function behindEmails() { return [...new Set((state.behindStudents || []).map(s => (s.email || '').trim()).filter(Boolean))]; }
 
@@ -3785,37 +3677,6 @@
         XLSX.utils.book_append_sheet(wb, ws, "All Entries");
         XLSX.writeFile(wb, `Timesheet_Report_${yearFilterVal}.xlsx`);
         showToast("Excel Exported Successfully!");
-    }
-
-    // ---------- Add to Home Screen ----------
-    // Android/desktop Chrome hand us an install prompt; iPhone Safari needs the Share menu.
-    let deferredInstallPrompt = null;
-    const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
-    const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-
-    function updateInstallButtons() {
-        const show = !isStandalone() && (deferredInstallPrompt || isIOS());
-        document.querySelectorAll('.install-btn').forEach(b => { b.classList.toggle('hidden', !show); b.classList.toggle('flex', !!show); });
-    }
-
-    window.addEventListener('beforeinstallprompt', e => {
-        e.preventDefault();
-        deferredInstallPrompt = e;
-        updateInstallButtons();
-    });
-    window.addEventListener('appinstalled', () => { deferredInstallPrompt = null; updateInstallButtons(); showToast('Installed! Open it from your home screen.'); });
-
-    async function installApp() {
-        if (deferredInstallPrompt) {
-            deferredInstallPrompt.prompt();
-            await deferredInstallPrompt.userChoice.catch(() => {});
-            deferredInstallPrompt = null;
-            updateInstallButtons();
-            return;
-        }
-        openConfirmModal('Add to Home Screen',
-            'In Safari, tap the <b class="text-white">Share</b> button <i data-lucide="share" class="w-4 h-4 inline"></i> at the bottom of the screen, then choose <b class="text-white">Add to Home Screen</b>. You\'ll stay signed in when you open it from there.',
-            'Got it', () => {}, 'neutral');
     }
 
     // --- UI HELPERS ---
