@@ -133,6 +133,16 @@
         .night-bg::after { content: ''; position: absolute; inset: 0; background: rgba(19, 19, 22, 0.25); }
         .night-overlay { display: none; }
 
+        /* Scroll inside a fixed layer instead of scrolling the page (same as the VIP Check In
+           app). When the page itself scrolls, iPhone Safari slides its bars away and fades
+           a grey gradient over the top and bottom edges; this keeps the photo edge to edge. */
+        html, body { height: 100%; overflow: hidden; }
+        #pageScroll {
+            position: fixed; inset: 0; z-index: 10;
+            overflow-y: auto; overflow-x: hidden;
+            overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+        }
+
         /* Pop-ups sit on the background photo itself (darker tint) rather than a flat black
            wash, so their see-through panels show it the same way the page cards do. */
         .modal-backdrop { background: var(--modal-backdrop); }
@@ -278,6 +288,9 @@
     <div class="night-bg"></div>
     <div class="night-overlay"></div>
 
+    <!-- The page itself never scrolls; this layer does (like the VIP Check In app), so
+         phone browsers keep their bars still and don't fade grey over the photo. -->
+    <div id="pageScroll">
     <main class="relative z-10 w-full max-w-7xl mx-auto px-3 py-4 sm:p-8 flex-1 flex flex-col items-center justify-center min-h-[100dvh]">
 
         <div class="flex-1 w-full flex flex-col items-center justify-center py-8 sm:py-10">
@@ -626,6 +639,7 @@
         </div> <!-- End Center Wrapper -->
 
     </main>
+    </div>
 
     <!-- Admin Login Modal -->
     <div id="gateModal" class="fixed inset-0 z-[1000] hidden items-center justify-center p-4">
@@ -1587,7 +1601,7 @@
             setTimeout(() => target.classList.add('active'), 10);
             gsap.fromTo(target, { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.4 });
         }
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        document.getElementById('pageScroll').scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     const REMEMBERED_STUDENT_KEY = 'ts_remembered_student_id';
