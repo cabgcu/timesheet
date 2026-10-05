@@ -1,328 +1,258 @@
-// ==========================================
-// CANYON ACTIVITIES BOARD - TIMESHEET SERVER
-// ==========================================
+/*
+ * Canyon Activities Board - Timesheet Automation
+ *
+ * INSTRUCTIONS:
+ * 1. Go to https://script.google.com/ and create a "New Project".
+ * 2. Delete all existing code and paste THIS ENTIRE block.
+ * 3. Update the SUPABASE_KEY if necessary.
+ * 4. Save and run the "checkTimesheetsAndSendEmails" function once to authorize.
+ * 5. Set up your Trigger (Time-driven -> Week timer -> Monday -> 8am-9am).
+ */
 
-function setupDatabase() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+// --- CONFIGURATION ---
+const SUPABASE_URL = "https://nmmshjdknmuzpgpquwec.supabase.co";
+// Ensure this key is valid for your Supabase project
+const SUPABASE_KEY = "sb_publishable_PCxlxywY7W6K3TmMrSnSsw_NPXKugoZ";
 
-  let settingsSheet = ss.getSheetByName('Settings');
-  if (!settingsSheet) {
-    settingsSheet = ss.insertSheet('Settings');
-    settingsSheet.appendRow(['Key', 'Value']);
-    settingsSheet.getRange('A1:B1').setFontWeight('bold');
-    settingsSheet.appendRow(['AdminPassword', 'admin123']);
-    settingsSheet.appendRow(['ActiveYear', '2025-2026']);
-    settingsSheet.appendRow(['Teams', JSON.stringify(['Arts Team', 'CAB Team', 'Media Team', 'Street Team'])]);
-    settingsSheet.appendRow(['AcademicYears', JSON.stringify(['2024-2025', '2025-2026'])]);
+// --- HELPERS ---
+
+function fetchSupabase(table, query = "") {
+  const url = `${SUPABASE_URL}/rest/v1/${table}${query ? '?' + query : ''}`;
+  const options = {
+    method: "GET",
+    headers: {
+      "apikey": SUPABASE_KEY,
+      "Authorization": `Bearer ${SUPABASE_KEY}`,
+      "Content-Type": "application/json"
+    },
+    muteHttpExceptions: true
+  };
+
+  const response = UrlFetchApp.fetch(url, options);
+  if (response.getResponseCode() !== 200) {
+    Logger.log("Error fetching " + table + ": " + response.getContentText());
+    return [];
   }
-
-  let rosterSheet = ss.getSheetByName('Roster');
-  if (!rosterSheet) {
-    rosterSheet = ss.insertSheet('Roster');
-    rosterSheet.appendRow(['AcademicYear', 'StudentID', 'Name', 'Team']);
-    rosterSheet.getRange('A1:D1').setFontWeight('bold');
-  }
-
-  let subSheet = ss.getSheetByName('Submissions');
-  if (!subSheet) {
-    subSheet = ss.insertSheet('Submissions');
-    subSheet.appendRow(['AcademicYear', 'StudentID', 'Name', 'Team', 'WeekIdentifier', 'TotalHours', 'LogsJSON', 'Timestamp']);
-    subSheet.getRange('A1:H1').setFontWeight('bold');
-  }
-
-  // Drafts sheet: stores in-progress (not yet submitted) logs per student per week
-  let draftsSheet = ss.getSheetByName('Drafts');
-  if (!draftsSheet) {
-    draftsSheet = ss.insertSheet('Drafts');
-    draftsSheet.appendRow(['StudentID', 'WeekIdentifier', 'LogsJSON', 'LastUpdated']);
-    draftsSheet.getRange('A1:D1').setFontWeight('bold');
-  }
+  return JSON.parse(response.getContentText());
 }
 
-function getSetting(key) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Settings');
-  const data = sheet.getDataRange().getValues();
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][0].toString().toLowerCase() === key.toLowerCase()) return data[i][1];
-  }
-  return null;
+function formatWeekRange(dateStr) {
+  const start = new Date(dateStr + 'T00:00:00');
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6);
+
+  const options = { month: 'short', day: 'numeric' };
+  return `${start.toLocaleDateString('en-US', options)} - ${end.toLocaleDateString('en-US', options)}, ${end.getFullYear()}`;
 }
 
-function setSetting(key, value) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Settings');
-  const data = sheet.getDataRange().getValues();
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][0].toString().toLowerCase() === key.toLowerCase()) {
-      sheet.getRange(i + 1, 2).setValue(typeof value === 'string' ? value : JSON.stringify(value));
-      return;
-    }
+// --- MAIN AUTOMATION ---
+
+function checkTimesheetsAndSendEmails() {
+  Logger.log("Starting Timesheet Check...");
+
+  // 1. Determine the week identifier (Monday of last week, Arizona time)
+  const today = new Date();
+  const lastMonday = new Date(today);
+  lastMonday.setDate(today.getDate() - today.getDay() + 1 - 7);
+  const weekId = Utilities.formatDate(lastMonday, "America/Phoenix", "yyyy-MM-dd");
+  const weekString = formatWeekRange(weekId);
+
+  Logger.log("Checking week of: " + weekId + " (" + weekString + ")");
+
+  // 2. Fetch System Settings
+  const settingsData = fetchSupabase("settings");
+  let activeYear = "";
+  let threshold = 7;
+  let staffList = [];
+  let positions = [];
+
+  settingsData.forEach(row => {
+    if (row.key === "ActiveYear") activeYear = row.value;
+    if (row.key === "SubmissionThreshold") threshold = parseInt(row.value) || 7;
+    if (row.key === "Staff") staffList = JSON.parse(row.value || "[]");
+    if (row.key === "Positions") positions = JSON.parse(row.value || "[]");
+  });
+
+  if (!activeYear) {
+    Logger.log("No active year set. Exiting.");
+    return;
   }
-  sheet.appendRow([key, typeof value === 'string' ? value : JSON.stringify(value)]);
+
+  const positionMinHours = {};
+  positions.forEach(p => {
+    positionMinHours[p.name] = p.minHours;
+  });
+
+  // 3. Fetch Submissions for last week
+  const submissions = fetchSupabase("submissions", `academic_year=eq.${encodeURIComponent(activeYear)}&week_identifier=eq.${weekId}`);
+
+  // 4. CHECK THRESHOLD (Break Week Logic)
+  const activeStudentsCount = submissions.filter(s => parseFloat(s.total_hours) > 0).length;
+  Logger.log(`Active students who submitted hours: ${activeStudentsCount} / Threshold: ${threshold}`);
+
+  if (activeStudentsCount < threshold) {
+    Logger.log("Threshold not met. System assumes this is a Break Week. Emails are paused.");
+    return;
+  }
+
+  // 5. Fetch Active Roster
+  const roster = fetchSupabase("roster", `academic_year=eq.${encodeURIComponent(activeYear)}`);
+
+  // 6. Process Roster and Send Emails
+  let emailsSent = 0;
+
+  roster.forEach(student => {
+    if (!student.email || !student.position) return;
+
+    const reqHours = positionMinHours[student.position] || 0;
+    if (reqHours <= 0) return;
+
+    const studentSub = submissions.find(s => s.student_id === student.student_id);
+    const loggedHours = studentSub ? parseFloat(studentSub.total_hours) : 0;
+
+    if (loggedHours < reqHours) {
+
+      const teamDirectors = roster
+        .filter(s => s.team === student.team && s.position === "Director" && s.email)
+        .map(s => s.email);
+
+      const teamStaff = staffList
+        .filter(staff => staff.teams && staff.teams.includes(student.team) && staff.email)
+        .map(staff => staff.email);
+
+      const ccList = [...new Set([...teamDirectors, ...teamStaff])].join(",");
+
+      const subject = `Action Needed: Timesheet Update - ${weekString}`;
+
+      const htmlBody = `
+        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+
+          <div style="background-color: #000000; padding: 24px; text-align: center;">
+            <h2 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 600;">Action Required: Timesheet Update</h2>
+          </div>
+
+          <div style="padding: 32px 24px;">
+            <p style="font-size: 16px; color: #374151; margin-top: 0;">Hello <strong>${student.name}</strong>,</p>
+
+            <p style="font-size: 16px; color: #4b5563; line-height: 1.6;">
+              You are receiving this automated notification because your logged hours for the week of <strong>${weekString}</strong> did not meet your position's minimum requirement.
+            </p>
+
+            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 24px 0;">
+              <h3 style="margin-top: 0; color: #1e293b; font-size: 15px; margin-bottom: 16px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em;">Weekly Summary</h3>
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                  <td style="padding: 8px 0; color: #64748b; font-size: 15px;">Team</td>
+                  <td style="padding: 8px 0; text-align: right; font-weight: 600; color: #334155;">${student.team}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #64748b; font-size: 15px;">Position</td>
+                  <td style="padding: 8px 0; text-align: right; font-weight: 600; color: #334155;">${student.position}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #64748b; font-size: 15px;">Required Hours</td>
+                  <td style="padding: 8px 0; text-align: right; font-weight: 600; color: #059669;">${reqHours.toFixed(1)}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #64748b; font-size: 15px;">Logged Hours</td>
+                  <td style="padding: 8px 0; text-align: right; font-weight: 600; color: #e11d48;">${loggedHours.toFixed(1)}</td>
+                </tr>
+              </table>
+            </div>
+
+            <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 16px; margin-bottom: 24px; border-radius: 0 8px 8px 0;">
+              <p style="margin: 0; color: #1e3a8a; font-size: 15px; line-height: 1.5;">
+                <strong>Important:</strong> Please reach out to your staff member for next steps. As a reminder, all hours must be submitted by <strong>11:59 PM on Sunday nights</strong>.
+              </p>
+            </div>
+
+            <p style="font-size: 15px; color: #4b5563; margin-bottom: 0;">Thank you,</p>
+            <p style="font-size: 15px; color: #4b5563; font-weight: 600; margin-top: 4px;">— Canyon Activities Board</p>
+          </div>
+
+          <div style="background-color: #f9fafb; padding: 16px; border-top: 1px solid #e5e7eb; text-align: center;">
+            <p style="font-size: 12px; color: #9ca3af; margin: 0;">This is an automated message from the CAB Timesheet System.</p>
+          </div>
+        </div>
+      `;
+
+      try {
+        GmailApp.sendEmail(student.email, subject, "", {
+          htmlBody: htmlBody,
+          cc: ccList,
+          name: "Canyon Activities Board"
+        });
+        Logger.log(`Sent email to ${student.name} (${student.email}). CC: ${ccList}`);
+        emailsSent++;
+      } catch (err) {
+        Logger.log(`Failed to send email to ${student.email}: ${err.message}`);
+      }
+    }
+  });
+
+  Logger.log(`Timesheet Check Complete. Total emails sent: ${emailsSent}`);
 }
 
-function getFullRoster() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Roster');
-  const data = sheet.getDataRange().getValues();
-  const rosters = {};
-  for (let i = 1; i < data.length; i++) {
-    const year = data[i][0];
-    if (!year) continue;
-    if (!rosters[year]) rosters[year] = [];
-    rosters[year].push({ id: data[i][1].toString(), name: data[i][2], team: data[i][3] });
-  }
-  return rosters;
-}
+// --- TEST FUNCTION ---
 
-function doPost(e) {
-  let response = { success: false, message: 'Unknown error' };
+function testSendEmail() {
+  const testEmail = "Chris.Hinojosa@gcu.edu";
+  const subject = "Action Needed: Timesheet Update - [Test Date Range]";
+  const htmlBody = `
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
 
-  try {
-    const params = JSON.parse(e.postData.contents);
-    const action = params.action;
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+      <div style="background-color: #000000; padding: 24px; text-align: center;">
+        <h2 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 600;">Action Required: Timesheet Update (Test)</h2>
+      </div>
 
-    // ------------------------------------------------
-    // PUBLIC ACTIONS
-    // ------------------------------------------------
+      <div style="padding: 32px 24px;">
+        <p style="font-size: 16px; color: #374151; margin-top: 0;">Hello <strong>Student Name</strong>,</p>
 
-    if (action === 'getConfig') {
-      response = {
-        success: true,
-        activeYear: getSetting('ActiveYear'),
-        teams: JSON.parse(getSetting('Teams') || '[]'),
-        academicYears: JSON.parse(getSetting('AcademicYears') || '[]'),
-        rosters: getFullRoster()
-      };
-    }
+        <p style="font-size: 16px; color: #4b5563; line-height: 1.6;">
+          You are receiving this automated notification because your logged hours for the week of <strong>[Test Date Range]</strong> did not meet your position's minimum requirement.
+        </p>
 
-    else if (action === 'studentLogin') {
-      const rosters = getFullRoster();
-      let foundStudent = null;
+        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 24px 0;">
+          <h3 style="margin-top: 0; color: #1e293b; font-size: 15px; margin-bottom: 16px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em;">Weekly Summary</h3>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 8px 0; color: #64748b; font-size: 15px;">Team</td>
+              <td style="padding: 8px 0; text-align: right; font-weight: 600; color: #334155;">Test Team</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #64748b; font-size: 15px;">Position</td>
+              <td style="padding: 8px 0; text-align: right; font-weight: 600; color: #334155;">Test Position</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #64748b; font-size: 15px;">Required Hours</td>
+              <td style="padding: 8px 0; text-align: right; font-weight: 600; color: #059669;">10.0</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #64748b; font-size: 15px;">Logged Hours</td>
+              <td style="padding: 8px 0; text-align: right; font-weight: 600; color: #e11d48;">4.5</td>
+            </tr>
+          </table>
+        </div>
 
-      for (const year in rosters) {
-        const match = rosters[year].find(s => s.id === params.studentId.toString().trim());
-        if (match) { foundStudent = match; break; }
-      }
+        <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 16px; margin-bottom: 24px; border-radius: 0 8px 8px 0;">
+          <p style="margin: 0; color: #1e3a8a; font-size: 15px; line-height: 1.5;">
+            <strong>Important:</strong> Please reach out to your staff member for next steps. As a reminder, all hours must be submitted by <strong>11:59 PM on Sunday nights</strong>.
+          </p>
+        </div>
 
-      if (!foundStudent) {
-        response = { success: false, message: 'Student ID not found.' };
-      } else {
-        const subSheet = ss.getSheetByName('Submissions');
-        const subData = subSheet.getDataRange().getValues();
-        const studentSubmissions = [];
+        <p style="font-size: 15px; color: #4b5563; margin-bottom: 0;">Thank you,</p>
+        <p style="font-size: 15px; color: #4b5563; font-weight: 600; margin-top: 4px;">— Canyon Activities Board</p>
+      </div>
 
-        for (let i = 1; i < subData.length; i++) {
-          if (subData[i][1].toString() === foundStudent.id) {
-            studentSubmissions.push({
-              academicYear:   subData[i][0].toString(),
-              studentId:      subData[i][1].toString(),
-              studentName:    subData[i][2].toString(),
-              team:           subData[i][3].toString(),
-              weekIdentifier: subData[i][4].toString(),
-              totalHours:     Number(subData[i][5]),
-              logs:           JSON.parse(subData[i][6] || '[]')
-            });
-          }
-        }
+      <div style="background-color: #f9fafb; padding: 16px; border-top: 1px solid #e5e7eb; text-align: center;">
+        <p style="font-size: 12px; color: #9ca3af; margin: 0;">This is an automated message from the CAB Timesheet System.</p>
+      </div>
+    </div>
+  `;
 
-        response = { success: true, student: foundStudent, submissions: studentSubmissions };
-      }
-    }
-
-    // Save in-progress draft logs for the current week (not a final submission)
-    else if (action === 'saveDraft') {
-      const draftsSheet = ss.getSheetByName('Drafts');
-      if (!draftsSheet) throw new Error('Drafts sheet missing — run setupDatabase()');
-
-      const data = draftsSheet.getDataRange().getValues();
-      const logsJson = JSON.stringify(params.logs || []);
-      const now = new Date().toISOString();
-      let rowIndex = -1;
-
-      for (let i = 1; i < data.length; i++) {
-        if (data[i][0].toString() === params.studentId.toString() &&
-            data[i][1].toString() === params.weekIdentifier) {
-          rowIndex = i + 1;
-          break;
-        }
-      }
-
-      if (rowIndex > -1) {
-        draftsSheet.getRange(rowIndex, 3).setValue(logsJson);
-        draftsSheet.getRange(rowIndex, 4).setValue(now);
-      } else {
-        draftsSheet.appendRow([params.studentId.toString(), params.weekIdentifier, logsJson, now]);
-      }
-
-      response = { success: true };
-    }
-
-    // Retrieve in-progress draft logs for a student + week
-    else if (action === 'getDraft') {
-      const draftsSheet = ss.getSheetByName('Drafts');
-      if (!draftsSheet) {
-        response = { success: true, logs: [] };
-      } else {
-        const data = draftsSheet.getDataRange().getValues();
-        let logs = [];
-        for (let i = 1; i < data.length; i++) {
-          if (data[i][0].toString() === params.studentId.toString() &&
-              data[i][1].toString() === params.weekIdentifier) {
-            logs = JSON.parse(data[i][2] || '[]');
-            break;
-          }
-        }
-        response = { success: true, logs: logs };
-      }
-    }
-
-    else if (action === 'submitTimesheet') {
-      const activeYear = getSetting('ActiveYear');
-      const rosters = getFullRoster();
-      const student = (rosters[activeYear] || []).find(s => s.id === params.studentId.toString());
-      if (!student) throw new Error('Student not authorized.');
-
-      const subSheet = ss.getSheetByName('Submissions');
-      const data = subSheet.getDataRange().getValues();
-      const timestamp = new Date().toISOString();
-      let rowIndex = -1;
-
-      for (let i = 1; i < data.length; i++) {
-        if (data[i][0].toString() === activeYear &&
-            data[i][1].toString() === student.id &&
-            data[i][4].toString() === params.weekIdentifier) {
-          rowIndex = i + 1;
-          break;
-        }
-      }
-
-      if (rowIndex > -1) {
-        const existingLogs = JSON.parse(data[rowIndex - 1][6] || '[]');
-        const updatedLogs = existingLogs.concat(params.logs);
-        const newTotal = updatedLogs.reduce((sum, l) => sum + Number(l.hours), 0);
-        subSheet.getRange(rowIndex, 6).setValue(newTotal);
-        subSheet.getRange(rowIndex, 7).setValue(JSON.stringify(updatedLogs));
-        subSheet.getRange(rowIndex, 8).setValue(timestamp);
-      } else {
-        const newTotal = params.logs.reduce((sum, l) => sum + Number(l.hours), 0);
-        subSheet.appendRow([activeYear, student.id, student.name, student.team, params.weekIdentifier, newTotal, JSON.stringify(params.logs), timestamp]);
-      }
-
-      // Clear the draft once the week has been officially submitted
-      const draftsSheet = ss.getSheetByName('Drafts');
-      if (draftsSheet) {
-        const draftData = draftsSheet.getDataRange().getValues();
-        for (let i = 1; i < draftData.length; i++) {
-          if (draftData[i][0].toString() === student.id &&
-              draftData[i][1].toString() === params.weekIdentifier) {
-            draftsSheet.deleteRow(i + 1);
-            break;
-          }
-        }
-      }
-
-      response = { success: true };
-    }
-
-    // ------------------------------------------------
-    // ADMIN ACTIONS (password required)
-    // ------------------------------------------------
-
-    else {
-      if (params.password !== getSetting('AdminPassword')) {
-        return ContentService
-          .createTextOutput(JSON.stringify({ success: false, message: 'Invalid Admin Password' }))
-          .setMimeType(ContentService.MimeType.JSON);
-      }
-
-      if (action === 'adminLogin') {
-        response = { success: true };
-      }
-
-      else if (action === 'getAdminData') {
-        const subSheet = ss.getSheetByName('Submissions');
-        const subData = subSheet.getDataRange().getValues();
-        const allSubmissions = [];
-
-        for (let i = 1; i < subData.length; i++) {
-          if (!subData[i][0]) continue;
-          allSubmissions.push({
-            academicYear:   subData[i][0].toString(),
-            studentId:      subData[i][1].toString(),
-            studentName:    subData[i][2].toString(),
-            name:           subData[i][2].toString(),
-            team:           subData[i][3].toString(),
-            weekIdentifier: subData[i][4].toString(),
-            totalHours:     Number(subData[i][5]),
-            hours:          Number(subData[i][5]),
-            logs:           JSON.parse(subData[i][6] || '[]')
-          });
-        }
-
-        response = { success: true, rosters: getFullRoster(), submissions: allSubmissions };
-      }
-
-      else if (action === 'adminUpdateSubmission') {
-        const subSheet = ss.getSheetByName('Submissions');
-        const data = subSheet.getDataRange().getValues();
-        let rowFound = false;
-
-        for (let i = 1; i < data.length; i++) {
-          if (data[i][0].toString() === params.academicYear &&
-              data[i][1].toString() === params.studentId.toString() &&
-              data[i][4].toString() === params.weekIdentifier) {
-            if (params.logs.length === 0) {
-              subSheet.deleteRow(i + 1);
-            } else {
-              const newTotal = params.logs.reduce((sum, l) => sum + Number(l.hours), 0);
-              subSheet.getRange(i + 1, 6).setValue(newTotal);
-              subSheet.getRange(i + 1, 7).setValue(JSON.stringify(params.logs));
-              subSheet.getRange(i + 1, 8).setValue(new Date().toISOString());
-            }
-            rowFound = true;
-            break;
-          }
-        }
-
-        if (!rowFound && params.logs.length > 0) {
-          const activeYear = getSetting('ActiveYear');
-          const rosters = getFullRoster();
-          const student = (rosters[params.academicYear] || []).find(s => s.id === params.studentId.toString());
-          if (!student) throw new Error('Student not found');
-          const newTotal = params.logs.reduce((sum, l) => sum + Number(l.hours), 0);
-          subSheet.appendRow([params.academicYear, params.studentId, student.name, student.team, params.weekIdentifier, newTotal, JSON.stringify(params.logs), new Date().toISOString()]);
-        }
-
-        response = { success: true };
-      }
-
-      else if (action === 'saveSettings') {
-        if (params.newPassword)   setSetting('AdminPassword',  params.newPassword);
-        if (params.activeYear)    setSetting('ActiveYear',     params.activeYear);
-        if (params.teams)         setSetting('Teams',          params.teams);
-        if (params.academicYears) setSetting('AcademicYears',  params.academicYears);
-        response = { success: true };
-      }
-
-      else if (action === 'saveRoster') {
-        const rosterSheet = ss.getSheetByName('Roster');
-        if (rosterSheet.getLastRow() > 1) {
-          rosterSheet.getRange(2, 1, rosterSheet.getLastRow() - 1, 4).clearContent();
-        }
-        const newRows = [];
-        for (const year in params.rosters) {
-          (params.rosters[year] || []).forEach(s => newRows.push([year, s.id, s.name, s.team]));
-        }
-        if (newRows.length > 0) rosterSheet.getRange(2, 1, newRows.length, 4).setValues(newRows);
-        response = { success: true };
-      }
-    }
-
-  } catch (error) {
-    response = { success: false, message: error.message };
-  }
-
-  return ContentService
-    .createTextOutput(JSON.stringify(response))
-    .setMimeType(ContentService.MimeType.JSON);
+  GmailApp.sendEmail(testEmail, subject, "", {
+    htmlBody: htmlBody,
+    name: "Canyon Activities Board"
+  });
+  Logger.log(`Test email sent to ${testEmail}`);
 }

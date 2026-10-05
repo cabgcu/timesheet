@@ -483,7 +483,7 @@
                             </button>
                         </div>
                     </div>
-                    <p class="text-purple-200/60 text-xs font-medium tracking-wide mb-4">Hours logged by your team. Tap a member for their full history. <span id="teamReviewHint">Use <i data-lucide="check" class="w-3 h-3 inline text-emerald-400"></i> to approve a week or <i data-lucide="flag" class="w-3 h-3 inline text-amber-400"></i> to flag it for staff &mdash; hours count either way.</span></p>
+                    <p class="text-purple-200/60 text-xs font-medium tracking-wide mb-4">Hours logged by your team. Tap a member for their full history.</p>
                     <div id="team-memberList" class="flex flex-col gap-1 max-h-[60vh] overflow-y-auto pr-2 custom-scroll"></div>
                 </div>
             </div>
@@ -823,20 +823,6 @@
                 <button class="w-full night-btn-link text-white font-bold py-3 rounded-xl text-sm flex items-center justify-center gap-2" onclick="openGoogleReminder()">Use Google Calendar instead</button>
             </div>
             <p class="text-purple-300/50 text-[10px] leading-relaxed mt-4 text-center">"Add to Calendar" works with Apple, Outlook and most phone calendars.</p>
-        </div>
-    </div>
-
-    <!-- Note Modal (flagging a week for review) -->
-    <div id="noteModal" class="fixed inset-0 z-[1500] hidden items-center justify-center p-4">
-        <div class="absolute inset-0 modal-backdrop" onclick="closeModal('noteModal')"></div>
-        <div class="relative w-full max-w-sm night-glass-card rounded-3xl p-6 sm:p-8 flex flex-col shadow-2xl border-amber-500/40 z-10">
-            <h3 class="text-xl font-bold text-white tracking-tight mb-1" id="noteModalTitle">Flag this week</h3>
-            <p class="text-purple-200/70 text-xs leading-relaxed mb-4" id="noteModalMsg">Add a short note about what needs a second look.</p>
-            <textarea id="noteModalInput" rows="3" maxlength="300" class="control-input resize-none" placeholder="e.g. 6 hours on Tuesday looks high"></textarea>
-            <div class="flex gap-3 mt-2">
-                <button class="flex-1 night-btn-link text-white font-bold py-3 rounded-xl" onclick="closeModal('noteModal')">Cancel</button>
-                <button class="flex-1 bg-amber-600 hover:bg-amber-500 text-white font-bold py-3 rounded-xl transition" id="noteModalSaveBtn">Flag</button>
-            </div>
         </div>
     </div>
 
@@ -1844,9 +1830,6 @@
             localStorage.removeItem(`ts_pending_${state.currentUser.id}_current`);
             localStorage.removeItem(`ts_pending_${state.currentUser.id}_previous`);
 
-            state.approvals = {};
-            await loadApprovals(`student_id=eq.${encodeURIComponent(state.currentUser.id)}`);
-
             initTimesheetView();
             switchView('timesheet');
             document.getElementById('loginStudentID').value = '';
@@ -2137,11 +2120,11 @@
     }
 
     // ==========================================
-    // CHANGE HISTORY + WEEKLY APPROVALS
-    // Both tables come from features.sql. Until it has been run they don't exist, and
-    // these features stay out of the way instead of showing errors.
+    // CHANGE HISTORY
+    // The audit_log table comes from features.sql. Until it has been run it doesn't
+    // exist, and history stays out of the way instead of showing errors.
     // ==========================================
-    const optionalTables = { audit_log: true, week_approvals: true };
+    const optionalTables = { audit_log: true };
     function isMissingTable(e) { return /PGRST205|Could not find the table|does not exist/i.test(String(e && e.message)); }
 
     // Fire-and-forget: a history write must never block or fail someone's save.
@@ -2158,65 +2141,6 @@
 
     function studentActor() { return state.currentUser ? `${state.currentUser.name} (student)` : 'Student'; }
 
-    function approvalKey(year, studentId, weekId) { return `${year}|${studentId}|${weekId}`; }
-    function getApproval(year, studentId, weekId) { return (state.approvals || {})[approvalKey(year, studentId, weekId)] || null; }
-
-    // Loads review rows matching a PostgREST filter into state.approvals.
-    async function loadApprovals(query) {
-        state.approvals = state.approvals || {};
-        if (!optionalTables.week_approvals) return;
-        try {
-            const rows = await sb.select('week_approvals', query);
-            rows.forEach(r => { state.approvals[approvalKey(r.academic_year, r.student_id, r.week_identifier)] = r; });
-        } catch (e) {
-            if (isMissingTable(e)) optionalTables.week_approvals = false;
-            else console.warn('approvals load failed:', e);
-        }
-    }
-
-    // How a review should read now: hours edited after the review make it stale.
-    function approvalState(approval, currentHours) {
-        if (!approval) return null;
-        const changed = approval.hours != null && Math.abs(Number(approval.hours) - currentHours) > 1e-9;
-        return { ...approval, changed };
-    }
-
-    function approvalBadge(a, compact = false) {
-        if (!a) return '';
-        if (a.changed) return `<span class="inline-flex items-center gap-1 text-[9px] uppercase font-bold tracking-widest px-1.5 py-0.5 rounded border text-sky-300 bg-sky-500/10 border-sky-500/30" title="Hours changed after ${escapeHTML(a.reviewer || 'the reviewer')} reviewed this week"><i data-lucide="refresh-cw" class="w-3 h-3"></i>${compact ? '' : ' Changed Since Review'}</span>`;
-        if (a.status === 'approved') return `<span class="inline-flex items-center gap-1 text-[9px] uppercase font-bold tracking-widest px-1.5 py-0.5 rounded border text-emerald-400 bg-emerald-500/10 border-emerald-500/30" title="Approved by ${escapeHTML(a.reviewer || '')}"><i data-lucide="check" class="w-3 h-3"></i>${compact ? '' : ' Approved'}</span>`;
-        return `<span class="inline-flex items-center gap-1 text-[9px] uppercase font-bold tracking-widest px-1.5 py-0.5 rounded border text-amber-400 bg-amber-500/10 border-amber-500/30" title="Flagged by ${escapeHTML(a.reviewer || '')}${a.note ? ': ' + escapeHTML(a.note) : ''}"><i data-lucide="flag" class="w-3 h-3"></i>${compact ? '' : ' Flagged'}</span>`;
-    }
-
-    // One line under a week's header: badge, who reviewed it, and any note
-    function reviewLine(a) {
-        if (!a) return '';
-        const who = a.reviewer ? ` <span class="text-purple-300/60">by ${escapeHTML(a.reviewer)}</span>` : '';
-        const note = a.status === 'flagged' && a.note && !a.changed ? `<div class="text-amber-400/90 mt-1 break-words">&ldquo;${escapeHTML(a.note)}&rdquo;</div>` : '';
-        return `<div class="text-[11px] mb-3">${approvalBadge(a)}${who}${note}</div>`;
-    }
-
-    async function setApproval({ year, student, weekId, status, note, hours, reviewer }) {
-        const key = approvalKey(year, student.id, weekId);
-        const filter = `academic_year=eq.${encodeURIComponent(year)}&student_id=eq.${encodeURIComponent(student.id)}&week_identifier=eq.${encodeURIComponent(weekId)}`;
-        try {
-            if (status) {
-                const row = { academic_year: year, student_id: student.id, week_identifier: weekId, status, note: note || null, reviewer, hours, updated_at: new Date().toISOString() };
-                await sb.upsert('week_approvals', row, 'academic_year,student_id,week_identifier');
-                state.approvals[key] = row;
-            } else {
-                await sb.delete('week_approvals', filter);
-                delete state.approvals[key];
-            }
-            logChange({ year, studentId: student.id, weekId, actor: reviewer, action: status || 'clear_review', details: { note: note || '', hours } });
-            return true;
-        } catch (e) {
-            if (isMissingTable(e)) { optionalTables.week_approvals = false; showToast('Approvals need a one-time database update (features.sql).', true); }
-            else showToast('Could not save review: ' + e.message, true);
-            return false;
-        }
-    }
-
     function describeChange(row) {
         let d = {};
         try { d = JSON.parse(row.details || '{}'); } catch (e) {}
@@ -2226,9 +2150,6 @@
             case 'add': return `Added ${entry(d.after)}`;
             case 'delete': return `Deleted ${entry(d.before)}`;
             case 'edit': return `Changed ${entry(d.before)} <span class="text-purple-300/60">&rarr;</span> ${entry(d.after)}`;
-            case 'approved': return `Approved the ${week} (${formatHours(d.hours)} hrs)`;
-            case 'flagged': return `Flagged the ${week}${d.note ? `: &ldquo;${escapeHTML(d.note)}&rdquo;` : ''}`;
-            case 'clear_review': return `Cleared the review for the ${week}`;
             default: return escapeHTML(row.action);
         }
     }
@@ -2522,7 +2443,7 @@
                         </span>
                         <span class="text-xs font-bold px-2.5 py-1 bg-purple-500/20 text-purple-300 rounded-lg border border-purple-400/30 shrink-0 shadow-inner">${weekData.hours.toFixed(1)} hrs</span>
                     </div>
-                    <div class="p-4 flex flex-col gap-2">${reviewLine(approvalState(getApproval(state.activeYear, state.currentUser.id, weekId), weekData.hours))}${logsHtml}</div>
+                    <div class="p-4 flex flex-col gap-2">${logsHtml}</div>
                 </div>`;
         }).join('');
 
@@ -2554,10 +2475,7 @@
             ]);
 
             state.teamRoster = rosterRows.map(r => ({ id: r.student_id, name: r.name, team: r.team, position: r.position }));
-            if (state.teamRoster.length) {
-                const ids = state.teamRoster.map(r => `"${String(r.id).replace(/"/g, '')}"`).join(',');
-                await loadApprovals(`academic_year=eq.${encodeURIComponent(year)}&student_id=in.(${encodeURIComponent(ids)})`);
-            }
+
             state.teamSubmissions = subRows.map(s => ({
                 studentId:      s.student_id,
                 studentName:    s.student_name,
@@ -2586,7 +2504,6 @@
         const targetMonday = weekFilterVal === 'current' ? currentMonday : prevMonday;
         const targetSunday = weekFilterVal === 'current' ? currentSunday : prevSunday;
 
-        document.getElementById('teamReviewHint').classList.toggle('hidden', !optionalTables.week_approvals);
         const roster = state.teamRoster || [];
         if (roster.length === 0) {
             list.innerHTML = `<div class="text-purple-200/50 text-xs italic py-8 text-center night-glass-card-subtle rounded-2xl border-dashed border-purple-400/20">No team members found.</div>`;
@@ -2618,86 +2535,19 @@
                 else if (hasEverSubmitted) statusClass = "text-rose-400 bg-rose-500/10 border border-rose-500/20 shadow-inner";
             }
 
-            const weekId = weekFilterVal === 'current' ? CURRENT_WEEK_ID_AZ : shiftWeek(CURRENT_WEEK_ID_AZ, -1);
-            const review = approvalState(getApproval(state.activeYear, student.id, weekId), teamMemberWeekHours(student.id, weekId));
-            const isSelf = student.id === state.currentUser.id;
-            let reviewHtml = '';
-            if (optionalTables.week_approvals && weekHours > 0) {
-                if (isSelf) reviewHtml = approvalBadge(review);
-                else if (review && !review.changed) reviewHtml = `<button onclick="event.stopPropagation(); clearTeamReview('${escapeHTML(student.id)}')" title="Tap to undo">${approvalBadge(review)}</button>`;
-                else reviewHtml = `<span class="flex gap-1.5">
-                        <button onclick="event.stopPropagation(); approveTeamWeek('${escapeHTML(student.id)}')" class="text-emerald-400 hover:text-white bg-slate-900/60 hover:bg-emerald-600/40 border border-emerald-500/30 p-2 rounded-lg transition" title="Approve this week" aria-label="Approve ${escapeHTML(student.name)}'s week"><i data-lucide="check" class="w-3.5 h-3.5"></i></button>
-                        <button onclick="event.stopPropagation(); flagTeamWeek('${escapeHTML(student.id)}')" class="text-amber-400 hover:text-white bg-slate-900/60 hover:bg-amber-600/40 border border-amber-500/30 p-2 rounded-lg transition" title="Flag for review" aria-label="Flag ${escapeHTML(student.name)}'s week"><i data-lucide="flag" class="w-3.5 h-3.5"></i></button>
-                    </span>`;
-            }
-            const note = review && review.status === 'flagged' && review.note && !review.changed
-                ? `<span class="text-[11px] text-amber-400/90 mt-1 break-words">&ldquo;${escapeHTML(review.note)}&rdquo;</span>` : '';
-
             return `
                 <div class="flex justify-between items-center py-3 border-b border-purple-500/10 last:border-0 cursor-pointer hover:bg-slate-900/40 rounded-xl px-3 -mx-3 transition gap-3 group" onclick="viewTeamMemberDetails('${student.id}')">
                     <div class="flex flex-col flex-1 min-w-0">
-                        <span class="text-sm font-semibold break-words group-hover:text-white transition-colors ${weekHours === 0 ? 'text-purple-200/60' : 'text-purple-100'}">${escapeHTML(student.name)}${isSelf ? ' <span class="text-purple-300/50 text-[10px] font-bold uppercase tracking-wider">(you)</span>' : ''}</span>
+                        <span class="text-sm font-semibold break-words group-hover:text-white transition-colors ${weekHours === 0 ? 'text-purple-200/60' : 'text-purple-100'}">${escapeHTML(student.name)}</span>
                         <span class="text-[10px] text-purple-300/50 uppercase font-bold tracking-wider break-words mt-0.5">${escapeHTML(student.position || 'Student')} &bull; ID: ${escapeHTML(student.id)}</span>
-                        ${note}
                     </div>
-                    <div class="flex items-center gap-2 shrink-0">
-                        ${reviewHtml}
+                    <div class="flex flex-col items-end gap-1 shrink-0">
                         <span class="text-xs font-bold px-2.5 py-1 rounded-lg shrink-0 ${statusClass}" title="${reqHours} required">${weekHours.toFixed(1)} hrs</span>
                     </div>
                 </div>
             `;
         }).join('');
         lucide.createIcons();
-    }
-
-    function teamSelectedWeekId() {
-        return document.getElementById('teamWeekFilter').value === 'current' ? CURRENT_WEEK_ID_AZ : shiftWeek(CURRENT_WEEK_ID_AZ, -1);
-    }
-
-    function teamMemberWeekHours(studentId, weekId) {
-        let total = 0;
-        (state.teamSubmissions || []).filter(s => s.studentId === studentId).forEach(s =>
-            (s.logs || []).forEach(l => { if (getWeekIdentifier(l.date) === weekId) total += Number(l.hours) || 0; }));
-        return total;
-    }
-
-    async function approveTeamWeek(studentId) {
-        const student = (state.teamRoster || []).find(s => s.id === studentId);
-        if (!student) return;
-        const weekId = teamSelectedWeekId();
-        if (await setApproval({ year: state.activeYear, student, weekId, status: 'approved', hours: teamMemberWeekHours(studentId, weekId), reviewer: state.currentUser.name })) {
-            showToast(`Approved ${student.name.split(' ')[0]}'s week`);
-            renderTeamView();
-        }
-    }
-
-    function flagTeamWeek(studentId) {
-        const student = (state.teamRoster || []).find(s => s.id === studentId);
-        if (!student) return;
-        const weekId = teamSelectedWeekId();
-        document.getElementById('noteModalTitle').textContent = `Flag ${student.name.split(' ')[0]}'s week`;
-        document.getElementById('noteModalMsg').textContent = `Week of ${formatWeekRange(weekId)}. Add a short note about what needs a second look — staff and ${student.name.split(' ')[0]} will see it.`;
-        const input = document.getElementById('noteModalInput');
-        input.value = '';
-        document.getElementById('noteModalSaveBtn').onclick = async () => {
-            const note = input.value.trim();
-            if (!note) return showToast('Add a short note so they know what to fix.', true);
-            closeModal('noteModal');
-            if (await setApproval({ year: state.activeYear, student, weekId, status: 'flagged', note, hours: teamMemberWeekHours(studentId, weekId), reviewer: state.currentUser.name })) {
-                showToast(`Flagged ${student.name.split(' ')[0]}'s week`);
-                renderTeamView();
-            }
-        };
-        openModal('noteModal');
-        setTimeout(() => input.focus(), 50);
-    }
-
-    function clearTeamReview(studentId) {
-        const student = (state.teamRoster || []).find(s => s.id === studentId);
-        if (!student) return;
-        openConfirmModal('Undo review?', `Remove your review of ${escapeHTML(student.name)}'s week? You can approve or flag it again afterwards.`, 'Undo Review', async () => {
-            if (await setApproval({ year: state.activeYear, student, weekId: teamSelectedWeekId(), status: null, reviewer: state.currentUser.name })) renderTeamView();
-        }, 'neutral');
     }
 
     function viewTeamMemberDetails(studentId) {
@@ -2824,8 +2674,6 @@
             });
             state.rosters = rosters;
             state.adminViewingYear = state.activeYear;
-            state.approvals = {};
-            await loadApprovals('');
 
             hideGate(); showToast('Access Granted');
             renderSettingsManager();
@@ -2899,8 +2747,7 @@
                                 <span class="text-sm font-semibold truncate group-hover:text-white transition-colors ${weekHours === 0 ? 'text-purple-200/60' : 'text-purple-100'}">${escapeHTML(student.name)}</span>
                                 <span class="text-[10px] text-purple-300/50 uppercase font-bold tracking-wider truncate mt-0.5">${escapeHTML(student.position || 'Student')} &bull; ID: ${escapeHTML(student.id)}</span>
                             </div>
-                            <div class="flex items-center gap-1.5 shrink-0">
-                                ${approvalBadge(approvalState(getApproval(yearFilterVal, student.id, adminSelectedWeekId()), studentWeekHours(student.id, yearFilterVal, adminSelectedWeekId())), true)}
+                            <div class="flex flex-col items-end gap-1 shrink-0">
                                 <span class="text-xs font-bold px-2.5 py-1 rounded-lg shrink-0 ${statusClass}" title="${reqHours} required">${weekHours.toFixed(1)} hrs</span>
                             </div>
                         </div>
@@ -3278,7 +3125,6 @@
                             <span class="text-sm font-bold text-white flex items-center flex-wrap gap-y-1"><i data-lucide="calendar" class="w-4 h-4 text-purple-400 mr-2 shrink-0"></i> ${weekTitle} ${statusBadge}</span>
                             <span class="text-xs font-bold px-2.5 py-1 bg-purple-500/20 text-purple-300 rounded-lg border border-purple-400/30 shrink-0 shadow-inner">${weekData.hours.toFixed(1)} hrs</span>
                         </div>
-                        ${reviewLine(approvalState(getApproval(academicYear, sid, weekId), weekData.hours))}
                         <div class="border-l-2 border-purple-500/20 pl-3">${logsHtml}</div>
                         ${addBtn}
                     </div>`;
@@ -3909,17 +3755,14 @@
         const summary = roster.map(st => {
             const req = getReqHours(st.position);
             const logged = studentWeekHours(st.id, yearFilterVal, weekId);
-            const approval = getApproval(yearFilterVal, st.id, weekId);
             return {
                 "Team": st.team, "Student Name": st.name, "Student ID": st.id, "Email": st.email || '', "Position": st.position || '',
                 "Required": req, "Logged": Math.round(logged * 100) / 100,
-                "Status": req > 0 ? (logged + 1e-9 >= req ? 'Met' : logged > 0 ? 'Behind' : 'None logged') : (logged > 0 ? 'Logged' : 'None logged'),
-                "Review": approval ? (approval.status === 'approved' ? 'Approved' : 'Flagged') : '',
-                "Review Note": approval && approval.note ? approval.note : ''
+                "Status": req > 0 ? (logged + 1e-9 >= req ? 'Met' : logged > 0 ? 'Behind' : 'None logged') : (logged > 0 ? 'Logged' : 'None logged')
             };
         });
         const wsSummary = XLSX.utils.json_to_sheet(summary);
-        wsSummary['!cols'] = [{wch: 15}, {wch: 22}, {wch: 12}, {wch: 26}, {wch: 18}, {wch: 9}, {wch: 8}, {wch: 12}, {wch: 10}, {wch: 40}];
+        wsSummary['!cols'] = [{wch: 15}, {wch: 22}, {wch: 12}, {wch: 26}, {wch: 18}, {wch: 9}, {wch: 8}, {wch: 12}];
 
         // Sheet 2: hours per student per week across the year (handy for payroll)
         const weekIds = [...new Set(state.submissions.filter(sb => sb.academicYear === yearFilterVal)
