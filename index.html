@@ -13,6 +13,8 @@
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="https://i.imgur.com/ZAdO6Qa.png" />
     <link rel="apple-touch-icon" href="https://i.imgur.com/ZAdO6Qa.png" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <meta name="theme-color" content="#131316" />
     
     <!-- Canvas Confetti -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -315,6 +317,9 @@
                     </button>
 
                     <div class="mt-8 pt-6 border-t border-purple-500/20 flex flex-col items-center gap-2">
+                        <button class="install-btn hidden night-btn-link text-white text-xs font-semibold px-4 py-2 rounded-xl items-center gap-2 mb-2" onclick="installApp()">
+                            <i data-lucide="smartphone" class="w-4 h-4 text-purple-400"></i> Add to Home Screen
+                        </button>
                         <span class="text-purple-300/50 text-[11px] tracking-wide">© <span id="year"></span> Canyon Activities Board</span>
                         <button class="opacity-60 hover:opacity-100 transition-all uppercase tracking-widest bg-transparent border-none text-[10px] cursor-pointer text-purple-400 hover:text-purple-300 p-1" onclick="showGate()">Staff Access</button>
                     </div>
@@ -336,6 +341,26 @@
                                 <span id="ts-totalHours">0.0</span>
                                 <span class="text-xs font-semibold text-purple-300/70" id="ts-reqHours">/ 0.0 required</span>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Progress toward this week's minimum -->
+                    <div id="ts-progress" class="hidden mb-5">
+                        <div class="h-2.5 w-full rounded-full bg-slate-900/70 border border-purple-500/20 overflow-hidden">
+                            <div id="ts-progressFill" class="h-full rounded-full transition-all duration-500" style="width:0%"></div>
+                        </div>
+                        <div id="ts-progressText" class="text-[11px] font-semibold text-purple-200/70 mt-2"></div>
+                    </div>
+
+                    <!-- Year total + streak -->
+                    <div class="grid grid-cols-2 gap-3 mb-8">
+                        <div class="night-glass-card-subtle rounded-2xl border-purple-400/20 p-3.5">
+                            <div class="text-purple-200/60 text-[10px] font-bold uppercase tracking-widest mb-1">This Year</div>
+                            <div class="text-xl font-black text-white"><span id="ts-yearTotal">0.0</span> <span class="text-xs font-semibold text-purple-300/70">hrs</span></div>
+                        </div>
+                        <div class="night-glass-card-subtle rounded-2xl border-purple-400/20 p-3.5">
+                            <div class="text-purple-200/60 text-[10px] font-bold uppercase tracking-widest mb-1" id="ts-streakLabel">Weeks On Target</div>
+                            <div class="text-xl font-black text-white flex items-center gap-1.5"><i data-lucide="flame" class="w-4 h-4 text-amber-400" id="ts-streakIcon"></i><span id="ts-streak">0</span> <span class="text-xs font-semibold text-purple-300/70" id="ts-streakUnit">in a row</span></div>
                         </div>
                     </div>
 
@@ -371,6 +396,10 @@
                         <div class="form-group">
                             <label for="entryTask" class="form-label">Task Description</label>
                             <input type="text" id="entryTask" class="control-input" placeholder="What did you work on?" />
+                            <div id="recentTasks" class="hidden">
+                                <div class="text-[10px] text-purple-300/60 font-bold uppercase tracking-widest mb-2">Recent tasks &mdash; tap to reuse</div>
+                                <div id="recentTasksList" class="flex flex-wrap gap-2"></div>
+                            </div>
                         </div>
                         <button id="saveEntryBtn" class="w-full night-btn-link text-white font-bold py-3.5 rounded-xl transition-all flex justify-center items-center gap-2 hover:bg-white/10 border-purple-400/50 shadow-md" onclick="saveTimeEntry()">
                             <i data-lucide="plus" class="w-4 h-4 text-purple-400" id="saveEntryIcon"></i> <span id="saveEntryText">Add to Week</span>
@@ -383,7 +412,13 @@
                     
                     <div class="flex justify-between items-center mt-8 px-2 gap-3 flex-wrap">
                         <button class="text-purple-300/60 hover:text-white text-xs font-semibold transition tracking-wide" onclick="logout()">Not you? Switch account</button>
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 flex-wrap justify-end">
+                            <button class="install-btn hidden night-btn-link text-white text-xs font-semibold transition items-center gap-2 px-4 py-2 rounded-xl" onclick="installApp()">
+                                <i data-lucide="smartphone" class="w-4 h-4 text-purple-400"></i> Install
+                            </button>
+                            <button class="night-btn-link text-white text-xs font-semibold transition flex items-center gap-2 px-4 py-2 rounded-xl" onclick="openReminderModal()">
+                                <i data-lucide="bell" class="w-4 h-4 text-purple-400"></i> Reminder
+                            </button>
                             <button id="teamHoursBtn" class="hidden night-btn-link text-white text-xs font-semibold transition items-center gap-2 px-4 py-2 rounded-xl" onclick="showTeamView()">
                                 <i data-lucide="users" class="w-4 h-4 text-purple-400"></i> Team Hours
                             </button>
@@ -448,7 +483,7 @@
                             </button>
                         </div>
                     </div>
-                    <p class="text-purple-200/60 text-xs font-medium tracking-wide mb-4">Hours logged by your team. Tap a member for their full history.</p>
+                    <p class="text-purple-200/60 text-xs font-medium tracking-wide mb-4">Hours logged by your team. Tap a member for their full history. <span id="teamReviewHint">Use <i data-lucide="check" class="w-3 h-3 inline text-emerald-400"></i> to approve a week or <i data-lucide="flag" class="w-3 h-3 inline text-amber-400"></i> to flag it for staff &mdash; hours count either way.</span></p>
                     <div id="team-memberList" class="flex flex-col gap-1 max-h-[60vh] overflow-y-auto pr-2 custom-scroll"></div>
                 </div>
             </div>
@@ -481,6 +516,25 @@
                         </button>
                     </div>
                 </div>
+                <!-- Who's behind this week -->
+                <div id="admin-behind" class="night-glass-card rounded-3xl border-purple-400/40 p-5 sm:p-6 mb-6"></div>
+
+                <!-- Hours by team, per week -->
+                <div class="night-glass-card rounded-3xl border-purple-400/40 p-5 sm:p-6 mb-6">
+                    <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+                        <div>
+                            <h3 class="text-lg font-extrabold text-white tracking-tight">Hours by Team, per Week</h3>
+                            <p class="text-purple-200/60 text-xs mt-0.5" id="chartSubtitle">Total hours each team logged, Monday to Sunday.</p>
+                        </div>
+                        <button id="chartTableToggle" class="night-btn-link text-white text-xs font-semibold px-4 py-2 rounded-xl flex items-center gap-2" onclick="toggleChartTable()">
+                            <i data-lucide="table" class="w-4 h-4 text-purple-400"></i> <span>Show table</span>
+                        </button>
+                    </div>
+                    <div id="chartLegend" class="flex flex-wrap gap-x-4 gap-y-1.5 mb-3"></div>
+                    <div id="teamChart" class="relative w-full"></div>
+                    <div id="teamChartTable" class="hidden overflow-x-auto custom-scroll"></div>
+                </div>
+
                 <div id="admin-teamCards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10"></div>
             </div>
 
@@ -598,6 +652,9 @@
                                     <button class="night-btn-link text-white px-5 rounded-xl transition-all shrink-0 text-xs font-bold" onclick="addYear()">Add</button>
                                 </div>
                                 <div id="settings-yearList" class="flex flex-col gap-2 max-h-[150px] overflow-y-auto pr-2 custom-scroll"></div>
+                                <button class="w-full mt-4 night-btn-link text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2 text-xs uppercase tracking-wide" onclick="openNewYearModal()">
+                                    <i data-lucide="calendar-plus" class="w-4 h-4 text-purple-400"></i> Start New Year
+                                </button>
                             </div>
                         </div>
 
@@ -705,6 +762,11 @@
 
             <div class="text-purple-300/50 text-[10px] font-bold tracking-widest uppercase mb-3 px-2">Weekly Breakdown</div>
             <div id="detailModalLogs" class="flex flex-col gap-3 pr-2"></div>
+
+            <button id="detailHistoryBtn" class="mt-2 w-full night-btn-link text-white text-xs font-bold py-3 rounded-xl flex items-center justify-center gap-2" onclick="toggleChangeHistory()">
+                <i data-lucide="history" class="w-4 h-4 text-purple-400"></i> <span>Show Change History</span>
+            </button>
+            <div id="detailHistory" class="hidden mt-3 night-glass-card-subtle rounded-2xl border-purple-400/30 px-4 py-1 max-h-[320px] overflow-y-auto custom-scroll"></div>
         </div>
     </div>
     
@@ -733,11 +795,77 @@
         </div>
     </div>
 
+    <!-- Weekly Reminder Modal (adds a repeating event to the student's own calendar) -->
+    <div id="reminderModal" class="fixed inset-0 z-[1000] hidden items-center justify-center p-4">
+        <div class="absolute inset-0 modal-backdrop" onclick="closeModal('reminderModal')"></div>
+        <div class="relative w-full max-w-sm night-glass-card rounded-3xl p-6 sm:p-8 flex flex-col shadow-2xl border-purple-400/50 z-10">
+            <div class="flex justify-between items-start mb-4">
+                <h3 class="text-xl font-bold text-white tracking-tight flex items-center gap-2"><i data-lucide="bell" class="w-5 h-5 text-purple-400"></i> Weekly Reminder</h3>
+                <button class="text-purple-200 hover:text-white bg-slate-900/50 hover:bg-white/10 border border-purple-400/30 p-2 rounded-xl transition" onclick="closeModal('reminderModal')"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <p class="text-purple-200/70 text-xs leading-relaxed mb-5">Pick when you'd like a nudge to log your hours. It's added to your own calendar and repeats every week.</p>
+            <div class="grid grid-cols-2 gap-3 mb-5">
+                <div>
+                    <label for="reminderDay" class="form-label">Day</label>
+                    <select id="reminderDay" class="control-input !mb-0">
+                        <option value="MO">Monday</option><option value="TU">Tuesday</option><option value="WE">Wednesday</option>
+                        <option value="TH">Thursday</option><option value="FR">Friday</option><option value="SA">Saturday</option>
+                        <option value="SU" selected>Sunday</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="reminderTime" class="form-label">Time</label>
+                    <input type="time" id="reminderTime" class="control-input !mb-0" value="18:00" style="color-scheme: dark;" />
+                </div>
+            </div>
+            <div class="flex flex-col gap-2.5">
+                <button class="w-full night-btn-primary font-bold py-3 rounded-xl text-sm flex items-center justify-center gap-2" onclick="downloadReminder()"><i data-lucide="calendar-plus" class="w-4 h-4"></i> Add to Calendar</button>
+                <button class="w-full night-btn-link text-white font-bold py-3 rounded-xl text-sm flex items-center justify-center gap-2" onclick="openGoogleReminder()">Use Google Calendar instead</button>
+            </div>
+            <p class="text-purple-300/50 text-[10px] leading-relaxed mt-4 text-center">"Add to Calendar" works with Apple, Outlook and most phone calendars.</p>
+        </div>
+    </div>
+
+    <!-- Note Modal (flagging a week for review) -->
+    <div id="noteModal" class="fixed inset-0 z-[1500] hidden items-center justify-center p-4">
+        <div class="absolute inset-0 modal-backdrop" onclick="closeModal('noteModal')"></div>
+        <div class="relative w-full max-w-sm night-glass-card rounded-3xl p-6 sm:p-8 flex flex-col shadow-2xl border-amber-500/40 z-10">
+            <h3 class="text-xl font-bold text-white tracking-tight mb-1" id="noteModalTitle">Flag this week</h3>
+            <p class="text-purple-200/70 text-xs leading-relaxed mb-4" id="noteModalMsg">Add a short note about what needs a second look.</p>
+            <textarea id="noteModalInput" rows="3" maxlength="300" class="control-input resize-none" placeholder="e.g. 6 hours on Tuesday looks high"></textarea>
+            <div class="flex gap-3 mt-2">
+                <button class="flex-1 night-btn-link text-white font-bold py-3 rounded-xl" onclick="closeModal('noteModal')">Cancel</button>
+                <button class="flex-1 bg-amber-600 hover:bg-amber-500 text-white font-bold py-3 rounded-xl transition" id="noteModalSaveBtn">Flag</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Start New Academic Year Modal -->
+    <div id="newYearModal" class="fixed inset-0 z-[1000] hidden items-center justify-center p-4">
+        <div class="absolute inset-0 modal-backdrop" onclick="closeModal('newYearModal')"></div>
+        <div class="relative w-full max-w-md night-glass-card rounded-3xl p-6 sm:p-8 flex flex-col shadow-2xl border-purple-400/50 z-10">
+            <div class="flex justify-between items-start mb-4">
+                <h3 class="text-xl font-bold text-white tracking-tight flex items-center gap-2"><i data-lucide="calendar-plus" class="w-5 h-5 text-purple-400"></i> Start a New Year</h3>
+                <button class="text-purple-200 hover:text-white bg-slate-900/50 hover:bg-white/10 border border-purple-400/30 p-2 rounded-xl transition" onclick="closeModal('newYearModal')"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <p class="text-purple-200/70 text-xs leading-relaxed mb-5">Creates the new year, copies the roster over so you don't re-enter everyone, and saves it. Past years' hours are kept.</p>
+            <label for="newYearName" class="form-label">New year</label>
+            <input type="text" id="newYearName" class="control-input" placeholder="e.g. 2027-2028" />
+            <label for="newYearCopyFrom" class="form-label">Copy roster from</label>
+            <select id="newYearCopyFrom" class="control-input"></select>
+            <label class="flex items-center gap-3 text-sm text-white font-medium mb-6 cursor-pointer">
+                <input type="checkbox" id="newYearMakeActive" class="w-4 h-4 accent-blue-600" checked />
+                Make it the active year now
+            </label>
+            <button class="w-full night-btn-primary font-bold py-3.5 rounded-xl text-sm flex items-center justify-center gap-2" id="newYearBtn" onclick="startNewYear()">Create Year</button>
+        </div>
+    </div>
+
     <!-- Custom Confirm Modal -->
     <div id="confirmModal" class="fixed inset-0 z-[2000] hidden items-center justify-center p-4">
         <div class="absolute inset-0 modal-backdrop" onclick="closeConfirmModal()"></div>
-        <div class="relative w-full max-w-sm night-glass-card rounded-3xl p-8 flex flex-col text-center shadow-2xl border-rose-500/40 z-10">
-            <div class="w-14 h-14 bg-rose-500/20 rounded-full flex items-center justify-center mx-auto mb-5 text-rose-400 border border-rose-500/30">
+        <div class="relative w-full max-w-sm night-glass-card rounded-3xl p-8 flex flex-col text-center shadow-2xl border-rose-500/40 z-10" id="confirmModalCard">
+            <div class="w-14 h-14 bg-rose-500/20 rounded-full flex items-center justify-center mx-auto mb-5 text-rose-400 border border-rose-500/30" id="confirmModalIcon">
                 <i data-lucide="alert-triangle" class="w-7 h-7"></i>
             </div>
             <h3 class="text-2xl font-bold mb-2 text-white tracking-tight" id="confirmModalTitle">Are you sure?</h3>
@@ -1462,6 +1590,37 @@
         if (!str) return '';
         return str.toString().replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
     }
+    // Monday (YYYY-MM-DD) n weeks before/after the given Monday
+    function shiftWeek(weekId, n) {
+        const d = new Date(weekId + 'T00:00:00Z');
+        d.setUTCDate(d.getUTCDate() + 7 * n);
+        return d.toISOString().split('T')[0];
+    }
+    // 2 -> "2", 2.5 -> "2.5", 2.25 -> "2.25"
+    function formatHours(h) { return String(Math.round((Number(h) || 0) * 100) / 100); }
+    function getReqHours(position) {
+        const p = state.positions.find(p => p.name === position);
+        return p ? Number(p.minHours) || 0 : 0;
+    }
+    function formatDay(dateStr) {
+        return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    }
+
+    // Generic open/close for the simple pop-ups (reminder, note, new year)
+    function openModal(id) {
+        const modal = document.getElementById(id);
+        modal.style.display = 'flex';
+        modal.classList.remove('hidden');
+        gsap.fromTo(modal.querySelector('.night-glass-card'), { scale: 0.9, opacity: 0, y: 20 }, { scale: 1, opacity: 1, y: 0, duration: 0.35, ease: "back.out(1.2)" });
+        lucide.createIcons();
+    }
+    function closeModal(id) {
+        const modal = document.getElementById(id);
+        gsap.to(modal.querySelector('.night-glass-card'), { scale: 0.9, opacity: 0, y: 20, duration: 0.2, onComplete: () => {
+            modal.style.display = 'none';
+            modal.classList.add('hidden');
+        }});
+    }
 
     // Default Positions fallback
     const DEFAULT_POSITIONS = [
@@ -1509,6 +1668,7 @@
 
     async function init() {
         document.getElementById('year').textContent = new Date().getFullYear();
+        updateInstallButtons();
         lucide.createIcons();
         
         // Immediately show login view so animations trigger visibly
@@ -1684,6 +1844,9 @@
             localStorage.removeItem(`ts_pending_${state.currentUser.id}_current`);
             localStorage.removeItem(`ts_pending_${state.currentUser.id}_previous`);
 
+            state.approvals = {};
+            await loadApprovals(`student_id=eq.${encodeURIComponent(state.currentUser.id)}`);
+
             initTimesheetView();
             switchView('timesheet');
             document.getElementById('loginStudentID').value = '';
@@ -1734,7 +1897,9 @@
         el.addEventListener('animationend', () => el.classList.add('hidden'), { once: true });
     }
 
-    function saveTimeEntry(gameConfirmed = false) {
+    // opts.dupOk: student already confirmed a same-day, same-task entry.
+    // opts.gamePassed: Drew already cleared Flappy Drew for this entry.
+    function saveTimeEntry(opts = {}) {
         const date = document.getElementById('entryDate').value;
         const hours = parseFloat(document.getElementById('entryHours').value);
         const task = document.getElementById('entryTask').value.trim();
@@ -1746,8 +1911,23 @@
 
         if(dateVal < minBound || dateVal > maxBound) return showToast("Selected date is outside the allowed logging window.", true);
 
+        const dayError = checkDayLimit(state.currentWeekEntries, date, hours, state.editingEntryId);
+        if (dayError) return showToast(dayError, true);
+
+        // Same task on the same day is usually a double-tap or a copy mistake.
+        if (!opts.dupOk) {
+            const dup = state.currentWeekEntries.find(e => e.date === date && String(e.id) !== String(state.editingEntryId)
+                && (e.task || '').trim().toLowerCase() === task.toLowerCase());
+            if (dup) {
+                return openConfirmModal('Log this again?',
+                    `You already logged <b class="text-white">${escapeHTML(dup.task)}</b> (${formatHours(dup.hours)} hrs) on ${formatDay(date)}. Add another entry anyway?`,
+                    'Add Anyway', () => saveTimeEntry({ ...opts, dupOk: true }), 'neutral');
+            }
+        }
+
         // Drew Colucci has to score 35 in Flappy Drew every time he adds hours.
-        if (!gameConfirmed && !state.editingEntryId && isDrew()) {
+        if (!opts.gamePassed && !state.editingEntryId && isDrew()) {
+            state.pendingEntryOpts = opts;
             return openFlappyModal();
         }
 
@@ -1755,7 +1935,9 @@
         if (state.editingEntryId) {
             const index = state.currentWeekEntries.findIndex(e => String(e.id) === String(state.editingEntryId));
             if (index !== -1) replacedKey = logKey(state.currentWeekEntries[index]);
+            const before = index !== -1 ? state.currentWeekEntries[index] : null;
             entry = { id: index !== -1 && state.currentWeekEntries[index].id != null ? state.currentWeekEntries[index].id : Date.now(), date, hours, task };
+            logChange({ year: state.activeYear, studentId: state.currentUser.id, weekId: CURRENT_WEEK_ID_AZ, actor: studentActor(), action: before ? 'edit' : 'add', details: { before, after: entry } });
             if (index !== -1) state.currentWeekEntries[index] = entry;
             else state.currentWeekEntries.push(entry);
             showToast("Entry updated successfully!");
@@ -1763,12 +1945,24 @@
         } else {
             entry = { id: Date.now(), date, hours, task };
             state.currentWeekEntries.push(entry);
+            logChange({ year: state.activeYear, studentId: state.currentUser.id, weekId: CURRENT_WEEK_ID_AZ, actor: studentActor(), action: 'add', details: { after: entry } });
             showToast("Hours added to current week!");
             document.getElementById('entryHours').value = "";
             document.getElementById('entryTask').value = "";
         }
         queueWeekChange(logs => mergeLogs(logs.map(l => logKey(l) === replacedKey ? entry : l), [entry]));
         renderTimesheetEntries();
+    }
+
+    // No single entry, and no single day, can go over 24 hours. Returns an error message or ''.
+    function checkDayLimit(logs, date, hours, ignoreId, ignoreLog) {
+        if (hours <= 0) return 'Hours must be more than 0.';
+        if (hours > 24) return 'One entry can\'t be more than 24 hours.';
+        const already = (logs || [])
+            .filter(l => l.date === date && l !== ignoreLog && (ignoreId == null || String(l.id) !== String(ignoreId)))
+            .reduce((s, l) => s + (Number(l.hours) || 0), 0);
+        if (already + hours > 24) return `That would put ${formatDay(date)} over 24 hours (${formatHours(already)} already logged that day).`;
+        return '';
     }
 
     function isDrew() {
@@ -1798,7 +1992,7 @@
         if (!frame || e.source !== frame.contentWindow || !e.data || e.data.flappyDrew !== 'passed') return;
         if (!(e.data.score >= 35)) return;
         closeFlappyModal();
-        saveTimeEntry(true);
+        saveTimeEntry({ ...(state.pendingEntryOpts || {}), gamePassed: true });
     });
 
     function editEntry(id) {
@@ -1852,6 +2046,7 @@
         if (!entry) return;
         const key = logKey(entry);
         state.currentWeekEntries = state.currentWeekEntries.filter(e => e !== entry);
+        logChange({ year: state.activeYear, studentId: state.currentUser.id, weekId: CURRENT_WEEK_ID_AZ, actor: studentActor(), action: 'delete', details: { before: entry } });
         queueWeekChange(logs => logs.filter(l => logKey(l) !== key));
         renderTimesheetEntries();
     }
@@ -1941,7 +2136,132 @@
             });
     }
 
+    // ==========================================
+    // CHANGE HISTORY + WEEKLY APPROVALS
+    // Both tables come from features.sql. Until it has been run they don't exist, and
+    // these features stay out of the way instead of showing errors.
+    // ==========================================
+    const optionalTables = { audit_log: true, week_approvals: true };
+    function isMissingTable(e) { return /PGRST205|Could not find the table|does not exist/i.test(String(e && e.message)); }
+
+    // Fire-and-forget: a history write must never block or fail someone's save.
+    function logChange({ year, studentId, weekId, actor, action, details }) {
+        if (!optionalTables.audit_log) return;
+        sb.insert('audit_log', {
+            academic_year: year, student_id: studentId, week_identifier: weekId,
+            actor, action, details: JSON.stringify(details || {})
+        }).catch(e => {
+            if (isMissingTable(e)) optionalTables.audit_log = false;
+            else console.warn('history write failed:', e);
+        });
+    }
+
+    function studentActor() { return state.currentUser ? `${state.currentUser.name} (student)` : 'Student'; }
+
+    function approvalKey(year, studentId, weekId) { return `${year}|${studentId}|${weekId}`; }
+    function getApproval(year, studentId, weekId) { return (state.approvals || {})[approvalKey(year, studentId, weekId)] || null; }
+
+    // Loads review rows matching a PostgREST filter into state.approvals.
+    async function loadApprovals(query) {
+        state.approvals = state.approvals || {};
+        if (!optionalTables.week_approvals) return;
+        try {
+            const rows = await sb.select('week_approvals', query);
+            rows.forEach(r => { state.approvals[approvalKey(r.academic_year, r.student_id, r.week_identifier)] = r; });
+        } catch (e) {
+            if (isMissingTable(e)) optionalTables.week_approvals = false;
+            else console.warn('approvals load failed:', e);
+        }
+    }
+
+    // How a review should read now: hours edited after the review make it stale.
+    function approvalState(approval, currentHours) {
+        if (!approval) return null;
+        const changed = approval.hours != null && Math.abs(Number(approval.hours) - currentHours) > 1e-9;
+        return { ...approval, changed };
+    }
+
+    function approvalBadge(a, compact = false) {
+        if (!a) return '';
+        if (a.changed) return `<span class="inline-flex items-center gap-1 text-[9px] uppercase font-bold tracking-widest px-1.5 py-0.5 rounded border text-sky-300 bg-sky-500/10 border-sky-500/30" title="Hours changed after ${escapeHTML(a.reviewer || 'the reviewer')} reviewed this week"><i data-lucide="refresh-cw" class="w-3 h-3"></i>${compact ? '' : ' Changed Since Review'}</span>`;
+        if (a.status === 'approved') return `<span class="inline-flex items-center gap-1 text-[9px] uppercase font-bold tracking-widest px-1.5 py-0.5 rounded border text-emerald-400 bg-emerald-500/10 border-emerald-500/30" title="Approved by ${escapeHTML(a.reviewer || '')}"><i data-lucide="check" class="w-3 h-3"></i>${compact ? '' : ' Approved'}</span>`;
+        return `<span class="inline-flex items-center gap-1 text-[9px] uppercase font-bold tracking-widest px-1.5 py-0.5 rounded border text-amber-400 bg-amber-500/10 border-amber-500/30" title="Flagged by ${escapeHTML(a.reviewer || '')}${a.note ? ': ' + escapeHTML(a.note) : ''}"><i data-lucide="flag" class="w-3 h-3"></i>${compact ? '' : ' Flagged'}</span>`;
+    }
+
+    // One line under a week's header: badge, who reviewed it, and any note
+    function reviewLine(a) {
+        if (!a) return '';
+        const who = a.reviewer ? ` <span class="text-purple-300/60">by ${escapeHTML(a.reviewer)}</span>` : '';
+        const note = a.status === 'flagged' && a.note && !a.changed ? `<div class="text-amber-400/90 mt-1 break-words">&ldquo;${escapeHTML(a.note)}&rdquo;</div>` : '';
+        return `<div class="text-[11px] mb-3">${approvalBadge(a)}${who}${note}</div>`;
+    }
+
+    async function setApproval({ year, student, weekId, status, note, hours, reviewer }) {
+        const key = approvalKey(year, student.id, weekId);
+        const filter = `academic_year=eq.${encodeURIComponent(year)}&student_id=eq.${encodeURIComponent(student.id)}&week_identifier=eq.${encodeURIComponent(weekId)}`;
+        try {
+            if (status) {
+                const row = { academic_year: year, student_id: student.id, week_identifier: weekId, status, note: note || null, reviewer, hours, updated_at: new Date().toISOString() };
+                await sb.upsert('week_approvals', row, 'academic_year,student_id,week_identifier');
+                state.approvals[key] = row;
+            } else {
+                await sb.delete('week_approvals', filter);
+                delete state.approvals[key];
+            }
+            logChange({ year, studentId: student.id, weekId, actor: reviewer, action: status || 'clear_review', details: { note: note || '', hours } });
+            return true;
+        } catch (e) {
+            if (isMissingTable(e)) { optionalTables.week_approvals = false; showToast('Approvals need a one-time database update (features.sql).', true); }
+            else showToast('Could not save review: ' + e.message, true);
+            return false;
+        }
+    }
+
+    function describeChange(row) {
+        let d = {};
+        try { d = JSON.parse(row.details || '{}'); } catch (e) {}
+        const entry = l => l ? `${formatHours(l.hours)} hrs on ${formatDay(l.date)} &mdash; &ldquo;${escapeHTML(l.task)}&rdquo;` : '';
+        const week = row.week_identifier ? `week of ${formatWeekRange(row.week_identifier)}` : 'a week';
+        switch (row.action) {
+            case 'add': return `Added ${entry(d.after)}`;
+            case 'delete': return `Deleted ${entry(d.before)}`;
+            case 'edit': return `Changed ${entry(d.before)} <span class="text-purple-300/60">&rarr;</span> ${entry(d.after)}`;
+            case 'approved': return `Approved the ${week} (${formatHours(d.hours)} hrs)`;
+            case 'flagged': return `Flagged the ${week}${d.note ? `: &ldquo;${escapeHTML(d.note)}&rdquo;` : ''}`;
+            case 'clear_review': return `Cleared the review for the ${week}`;
+            default: return escapeHTML(row.action);
+        }
+    }
+
+    async function toggleChangeHistory() {
+        const box = document.getElementById('detailHistory');
+        const btn = document.getElementById('detailHistoryBtn');
+        if (!box.classList.contains('hidden')) {
+            box.classList.add('hidden');
+            btn.querySelector('span').textContent = 'Show Change History';
+            return;
+        }
+        box.classList.remove('hidden');
+        btn.querySelector('span').textContent = 'Hide Change History';
+        box.innerHTML = '<div class="text-purple-200/50 text-xs py-4 text-center">Loading…</div>';
+        const notSetUp = '<div class="text-purple-200/60 text-xs leading-relaxed py-3">Change history isn\'t switched on yet. Run <b class="text-white">features.sql</b> once in the Supabase SQL editor; changes are recorded from then on.</div>';
+        if (!optionalTables.audit_log) { box.innerHTML = notSetUp; return; }
+        try {
+            const rows = await sb.select('audit_log', `student_id=eq.${encodeURIComponent(state.viewingStudentId)}&order=created_at.desc&limit=100`);
+            box.innerHTML = rows.length ? rows.map(r => `
+                <div class="py-2.5 border-b border-purple-500/10 last:border-0">
+                    <div class="text-xs text-purple-100 leading-relaxed break-words">${describeChange(r)}</div>
+                    <div class="text-[10px] text-purple-300/50 font-semibold mt-0.5">${escapeHTML(r.actor || 'Unknown')} &bull; ${new Date(r.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</div>
+                </div>`).join('')
+                : '<div class="text-purple-200/50 text-xs py-4 text-center">No changes recorded yet.</div>';
+        } catch (e) {
+            if (isMissingTable(e)) { optionalTables.audit_log = false; box.innerHTML = notSetUp; }
+            else box.innerHTML = `<div class="text-rose-400 text-xs py-3">Could not load history: ${escapeHTML(e.message)}</div>`;
+        }
+    }
+
     function renderTimesheetEntries() {
+        renderRecentTasks();
         const list = document.getElementById('ts-entriesList');
         const totalEl = document.getElementById('ts-totalHours');
         
@@ -1978,12 +2298,11 @@
     
     function checkStudentProgress(totalHours) {
         if (!state.currentUser) return;
-        const userPosition = state.positions.find(p => p.name === state.currentUser.position);
-        const reqHours = userPosition ? userPosition.minHours : 0;
-        
+        const reqHours = getReqHours(state.currentUser.position);
+
         const totalEl = document.getElementById('ts-totalHours');
         totalEl.classList.remove('text-emerald-400', 'text-amber-400', 'text-white');
-        
+
         if (reqHours > 0) {
             if (totalHours >= reqHours) {
                 totalEl.classList.add('text-emerald-400');
@@ -1995,6 +2314,157 @@
         } else {
             totalEl.classList.add('text-white');
         }
+
+        // Progress bar toward the weekly minimum
+        const progress = document.getElementById('ts-progress');
+        if (reqHours > 0) {
+            const met = totalHours >= reqHours;
+            const fill = document.getElementById('ts-progressFill');
+            fill.style.width = Math.min(100, (totalHours / reqHours) * 100) + '%';
+            fill.className = 'h-full rounded-full transition-all duration-500 ' + (met ? 'bg-emerald-500' : 'bg-amber-500');
+            // Days left in the Mon–Sun week, counting today (Sunday = 1)
+            const azDay = new Date(getAZDateStr() + 'T00:00:00').getDay();
+            const daysLeft = azDay === 0 ? 1 : 8 - azDay;
+            const toGo = reqHours - totalHours;
+            document.getElementById('ts-progressText').innerHTML = met
+                ? `<span class="text-emerald-400">Minimum met for this week &mdash; nice work!</span>`
+                : `<span class="text-amber-400">${formatHours(toGo)} ${toGo === 1 ? 'hr' : 'hrs'} to go</span> &bull; ${daysLeft} day${daysLeft === 1 ? '' : 's'} left this week`;
+            progress.classList.remove('hidden');
+        } else {
+            progress.classList.add('hidden');
+        }
+        renderStudentStats();
+    }
+
+    // Year total and the run of consecutive weeks that met the minimum (or, for
+    // positions with no minimum, had any hours at all).
+    function renderStudentStats() {
+        if (!state.currentUser) return;
+        const reqHours = getReqHours(state.currentUser.position);
+        const logs = [];
+        (state.studentSubmissions || []).filter(s => s.academicYear === state.activeYear).forEach(s =>
+            (s.logs || []).forEach(l => { if (getWeekIdentifier(l.date) !== CURRENT_WEEK_ID_AZ) logs.push(l); }));
+        logs.push(...state.currentWeekEntries);
+
+        const totals = {};
+        let yearTotal = 0;
+        logs.forEach(l => {
+            const h = Number(l.hours) || 0;
+            yearTotal += h;
+            const w = getWeekIdentifier(l.date);
+            totals[w] = (totals[w] || 0) + h;
+        });
+        document.getElementById('ts-yearTotal').textContent = yearTotal.toFixed(1);
+        document.getElementById('ts-streak').textContent = weekStreak(totals, reqHours);
+        document.getElementById('ts-streakLabel').textContent = reqHours > 0 ? 'Weeks On Target' : 'Weeks Logged';
+    }
+
+    // Counts back from this week. The current week only counts once it's met, so an
+    // in-progress week never breaks the streak.
+    function weekStreak(totals, reqHours) {
+        const met = w => (totals[w] || 0) + 1e-9 >= (reqHours > 0 ? reqHours : 0.01);
+        let streak = met(CURRENT_WEEK_ID_AZ) ? 1 : 0;
+        for (let w = shiftWeek(CURRENT_WEEK_ID_AZ, -1); met(w); w = shiftWeek(w, -1)) streak++;
+        return streak;
+    }
+
+    // Up to six distinct tasks the student has logged, most recent first.
+    function renderRecentTasks() {
+        const all = [];
+        (state.studentSubmissions || []).forEach(s => (s.logs || []).forEach(l => all.push(l)));
+        all.push(...state.currentWeekEntries);
+        all.sort((a, b) => (b.date || '').localeCompare(a.date || '') || (Number(b.id) || 0) - (Number(a.id) || 0));
+        const seen = new Set();
+        state.recentTasks = [];
+        for (const l of all) {
+            const key = (l.task || '').trim().toLowerCase();
+            if (!key || seen.has(key)) continue;
+            seen.add(key);
+            state.recentTasks.push({ task: l.task.trim(), hours: l.hours });
+            if (state.recentTasks.length === 6) break;
+        }
+        const box = document.getElementById('recentTasks');
+        box.classList.toggle('hidden', state.recentTasks.length === 0);
+        document.getElementById('recentTasksList').innerHTML = state.recentTasks.map((t, i) =>
+            `<button type="button" onclick="useRecentTask(${i})" class="text-left text-xs font-medium text-purple-100 bg-slate-900/60 hover:bg-white/10 border border-purple-500/30 hover:border-purple-400/60 rounded-xl px-3 py-1.5 transition max-w-full break-words [overflow-wrap:anywhere]">${escapeHTML(t.task)}</button>`
+        ).join('');
+    }
+
+    function useRecentTask(i) {
+        const t = (state.recentTasks || [])[i];
+        if (!t) return;
+        document.getElementById('entryTask').value = t.task;
+        const hoursEl = document.getElementById('entryHours');
+        if (!hoursEl.value) hoursEl.value = t.hours;
+        hoursEl.focus();
+    }
+
+    // ---------- Weekly reminder (calendar event the student adds themselves) ----------
+    const REMINDER_DAYS = { SU: 0, MO: 1, TU: 2, WE: 3, TH: 4, FR: 5, SA: 6 };
+
+    function openReminderModal() { openModal('reminderModal'); }
+
+    // Next occurrence of the chosen weekday + time, in the device's local time.
+    function nextReminderStart() {
+        const day = document.getElementById('reminderDay').value;
+        const [h, m] = (document.getElementById('reminderTime').value || '18:00').split(':').map(Number);
+        const now = new Date();
+        const d = new Date(now); d.setHours(h, m, 0, 0);
+        let add = (REMINDER_DAYS[day] - d.getDay() + 7) % 7;
+        if (add === 0 && d <= now) add = 7;
+        d.setDate(d.getDate() + add);
+        return { day, start: d, end: new Date(d.getTime() + 15 * 60000) };
+    }
+
+    // YYYYMMDDTHHMMSS in local ("floating") time, so the event stays at that clock time.
+    function calStamp(d) {
+        const p = n => String(n).padStart(2, '0');
+        return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}T${p(d.getHours())}${p(d.getMinutes())}00`;
+    }
+
+    function appUrl() { return /^https?:/.test(location.href) ? location.href.split('#')[0] : ''; }
+
+    function downloadReminder() {
+        const { day, start, end } = nextReminderStart();
+        const esc = s => s.replace(/[\\,;]/g, m => '\\' + m);
+        const url = appUrl();
+        const ics = [
+            'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Canyon Activities Board//Timesheet//EN', 'CALSCALE:GREGORIAN',
+            'BEGIN:VEVENT',
+            `UID:cab-timesheet-${Date.now()}@cab`,
+            `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z`,
+            `DTSTART:${calStamp(start)}`, `DTEND:${calStamp(end)}`,
+            `RRULE:FREQ=WEEKLY;BYDAY=${day}`,
+            'SUMMARY:Log your CAB hours',
+            `DESCRIPTION:${esc('Add this week\'s hours to the CAB timesheet before Sunday 11:59 PM.' + (url ? ' ' + url : ''))}`,
+            ...(url ? [`URL:${url}`] : []),
+            'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:Log your CAB hours', 'TRIGGER:PT0M', 'END:VALARM',
+            'END:VEVENT', 'END:VCALENDAR'
+        ].join('\r\n');
+        const dataUri = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
+        // iOS Safari opens the "Add to Calendar" sheet when navigating to the file itself.
+        if (/iPad|iPhone|iPod/.test(navigator.userAgent)) { window.location.href = dataUri; }
+        else {
+            const a = document.createElement('a');
+            a.href = dataUri; a.download = 'cab-hours-reminder.ics';
+            document.body.appendChild(a); a.click(); a.remove();
+        }
+        closeModal('reminderModal');
+        showToast('Reminder created — open it to add it to your calendar.');
+    }
+
+    function openGoogleReminder() {
+        const { day, start, end } = nextReminderStart();
+        const url = appUrl();
+        const params = new URLSearchParams({
+            action: 'TEMPLATE',
+            text: 'Log your CAB hours',
+            dates: `${calStamp(start)}/${calStamp(end)}`,
+            details: 'Add this week\'s hours to the CAB timesheet before Sunday 11:59 PM.' + (url ? '\n' + url : ''),
+            recur: `RRULE:FREQ=WEEKLY;BYDAY=${day}`
+        });
+        window.open('https://calendar.google.com/calendar/render?' + params.toString(), '_blank', 'noopener');
+        closeModal('reminderModal');
     }
 
     function showHistory() {
@@ -2052,7 +2522,7 @@
                         </span>
                         <span class="text-xs font-bold px-2.5 py-1 bg-purple-500/20 text-purple-300 rounded-lg border border-purple-400/30 shrink-0 shadow-inner">${weekData.hours.toFixed(1)} hrs</span>
                     </div>
-                    <div class="p-4 flex flex-col gap-2">${logsHtml}</div>
+                    <div class="p-4 flex flex-col gap-2">${reviewLine(approvalState(getApproval(state.activeYear, state.currentUser.id, weekId), weekData.hours))}${logsHtml}</div>
                 </div>`;
         }).join('');
 
@@ -2084,6 +2554,10 @@
             ]);
 
             state.teamRoster = rosterRows.map(r => ({ id: r.student_id, name: r.name, team: r.team, position: r.position }));
+            if (state.teamRoster.length) {
+                const ids = state.teamRoster.map(r => `"${String(r.id).replace(/"/g, '')}"`).join(',');
+                await loadApprovals(`academic_year=eq.${encodeURIComponent(year)}&student_id=in.(${encodeURIComponent(ids)})`);
+            }
             state.teamSubmissions = subRows.map(s => ({
                 studentId:      s.student_id,
                 studentName:    s.student_name,
@@ -2112,6 +2586,7 @@
         const targetMonday = weekFilterVal === 'current' ? currentMonday : prevMonday;
         const targetSunday = weekFilterVal === 'current' ? currentSunday : prevSunday;
 
+        document.getElementById('teamReviewHint').classList.toggle('hidden', !optionalTables.week_approvals);
         const roster = state.teamRoster || [];
         if (roster.length === 0) {
             list.innerHTML = `<div class="text-purple-200/50 text-xs italic py-8 text-center night-glass-card-subtle rounded-2xl border-dashed border-purple-400/20">No team members found.</div>`;
@@ -2143,19 +2618,86 @@
                 else if (hasEverSubmitted) statusClass = "text-rose-400 bg-rose-500/10 border border-rose-500/20 shadow-inner";
             }
 
+            const weekId = weekFilterVal === 'current' ? CURRENT_WEEK_ID_AZ : shiftWeek(CURRENT_WEEK_ID_AZ, -1);
+            const review = approvalState(getApproval(state.activeYear, student.id, weekId), teamMemberWeekHours(student.id, weekId));
+            const isSelf = student.id === state.currentUser.id;
+            let reviewHtml = '';
+            if (optionalTables.week_approvals && weekHours > 0) {
+                if (isSelf) reviewHtml = approvalBadge(review);
+                else if (review && !review.changed) reviewHtml = `<button onclick="event.stopPropagation(); clearTeamReview('${escapeHTML(student.id)}')" title="Tap to undo">${approvalBadge(review)}</button>`;
+                else reviewHtml = `<span class="flex gap-1.5">
+                        <button onclick="event.stopPropagation(); approveTeamWeek('${escapeHTML(student.id)}')" class="text-emerald-400 hover:text-white bg-slate-900/60 hover:bg-emerald-600/40 border border-emerald-500/30 p-2 rounded-lg transition" title="Approve this week" aria-label="Approve ${escapeHTML(student.name)}'s week"><i data-lucide="check" class="w-3.5 h-3.5"></i></button>
+                        <button onclick="event.stopPropagation(); flagTeamWeek('${escapeHTML(student.id)}')" class="text-amber-400 hover:text-white bg-slate-900/60 hover:bg-amber-600/40 border border-amber-500/30 p-2 rounded-lg transition" title="Flag for review" aria-label="Flag ${escapeHTML(student.name)}'s week"><i data-lucide="flag" class="w-3.5 h-3.5"></i></button>
+                    </span>`;
+            }
+            const note = review && review.status === 'flagged' && review.note && !review.changed
+                ? `<span class="text-[11px] text-amber-400/90 mt-1 break-words">&ldquo;${escapeHTML(review.note)}&rdquo;</span>` : '';
+
             return `
                 <div class="flex justify-between items-center py-3 border-b border-purple-500/10 last:border-0 cursor-pointer hover:bg-slate-900/40 rounded-xl px-3 -mx-3 transition gap-3 group" onclick="viewTeamMemberDetails('${student.id}')">
                     <div class="flex flex-col flex-1 min-w-0">
-                        <span class="text-sm font-semibold truncate group-hover:text-white transition-colors ${weekHours === 0 ? 'text-purple-200/60' : 'text-purple-100'}">${escapeHTML(student.name)}</span>
-                        <span class="text-[10px] text-purple-300/50 uppercase font-bold tracking-wider truncate mt-0.5">${escapeHTML(student.position || 'Student')} &bull; ID: ${escapeHTML(student.id)}</span>
+                        <span class="text-sm font-semibold break-words group-hover:text-white transition-colors ${weekHours === 0 ? 'text-purple-200/60' : 'text-purple-100'}">${escapeHTML(student.name)}${isSelf ? ' <span class="text-purple-300/50 text-[10px] font-bold uppercase tracking-wider">(you)</span>' : ''}</span>
+                        <span class="text-[10px] text-purple-300/50 uppercase font-bold tracking-wider break-words mt-0.5">${escapeHTML(student.position || 'Student')} &bull; ID: ${escapeHTML(student.id)}</span>
+                        ${note}
                     </div>
-                    <div class="flex flex-col items-end gap-1 shrink-0">
+                    <div class="flex items-center gap-2 shrink-0">
+                        ${reviewHtml}
                         <span class="text-xs font-bold px-2.5 py-1 rounded-lg shrink-0 ${statusClass}" title="${reqHours} required">${weekHours.toFixed(1)} hrs</span>
                     </div>
                 </div>
             `;
         }).join('');
         lucide.createIcons();
+    }
+
+    function teamSelectedWeekId() {
+        return document.getElementById('teamWeekFilter').value === 'current' ? CURRENT_WEEK_ID_AZ : shiftWeek(CURRENT_WEEK_ID_AZ, -1);
+    }
+
+    function teamMemberWeekHours(studentId, weekId) {
+        let total = 0;
+        (state.teamSubmissions || []).filter(s => s.studentId === studentId).forEach(s =>
+            (s.logs || []).forEach(l => { if (getWeekIdentifier(l.date) === weekId) total += Number(l.hours) || 0; }));
+        return total;
+    }
+
+    async function approveTeamWeek(studentId) {
+        const student = (state.teamRoster || []).find(s => s.id === studentId);
+        if (!student) return;
+        const weekId = teamSelectedWeekId();
+        if (await setApproval({ year: state.activeYear, student, weekId, status: 'approved', hours: teamMemberWeekHours(studentId, weekId), reviewer: state.currentUser.name })) {
+            showToast(`Approved ${student.name.split(' ')[0]}'s week`);
+            renderTeamView();
+        }
+    }
+
+    function flagTeamWeek(studentId) {
+        const student = (state.teamRoster || []).find(s => s.id === studentId);
+        if (!student) return;
+        const weekId = teamSelectedWeekId();
+        document.getElementById('noteModalTitle').textContent = `Flag ${student.name.split(' ')[0]}'s week`;
+        document.getElementById('noteModalMsg').textContent = `Week of ${formatWeekRange(weekId)}. Add a short note about what needs a second look — staff and ${student.name.split(' ')[0]} will see it.`;
+        const input = document.getElementById('noteModalInput');
+        input.value = '';
+        document.getElementById('noteModalSaveBtn').onclick = async () => {
+            const note = input.value.trim();
+            if (!note) return showToast('Add a short note so they know what to fix.', true);
+            closeModal('noteModal');
+            if (await setApproval({ year: state.activeYear, student, weekId, status: 'flagged', note, hours: teamMemberWeekHours(studentId, weekId), reviewer: state.currentUser.name })) {
+                showToast(`Flagged ${student.name.split(' ')[0]}'s week`);
+                renderTeamView();
+            }
+        };
+        openModal('noteModal');
+        setTimeout(() => input.focus(), 50);
+    }
+
+    function clearTeamReview(studentId) {
+        const student = (state.teamRoster || []).find(s => s.id === studentId);
+        if (!student) return;
+        openConfirmModal('Undo review?', `Remove your review of ${escapeHTML(student.name)}'s week? You can approve or flag it again afterwards.`, 'Undo Review', async () => {
+            if (await setApproval({ year: state.activeYear, student, weekId: teamSelectedWeekId(), status: null, reviewer: state.currentUser.name })) renderTeamView();
+        }, 'neutral');
     }
 
     function viewTeamMemberDetails(studentId) {
@@ -2282,6 +2824,8 @@
             });
             state.rosters = rosters;
             state.adminViewingYear = state.activeYear;
+            state.approvals = {};
+            await loadApprovals('');
 
             hideGate(); showToast('Access Granted');
             renderSettingsManager();
@@ -2355,7 +2899,8 @@
                                 <span class="text-sm font-semibold truncate group-hover:text-white transition-colors ${weekHours === 0 ? 'text-purple-200/60' : 'text-purple-100'}">${escapeHTML(student.name)}</span>
                                 <span class="text-[10px] text-purple-300/50 uppercase font-bold tracking-wider truncate mt-0.5">${escapeHTML(student.position || 'Student')} &bull; ID: ${escapeHTML(student.id)}</span>
                             </div>
-                            <div class="flex flex-col items-end gap-1 shrink-0">
+                            <div class="flex items-center gap-1.5 shrink-0">
+                                ${approvalBadge(approvalState(getApproval(yearFilterVal, student.id, adminSelectedWeekId()), studentWeekHours(student.id, yearFilterVal, adminSelectedWeekId())), true)}
                                 <span class="text-xs font-bold px-2.5 py-1 rounded-lg shrink-0 ${statusClass}" title="${reqHours} required">${weekHours.toFixed(1)} hrs</span>
                             </div>
                         </div>
@@ -2391,11 +2936,261 @@
             indicator.innerHTML = `<span class="bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2.5 py-1 rounded-lg text-[10px] uppercase font-bold tracking-widest flex items-center gap-1.5 shadow-inner" title="Fewer than ${state.submissionThreshold} students submitted hours. System treats this as a break and pauses automated emails."><i data-lucide="moon" class="w-3.5 h-3.5"></i> Break Week (${totalActiveStudentsThisWeek}/${state.submissionThreshold})</span>`;
         }
 
+        renderBehindPanel();
+        // Drawn after layout so the chart can size itself to the (now visible) card
+        requestAnimationFrame(renderTeamChart);
+
         lucide.createIcons();
     }
 
+    // Week (Monday id) the dashboard's Current/Previous filter points at
+    function adminSelectedWeekId() {
+        return document.getElementById('adminWeekFilter').value === 'current' ? CURRENT_WEEK_ID_AZ : shiftWeek(CURRENT_WEEK_ID_AZ, -1);
+    }
+
+    // Hours one student logged in one Mon–Sun week of a given year
+    function studentWeekHours(studentId, year, weekId) {
+        let total = 0;
+        state.submissions.forEach(s => {
+            if (s.studentId !== studentId || s.academicYear !== year) return;
+            (s.logs || []).forEach(l => { if (getWeekIdentifier(l.date) === weekId) total += Number(l.hours) || 0; });
+        });
+        return total;
+    }
+
+    // Everyone with a minimum who is under it for the selected week
+    function getBehindStudents(year, weekId) {
+        return (state.rosters[year] || [])
+            .map(s => ({ ...s, req: getReqHours(s.position), logged: studentWeekHours(s.id, year, weekId) }))
+            .filter(s => s.req > 0 && s.logged + 1e-9 < s.req)
+            .sort((a, b) => (a.team || '').localeCompare(b.team || '') || (a.logged / a.req) - (b.logged / b.req) || a.name.localeCompare(b.name));
+    }
+
+    function renderBehindPanel() {
+        const panel = document.getElementById('admin-behind');
+        const year = document.getElementById('adminYearFilter').value;
+        const weekId = adminSelectedWeekId();
+        const isCurrent = weekId === CURRENT_WEEK_ID_AZ;
+        const behind = getBehindStudents(year, weekId);
+        state.behindStudents = behind;
+
+        const heading = `<div class="flex flex-wrap justify-between items-center gap-3 ${behind.length ? 'mb-4' : ''}">
+            <div>
+                <h3 class="text-lg font-extrabold text-white tracking-tight flex items-center gap-2">
+                    <i data-lucide="${behind.length ? 'alert-circle' : 'check-circle-2'}" class="w-5 h-5 ${behind.length ? 'text-amber-400' : 'text-emerald-400'}"></i>
+                    ${behind.length ? `Behind the Minimum (${behind.length})` : 'Everyone Is On Track'}
+                </h3>
+                <p class="text-purple-200/60 text-xs mt-0.5">${isCurrent ? 'So far this week' : 'Last week'} &bull; ${formatWeekRange(weekId)}${behind.length ? '' : ' &mdash; every student with a minimum has met it.'}</p>
+            </div>
+            ${behind.length ? `<div class="flex gap-2 flex-wrap">
+                <button onclick="emailBehindStudents()" class="night-btn-primary text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-2"><i data-lucide="mail" class="w-4 h-4"></i> Email Them</button>
+                <button onclick="copyBehindEmails()" class="night-btn-link text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-2"><i data-lucide="copy" class="w-4 h-4 text-purple-400"></i> Copy Emails</button>
+            </div>` : ''}
+        </div>`;
+
+        if (!behind.length) { panel.innerHTML = heading; return; }
+
+        const noEmail = behind.filter(s => !s.email).length;
+        panel.innerHTML = heading + `
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2 max-h-[320px] overflow-y-auto pr-1 custom-scroll">
+                ${behind.map(s => `
+                    <button onclick="viewStudentDetails('${escapeHTML(s.id)}')" class="text-left flex justify-between items-center gap-3 bg-slate-900/40 hover:bg-slate-800/60 border border-purple-500/20 rounded-xl px-3 py-2.5 transition">
+                        <span class="flex flex-col min-w-0">
+                            <span class="text-sm font-semibold text-white break-words">${escapeHTML(s.name)}</span>
+                            <span class="text-[10px] text-purple-300/60 uppercase font-bold tracking-wider break-words">${escapeHTML(s.team)} &bull; ${escapeHTML(s.position)}</span>
+                        </span>
+                        <span class="text-xs font-bold px-2.5 py-1 rounded-lg shrink-0 ${s.logged > 0 ? 'text-amber-400 bg-amber-500/10 border border-amber-500/20' : 'text-rose-400 bg-rose-500/10 border border-rose-500/20'}">${formatHours(s.logged)} / ${formatHours(s.req)}</span>
+                    </button>`).join('')}
+            </div>
+            ${noEmail ? `<p class="text-[11px] text-amber-400/80 mt-3">${noEmail} of them ${noEmail === 1 ? 'has' : 'have'} no email on the roster and won't be included.</p>` : ''}`;
+    }
+
+    function behindEmails() { return [...new Set((state.behindStudents || []).map(s => (s.email || '').trim()).filter(Boolean))]; }
+
+    function emailBehindStudents() {
+        const emails = behindEmails();
+        if (!emails.length) return showToast('None of these students have an email on the roster.', true);
+        const weekId = adminSelectedWeekId();
+        const isCurrent = weekId === CURRENT_WEEK_ID_AZ;
+        const url = appUrl();
+        const subject = isCurrent ? 'Reminder: log your CAB hours this week' : `CAB hours missing for the week of ${formatWeekRange(weekId)}`;
+        const body = (isCurrent
+            ? `Hi,\n\nThis is a reminder that you're under your weekly minimum so far this week (${formatWeekRange(weekId)}). The week closes Sunday at 11:59 PM.`
+            : `Hi,\n\nOur records show you didn't reach your weekly minimum for the week of ${formatWeekRange(weekId)}.`)
+            + `\n\nPlease log your hours${url ? ' here: ' + url : ' on the CAB timesheet'}.\n\nThanks,\nCanyon Activities Board`;
+        // BCC so students don't see each other's addresses
+        window.location.href = `mailto:?bcc=${encodeURIComponent(emails.join(','))}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    }
+
+    async function copyBehindEmails() {
+        const emails = behindEmails();
+        if (!emails.length) return showToast('None of these students have an email on the roster.', true);
+        try {
+            await navigator.clipboard.writeText(emails.join(', '));
+            showToast(`Copied ${emails.length} email${emails.length === 1 ? '' : 's'}`);
+        } catch (e) {
+            showToast('Could not copy — your browser blocked it.', true);
+        }
+    }
+
+    // ---------- Chart: hours by team, per week ----------
+    // Categorical slots (validated for this dark surface), assigned in the order teams are set up.
+    const SERIES_COLORS = ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#008300', '#9085e9', '#e66767'];
+
+    function teamChartData(year) {
+        let teams = [...state.teams];
+        const yearSubs = state.submissions.filter(s => s.academicYear === year);
+        const byTeamWeek = {};
+        const weeksWithData = new Set();
+        const rosterTeam = {};
+        (state.rosters[year] || []).forEach(r => { rosterTeam[r.id] = r.team; });
+        yearSubs.forEach(s => (s.logs || []).forEach(l => {
+            const w = getWeekIdentifier(l.date);
+            const team = rosterTeam[s.studentId] || s.team;
+            weeksWithData.add(w);
+            byTeamWeek[team] = byTeamWeek[team] || {};
+            byTeamWeek[team][w] = (byTeamWeek[team][w] || 0) + (Number(l.hours) || 0);
+        }));
+        if (!weeksWithData.size) return null;
+        const sorted = [...weeksWithData].sort();
+        const last = year === state.activeYear && CURRENT_WEEK_ID_AZ > sorted[sorted.length - 1] ? CURRENT_WEEK_ID_AZ : sorted[sorted.length - 1];
+        const weeks = [];
+        for (let w = sorted[0]; w <= last; w = shiftWeek(w, 1)) weeks.push(w);
+
+        // Past eight teams, the rest fold into "Other" so no color is ever generated.
+        let series = teams.map((t, i) => ({ name: t, color: SERIES_COLORS[i], values: weeks.map(w => (byTeamWeek[t] || {})[w] || 0) }));
+        if (series.length > 8) {
+            const rest = series.slice(7);
+            series = series.slice(0, 7);
+            series.push({ name: 'Other', color: SERIES_COLORS[7], values: weeks.map((_, i) => rest.reduce((s, r) => s + r.values[i], 0)) });
+        }
+        return { weeks, series };
+    }
+
+    function niceStep(max, ticks) {
+        const raw = max / ticks;
+        const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+        const n = raw / mag;
+        return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * mag;
+    }
+
+    function shortWeek(weekId) { return new Date(weekId + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); }
+
+    function renderTeamChart() {
+        const host = document.getElementById('teamChart');
+        const legend = document.getElementById('chartLegend');
+        const year = document.getElementById('adminYearFilter').value;
+        const data = teamChartData(year);
+        state.chartData = data;
+        if (!data) {
+            legend.innerHTML = '';
+            host.innerHTML = `<div class="text-purple-200/50 text-xs italic py-10 text-center">No hours logged in ${escapeHTML(year)} yet.</div>`;
+            document.getElementById('teamChartTable').innerHTML = '';
+            return;
+        }
+        const { weeks, series } = data;
+        legend.innerHTML = series.map(s => `<span class="flex items-center gap-1.5 text-xs font-semibold text-purple-100"><span class="inline-block w-3 h-[3px] rounded-full" style="background:${s.color}"></span>${escapeHTML(s.name)}</span>`).join('');
+
+        const W = Math.max(280, host.clientWidth || 600);
+        const H = W < 500 ? 220 : 260;
+        const direct = series.length <= 4 && W >= 560;
+        const m = { top: 12, right: direct ? 92 : 14, bottom: 26, left: 34 };
+        const pw = W - m.left - m.right, ph = H - m.top - m.bottom;
+        const maxVal = Math.max(1, ...series.flatMap(s => s.values));
+        const step = niceStep(maxVal, 4);
+        const yMax = Math.ceil(maxVal / step) * step;
+        const x = i => m.left + (weeks.length === 1 ? pw / 2 : (i / (weeks.length - 1)) * pw);
+        const y = v => m.top + ph - (v / yMax) * ph;
+
+        let svg = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Line chart of hours by team per week" style="display:block;font-family:var(--font-stack)">`;
+        for (let v = 0; v <= yMax + 1e-9; v += step) {
+            svg += `<line x1="${m.left}" x2="${m.left + pw}" y1="${y(v)}" y2="${y(v)}" stroke="rgba(255,255,255,${v === 0 ? 0.22 : 0.07})" stroke-width="1"/>`;
+            svg += `<text x="${m.left - 8}" y="${y(v) + 3.5}" text-anchor="end" font-size="10" fill="#9ca3af">${formatHours(v)}</text>`;
+        }
+        const every = Math.max(1, Math.ceil(weeks.length / Math.max(1, Math.floor(pw / 52))));
+        weeks.forEach((w, i) => {
+            if (i % every !== 0 && i !== weeks.length - 1) return;
+            if (i !== weeks.length - 1 && weeks.length - 1 - i < every) return; // keep the last label clear
+            svg += `<text x="${x(i)}" y="${H - 8}" text-anchor="middle" font-size="10" fill="#9ca3af">${shortWeek(w)}</text>`;
+        });
+        series.forEach(s => {
+            const d = s.values.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+            svg += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+        });
+        if (direct) {
+            // Label line ends, nudged apart so they never overlap
+            const ends = series.map(s => ({ s, y: y(s.values[s.values.length - 1]) })).sort((a, b) => a.y - b.y);
+            for (let i = 1; i < ends.length; i++) if (ends[i].y - ends[i - 1].y < 13) ends[i].y = ends[i - 1].y + 13;
+            ends.forEach(e => { svg += `<text x="${m.left + pw + 8}" y="${e.y + 3.5}" font-size="11" font-weight="600" fill="#e4e4e7">${escapeHTML(e.s.name)}</text>`; });
+        }
+        svg += `<line id="chartCrosshair" x1="0" x2="0" y1="${m.top}" y2="${m.top + ph}" stroke="rgba(255,255,255,0.35)" stroke-width="1" visibility="hidden"/>`;
+        svg += `<g id="chartDots"></g>`;
+        svg += `<rect x="${m.left - 10}" y="0" width="${pw + 20}" height="${H}" fill="transparent" id="chartHit" style="cursor:crosshair;touch-action:pan-y"/>`;
+        svg += `</svg><div id="chartTip" class="hidden absolute pointer-events-none z-10 rounded-xl border border-purple-400/40 px-3 py-2 text-xs shadow-xl" style="background:var(--solid-bg);min-width:150px"></div>`;
+        host.innerHTML = svg;
+
+        const hit = document.getElementById('chartHit');
+        const tip = document.getElementById('chartTip');
+        const cross = document.getElementById('chartCrosshair');
+        const dots = document.getElementById('chartDots');
+        const show = evt => {
+            const rect = host.getBoundingClientRect();
+            const px = evt.clientX - rect.left;
+            let i = weeks.length === 1 ? 0 : Math.round(((px - m.left) / pw) * (weeks.length - 1));
+            i = Math.max(0, Math.min(weeks.length - 1, i));
+            cross.setAttribute('x1', x(i)); cross.setAttribute('x2', x(i)); cross.setAttribute('visibility', 'visible');
+            dots.innerHTML = series.map(s => `<circle cx="${x(i)}" cy="${y(s.values[i])}" r="4" fill="${s.color}" stroke="#1c1c22" stroke-width="2"/>`).join('');
+            const total = series.reduce((sum, s) => sum + s.values[i], 0);
+            tip.innerHTML = `<div class="font-bold text-white mb-1.5">Week of ${formatWeekRange(weeks[i])}</div>`
+                + series.map(s => `<div class="flex items-center justify-between gap-4 text-purple-100"><span class="flex items-center gap-1.5"><span class="inline-block w-2.5 h-2.5 rounded-full" style="background:${s.color}"></span>${escapeHTML(s.name)}</span><span class="font-semibold text-white">${s.values[i].toFixed(1)}</span></div>`).join('')
+                + `<div class="flex justify-between gap-4 mt-1.5 pt-1.5 border-t border-purple-500/20 text-purple-200/70"><span>Total</span><span class="font-semibold text-white">${total.toFixed(1)}</span></div>`;
+            tip.classList.remove('hidden');
+            const tw = tip.offsetWidth;
+            let left = x(i) + 12;
+            if (left + tw > W) left = x(i) - tw - 12;
+            tip.style.left = Math.max(0, left) + 'px';
+            tip.style.top = m.top + 'px';
+        };
+        const hide = () => { tip.classList.add('hidden'); cross.setAttribute('visibility', 'hidden'); dots.innerHTML = ''; };
+        hit.addEventListener('pointermove', show);
+        hit.addEventListener('pointerdown', show);
+        hit.addEventListener('pointerleave', hide);
+
+        // Table view of the same numbers
+        document.getElementById('teamChartTable').innerHTML = `
+            <table class="w-full text-xs text-left border-collapse">
+                <thead><tr class="text-purple-300 uppercase tracking-wider text-[10px]">
+                    <th class="py-2 pr-4 font-bold">Week of</th>
+                    ${series.map(s => `<th class="py-2 px-3 font-bold text-right whitespace-nowrap">${escapeHTML(s.name)}</th>`).join('')}
+                    <th class="py-2 pl-3 font-bold text-right">Total</th>
+                </tr></thead>
+                <tbody>${weeks.map((w, i) => `<tr class="border-t border-purple-500/15">
+                    <td class="py-2 pr-4 text-white font-semibold whitespace-nowrap">${shortWeek(w)}</td>
+                    ${series.map(s => `<td class="py-2 px-3 text-right text-purple-100">${s.values[i].toFixed(1)}</td>`).join('')}
+                    <td class="py-2 pl-3 text-right text-white font-bold">${series.reduce((sum, s) => sum + s.values[i], 0).toFixed(1)}</td>
+                </tr>`).reverse().join('')}</tbody>
+            </table>`;
+    }
+
+    function toggleChartTable() {
+        const table = document.getElementById('teamChartTable');
+        const showTable = table.classList.contains('hidden');
+        table.classList.toggle('hidden', !showTable);
+        document.getElementById('teamChart').classList.toggle('hidden', showTable);
+        document.getElementById('chartLegend').classList.toggle('hidden', showTable);
+        document.querySelector('#chartTableToggle span').textContent = showTable ? 'Show chart' : 'Show table';
+    }
+
+    let chartResizeTimer = null;
+    window.addEventListener('resize', () => {
+        clearTimeout(chartResizeTimer);
+        chartResizeTimer = setTimeout(() => { if (state.view === 'dashboard') renderTeamChart(); }, 150);
+    });
+
     function viewStudentDetails(studentId) {
         state.viewingStudentId = studentId;
+        document.getElementById('detailHistory').classList.add('hidden');
+        document.querySelector('#detailHistoryBtn span').textContent = 'Show Change History';
         const modal = document.getElementById('studentDetailModal');
         modal.style.display = 'flex';
         modal.classList.remove('hidden');
@@ -2483,6 +3278,7 @@
                             <span class="text-sm font-bold text-white flex items-center flex-wrap gap-y-1"><i data-lucide="calendar" class="w-4 h-4 text-purple-400 mr-2 shrink-0"></i> ${weekTitle} ${statusBadge}</span>
                             <span class="text-xs font-bold px-2.5 py-1 bg-purple-500/20 text-purple-300 rounded-lg border border-purple-400/30 shrink-0 shadow-inner">${weekData.hours.toFixed(1)} hrs</span>
                         </div>
+                        ${reviewLine(approvalState(getApproval(academicYear, sid, weekId), weekData.hours))}
                         <div class="border-l-2 border-purple-500/20 pl-3">${logsHtml}</div>
                         ${addBtn}
                     </div>`;
@@ -2511,10 +3307,29 @@
     }
 
     let confirmActionCallback = null;
-    function openConfirmModal(title, msg, btnText, callback) {
+    const CONFIRM_TONES = {
+        danger: {
+            card: 'border-rose-500/40', icon: 'bg-rose-500/20 text-rose-400 border-rose-500/30', glyph: 'alert-triangle',
+            btn: 'flex-1 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-bold py-3.5 rounded-xl transition shadow-[0_0_15px_rgba(225,29,72,0.4)]'
+        },
+        neutral: {
+            card: 'border-purple-400/50', icon: 'bg-blue-500/15 text-blue-400 border-blue-500/30', glyph: 'help-circle',
+            btn: 'flex-1 night-btn-primary font-bold py-3.5 rounded-xl'
+        }
+    };
+    function openConfirmModal(title, msg, btnText, callback, tone = 'danger') {
+        const t = CONFIRM_TONES[tone] || CONFIRM_TONES.danger;
         document.getElementById('confirmModalTitle').textContent = title;
         document.getElementById('confirmModalMsg').innerHTML = msg;
-        document.getElementById('confirmModalActionBtn').textContent = btnText;
+        const actionBtn = document.getElementById('confirmModalActionBtn');
+        actionBtn.textContent = btnText;
+        actionBtn.className = t.btn;
+        const card = document.getElementById('confirmModalCard');
+        card.classList.remove('border-rose-500/40', 'border-purple-400/50');
+        card.classList.add(t.card);
+        document.getElementById('confirmModalIcon').className = `w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-5 border ${t.icon}`;
+        document.getElementById('confirmModalIcon').innerHTML = `<i data-lucide="${t.glyph}" class="w-7 h-7"></i>`;
+        lucide.createIcons();
         confirmActionCallback = callback;
         const modal = document.getElementById('confirmModal');
         modal.style.display = 'flex';
@@ -2647,8 +3462,16 @@
 
         let sub = state.submissions.find(s => s.studentId === studentId && s.weekIdentifier === weekId && s.academicYear === academicYear);
 
+        // Same 24-hours-per-day limit students get, checked across every week of theirs
+        // (an edit can move an entry onto a day that lives in another week's row).
+        const allLogs = state.submissions.filter(s => s.studentId === studentId && s.academicYear === academicYear).flatMap(s => s.logs || []);
+        const editingLog = mode === 'edit' && sub && sub.logs ? sub.logs[logIdx] : null;
+        const dayError = checkDayLimit(allLogs, date, hours, null, editingLog);
+        if (dayError) return showToast(dayError, true);
+
         if (mode === 'add') {
             const newLog = { id: Date.now().toString(), date, hours, task };
+            logChange({ year: academicYear, studentId, weekId, actor: 'Admin', action: 'add', details: { after: newLog } });
             if (sub) {
                 sub.logs = sub.logs || [];
                 sub.logs.push(newLog);
@@ -2662,7 +3485,9 @@
             }
         } else {
             if (!sub || !sub.logs || logIdx < 0 || logIdx >= sub.logs.length) return showToast('Entry not found', true);
-            sub.logs[logIdx] = { ...sub.logs[logIdx], date, hours, task };
+            const before = sub.logs[logIdx];
+            sub.logs[logIdx] = { ...before, date, hours, task };
+            logChange({ year: academicYear, studentId, weekId, actor: 'Admin', action: 'edit', details: { before, after: sub.logs[logIdx] } });
             sub.totalHours = sub.logs.reduce((s, l) => s + Number(l.hours), 0);
         }
 
@@ -2674,6 +3499,7 @@
         const academicYear = document.getElementById('adminYearFilter').value;
         const sub = state.submissions.find(s => s.studentId === studentId && s.academicYear === academicYear && s.weekIdentifier === weekId);
         if (!sub || !sub.logs || logIdx < 0 || logIdx >= sub.logs.length) { showToast('Entry not found', true); return; }
+        logChange({ year: academicYear, studentId, weekId, actor: 'Admin', action: 'delete', details: { before: sub.logs[logIdx] } });
         sub.logs = sub.logs.filter((_, idx) => idx !== logIdx);
         sub.totalHours = sub.logs.reduce((s, l) => s + Number(l.hours), 0);
         if (sub.logs.length === 0) state.submissions = state.submissions.filter(s => s !== sub);
@@ -2873,6 +3699,45 @@
     function addYear() { const input = document.getElementById('newYearInput'); const val = input.value.trim(); if(val && !state.academicYears.includes(val)) { state.academicYears.push(val); state.rosters[val] = []; input.value = ""; renderSettingsManager(); showToast("Year Added"); } }
     function removeYear(yearStr) { if(state.activeYear === yearStr) return showToast("Cannot remove active year.", true); state.academicYears = state.academicYears.filter(y => y !== yearStr); delete state.rosters[yearStr]; if(state.adminViewingYear === yearStr) state.adminViewingYear = state.activeYear; renderSettingsManager(); }
 
+    // "2026-2027" -> "2027-2028"; anything else gets no suggestion
+    function suggestNextYear(year) {
+        const m = /^(\d{4})-(\d{4})$/.exec(year || '');
+        return m ? `${+m[1] + 1}-${+m[2] + 1}` : '';
+    }
+
+    function openNewYearModal() {
+        const latest = [...state.academicYears].sort().pop() || state.activeYear;
+        let suggestion = suggestNextYear(latest);
+        if (state.academicYears.includes(suggestion)) suggestion = '';
+        document.getElementById('newYearName').value = suggestion;
+        document.getElementById('newYearCopyFrom').innerHTML = state.academicYears.map(y =>
+            `<option value="${escapeHTML(y)}">${escapeHTML(y)} (${(state.rosters[y] || []).length} students)</option>`).join('')
+            + '<option value="">Start with an empty roster</option>';
+        document.getElementById('newYearCopyFrom').value = state.activeYear;
+        document.getElementById('newYearMakeActive').checked = true;
+        openModal('newYearModal');
+    }
+
+    async function startNewYear() {
+        const name = document.getElementById('newYearName').value.trim();
+        const from = document.getElementById('newYearCopyFrom').value;
+        const makeActive = document.getElementById('newYearMakeActive').checked;
+        if (!name) return showToast('Enter a name for the new year.', true);
+        if (state.academicYears.includes(name)) return showToast(`${name} already exists.`, true);
+
+        state.academicYears.push(name);
+        state.rosters[name] = (state.rosters[from] || []).map(s => ({ ...s }));
+        if (makeActive) {
+            state.activeYear = name;
+            document.getElementById('loginActiveYear').textContent = name;
+        }
+        state.adminViewingYear = name;
+        closeModal('newYearModal');
+        renderSettingsManager();
+        await saveAdminChanges();
+        showToast(`${name} created with ${state.rosters[name].length} students${makeActive ? ' and set active' : ''}. Remove anyone who isn't returning.`);
+    }
+
     function renderRoster() {
         const list = document.getElementById('admin-rosterList'); const currentRoster = state.rosters[state.adminViewingYear] || [];
         if(currentRoster.length === 0) { list.innerHTML = `<div class="text-purple-200/50 text-[11px] font-bold tracking-widest uppercase italic py-8 text-center night-glass-card-subtle rounded-2xl border-dashed border-purple-400/20 mt-2">No students found for this year.</div>`; return; }
@@ -3037,11 +3902,77 @@
         });
 
         if(exportData.length === 0) return showToast("No roster to export.", true);
+        const roster = [...(state.rosters[yearFilterVal] || [])].sort((a, b) => (a.team || '').localeCompare(b.team || '') || a.name.localeCompare(b.name));
+
+        // Sheet 1: the week picked in the dashboard filter, one row per student
+        const weekId = adminSelectedWeekId();
+        const summary = roster.map(st => {
+            const req = getReqHours(st.position);
+            const logged = studentWeekHours(st.id, yearFilterVal, weekId);
+            const approval = getApproval(yearFilterVal, st.id, weekId);
+            return {
+                "Team": st.team, "Student Name": st.name, "Student ID": st.id, "Email": st.email || '', "Position": st.position || '',
+                "Required": req, "Logged": Math.round(logged * 100) / 100,
+                "Status": req > 0 ? (logged + 1e-9 >= req ? 'Met' : logged > 0 ? 'Behind' : 'None logged') : (logged > 0 ? 'Logged' : 'None logged'),
+                "Review": approval ? (approval.status === 'approved' ? 'Approved' : 'Flagged') : '',
+                "Review Note": approval && approval.note ? approval.note : ''
+            };
+        });
+        const wsSummary = XLSX.utils.json_to_sheet(summary);
+        wsSummary['!cols'] = [{wch: 15}, {wch: 22}, {wch: 12}, {wch: 26}, {wch: 18}, {wch: 9}, {wch: 8}, {wch: 12}, {wch: 10}, {wch: 40}];
+
+        // Sheet 2: hours per student per week across the year (handy for payroll)
+        const weekIds = [...new Set(state.submissions.filter(sb => sb.academicYear === yearFilterVal)
+            .flatMap(sb => (sb.logs || []).map(l => getWeekIdentifier(l.date))))].sort();
+        const totalsRows = roster.map(st => {
+            const row = { "Team": st.team, "Student Name": st.name, "Student ID": st.id };
+            let yearTotal = 0;
+            weekIds.forEach(w => { const h = studentWeekHours(st.id, yearFilterVal, w); yearTotal += h; row[`Week of ${shortWeek(w)}`] = Math.round(h * 100) / 100; });
+            row["Year Total"] = Math.round(yearTotal * 100) / 100;
+            return row;
+        });
+        const wsTotals = XLSX.utils.json_to_sheet(totalsRows);
+        wsTotals['!cols'] = [{wch: 15}, {wch: 22}, {wch: 12}, ...weekIds.map(() => ({wch: 13})), {wch: 10}];
+
         const ws = XLSX.utils.json_to_sheet(exportData);
         ws['!cols'] = [{wch: 15}, {wch: 15}, {wch: 20}, {wch: 15}, {wch: 25}, {wch: 15}, {wch: 20}, {wch: 12}, {wch: 8}, {wch: 40}];
-        const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Master Timesheet");
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, wsSummary, `Week of ${shortWeek(weekId)}`);
+        XLSX.utils.book_append_sheet(wb, wsTotals, "Weekly Totals");
+        XLSX.utils.book_append_sheet(wb, ws, "All Entries");
         XLSX.writeFile(wb, `Timesheet_Report_${yearFilterVal}.xlsx`);
         showToast("Excel Exported Successfully!");
+    }
+
+    // ---------- Add to Home Screen ----------
+    // Android/desktop Chrome hand us an install prompt; iPhone Safari needs the Share menu.
+    let deferredInstallPrompt = null;
+    const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+    const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+    function updateInstallButtons() {
+        const show = !isStandalone() && (deferredInstallPrompt || isIOS());
+        document.querySelectorAll('.install-btn').forEach(b => { b.classList.toggle('hidden', !show); b.classList.toggle('flex', !!show); });
+    }
+
+    window.addEventListener('beforeinstallprompt', e => {
+        e.preventDefault();
+        deferredInstallPrompt = e;
+        updateInstallButtons();
+    });
+    window.addEventListener('appinstalled', () => { deferredInstallPrompt = null; updateInstallButtons(); showToast('Installed! Open it from your home screen.'); });
+
+    async function installApp() {
+        if (deferredInstallPrompt) {
+            deferredInstallPrompt.prompt();
+            await deferredInstallPrompt.userChoice.catch(() => {});
+            deferredInstallPrompt = null;
+            updateInstallButtons();
+            return;
+        }
+        openConfirmModal('Add to Home Screen',
+            'In Safari, tap the <b class="text-white">Share</b> button <i data-lucide="share" class="w-4 h-4 inline"></i> at the bottom of the screen, then choose <b class="text-white">Add to Home Screen</b>. You\'ll stay signed in when you open it from there.',
+            'Got it', () => {}, 'neutral');
     }
 
     // --- UI HELPERS ---
