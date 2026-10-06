@@ -1339,7 +1339,7 @@
     }
 
     // --- Scream gate: loud enough on the mic AND speech recognition hears the phrase ---
-    const SCREAM_THRESHOLD = 95; // 0-100 meter scale; only a real scream gets here
+    const SCREAM_THRESHOLD = 80; // 0-100 meter scale; a good yell gets here, normal talking doesn't
     const scream = { running: false, stream: null, ctx: null, analyser: null, data: null, raf: 0, recognition: null, phraseHeard: false, phraseTimer: 0 };
 
     function showScreamStep(step) {
@@ -1388,13 +1388,16 @@
         const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SR) return screamStartError('Speech recognition isn\'t supported in this browser. Try Chrome!');
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return screamStartError('Microphone isn\'t available in this browser.');
+        // Safari only lets audio run if it starts during the tap, so set it up before waiting on the mic prompt.
+        scream.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        scream.ctx.resume().catch(() => {});
         try {
             // No auto gain, so whispering and letting the browser boost it doesn't count.
             scream.stream = await navigator.mediaDevices.getUserMedia({ audio: { autoGainControl: false, echoCancellation: false, noiseSuppression: false } });
         } catch (err) {
+            stopScream();
             return screamStartError('Microphone access denied! Please allow access to continue.');
         }
-        scream.ctx = new (window.AudioContext || window.webkitAudioContext)();
         scream.analyser = scream.ctx.createAnalyser();
         scream.analyser.fftSize = 256;
         scream.data = new Uint8Array(scream.analyser.frequencyBinCount);
@@ -1443,8 +1446,10 @@
     function monitorScream() {
         if (!scream.running) return;
         scream.analyser.getByteFrequencyData(scream.data);
-        const avg = scream.data.reduce((s, v) => s + v, 0) / scream.data.length;
-        const vol = Math.min((avg / 255) * 140, 100);
+        // Only the low bins (~0-6 kHz) carry a voice; the near-silent high ones would drag the average down.
+        const bins = scream.data.subarray(0, 32);
+        const avg = bins.reduce((s, v) => s + v, 0) / bins.length;
+        const vol = Math.min((avg / 255) * 150, 100);
         const loud = vol >= SCREAM_THRESHOLD;
         const said = scream.phraseHeard;
 
@@ -1455,9 +1460,9 @@
         text.classList.remove('scream-level-1', 'scream-level-2', 'scream-level-3', 'scream-level-4');
 
         let color = '#3b82f6', level = 0, msg = said ? 'You said it, but you have to SCREAM it!' : 'Scream "Chris is the best!"';
-        if (vol >= 30) { color = '#38bdf8'; level = 1; }
-        if (vol >= 60) { color = '#facc15'; level = 2; msg = said ? 'Right phrase, now LOUDER!' : 'LOUDER! Say "Chris is the best!"'; }
-        if (vol >= 80) { color = '#f97316'; level = 3; msg = said ? 'ALMOST THERE!! SCREAM IT!!' : 'I hear yelling, but say the phrase!'; }
+        if (vol >= SCREAM_THRESHOLD * 0.35) { color = '#38bdf8'; level = 1; }
+        if (vol >= SCREAM_THRESHOLD * 0.65) { color = '#facc15'; level = 2; msg = said ? 'Right phrase, now LOUDER!' : 'LOUDER! Say "Chris is the best!"'; }
+        if (vol >= SCREAM_THRESHOLD * 0.85) { color = '#f97316'; level = 3; msg = said ? 'ALMOST THERE!! SCREAM IT!!' : 'I hear yelling, but say the phrase!'; }
         if (loud)      { color = '#ef4444'; level = 4; msg = said ? '' : 'Loud enough, but say "Chris is the best!"'; }
         fill.style.backgroundColor = color;
         fill.style.boxShadow = `0 0 15px ${color}`;
