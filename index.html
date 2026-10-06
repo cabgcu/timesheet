@@ -280,6 +280,18 @@
             box-shadow: 0 20px 40px rgba(0,0,0,0.4);
         }
 
+        /* Scream gate (Drew) — meter + shake levels */
+        .scream-meter { box-shadow: 0 0 20px rgba(0,0,0,0.5) inset; }
+        #screamMeterFill { transition: height 0.05s ease-out, background-color 0.2s; }
+        #screamText { transition: color 0.1s; }
+        @keyframes scream-shake-1 { 0%,100% { transform: translate(0,0); } 25% { transform: translate(1px,-1px); } 50% { transform: translate(-1px,1px); } 75% { transform: translate(1px,1px); } }
+        @keyframes scream-shake-2 { 0%,100% { transform: translate(0,0); } 25% { transform: translate(2px,-2px) rotate(1deg); } 50% { transform: translate(-2px,2px) rotate(-1deg); } 75% { transform: translate(2px,2px); } }
+        @keyframes scream-shake-3 { 0%,100% { transform: translate(0,0); } 25% { transform: translate(5px,-5px) rotate(2deg); } 50% { transform: translate(-5px,5px) rotate(-2deg); } 75% { transform: translate(5px,5px) rotate(1deg); } }
+        @keyframes scream-shake-4 { 0%,100% { transform: translate(0,0) scale(1.1); } 25% { transform: translate(8px,-8px) rotate(4deg) scale(1.1); } 50% { transform: translate(-8px,8px) rotate(-4deg) scale(1.1); } 75% { transform: translate(8px,8px) rotate(3deg) scale(1.1); } }
+        .scream-level-1 { animation: scream-shake-1 0.2s infinite; color: #38bdf8 !important; }
+        .scream-level-2 { animation: scream-shake-2 0.15s infinite; color: #facc15 !important; text-shadow: 0 0 10px #facc15; }
+        .scream-level-3 { animation: scream-shake-3 0.1s infinite; color: #f97316 !important; text-shadow: 0 0 20px #f97316; }
+        .scream-level-4 { animation: scream-shake-4 0.05s infinite; color: #ef4444 !important; text-shadow: 0 0 30px #ef4444; }
     </style>
 </head>
 <body class="text-white min-h-[100dvh] w-full relative overflow-x-hidden selection:bg-purple-500/30 font-sans flex flex-col items-center justify-start antialiased custom-scroll">
@@ -821,641 +833,58 @@
         </div>
     </div>
 
-    <!-- Flappy Drew gate (Drew Colucci must score 35 before he can add hours) -->
-    <div id="flappyModal" class="fixed inset-0 z-[2000] hidden items-center justify-center p-4">
-        <div class="absolute inset-0 modal-backdrop"></div>
-        <div class="relative z-10 flex flex-col items-center gap-3">
-            <div class="flex items-center justify-between w-full gap-4">
-                <p class="text-purple-200 text-sm font-bold">Score <span class="text-purple-300">35</span> to log your hours</p>
-                <button class="night-btn-link text-white font-bold py-2 px-4 rounded-xl transition border-purple-400/30 text-sm" onclick="closeFlappyModal()">Cancel</button>
-            </div>
-            <iframe id="flappyFrame" title="Flappy Drew" referrerpolicy="no-referrer" class="rounded-[10px] border-0 bg-[#222]" style="width:min(400px, 92vw);height:min(600px, 80vh);"></iframe>
-        </div>
-    </div>
-
-    <template id="flappyDrewSrc">
-<style>
-    body {
-        margin: 0;
-        padding: 0;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-        background-color: #222;
-        font-family: 'Courier New', Courier, monospace;
-        overflow: hidden; /* Prevent scrolling on mobile */
-        touch-action: none; /* Disable default touch actions to prevent zooming/scrolling */
-    }
-
-    #game-container {
-        position: relative;
-        width: 100%;
-        max-width: 400px;
-        height: 100%;
-        max-height: 600px;
-        background-color: #70c5ce; /* Sky blue */
-        box-shadow: 0 0 20px rgba(0,0,0,0.5);
-        overflow: hidden;
-        border-radius: 10px;
-    }
-
-    canvas {
-        display: block;
-        width: 100%;
-        height: 100%;
-    }
-
-    #ui-layer {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: none; /* Let clicks pass through to canvas */
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-    }
-
-    .score-display {
-        font-size: 48px;
-        color: white;
-        text-align: center;
-        margin-top: 20px;
-        text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000;
-        z-index: 10;
-    }
-
-    .overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.5);
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        z-index: 20;
-        pointer-events: auto; /* Catch clicks on overlays */
-    }
-
-    .hidden {
-        display: none !important;
-    }
-
-    .panel {
-        background-color: #ded895;
-        border: 4px solid #553847;
-        border-radius: 10px;
-        padding: 20px;
-        text-align: center;
-        box-shadow: inset 0 -4px 0 rgba(0,0,0,0.1), 0 4px 8px rgba(0,0,0,0.5);
-        width: 80%;
-        max-width: 300px;
-    }
-
-    h1, h2 {
-        margin: 0 0 10px 0;
-        color: #e86101;
-        text-shadow: 2px 2px 0 #fff;
-        text-transform: uppercase;
-    }
-
-    .medals {
-        display: flex;
-        justify-content: center;
-        gap: 10px;
-        margin-bottom: 15px;
-    }
-
-    .medal-slot {
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        background-color: #9c8e6a;
-        box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        font-size: 24px;
-    }
-
-    button {
-        background-color: #e86101;
-        color: white;
-        border: 2px solid #fff;
-        padding: 10px 20px;
-        font-size: 20px;
-        font-family: inherit;
-        border-radius: 5px;
-        cursor: pointer;
-        text-shadow: 1px 1px 0 #000;
-        box-shadow: 0 4px 0 #9c3f00;
-        transition: transform 0.1s, box-shadow 0.1s;
-        margin-top: 10px;
-    }
-
-    button:active {
-        transform: translateY(4px);
-        box-shadow: 0 0 0 #9c3f00;
-    }
-
-    .score-info {
-        font-size: 18px;
-        color: #553847;
-        font-weight: bold;
-        margin: 5px 0;
-    }
-
-    .score-value {
-        font-size: 24px;
-        color: white;
-        text-shadow: 1px 1px 0 #000;
-        background: #e86101;
-        padding: 2px 8px;
-        border-radius: 4px;
-        border: 1px solid white;
-    }
-</style>
-
-<div id="game-container">
-    <canvas id="gameCanvas"></canvas>
-
-    <div id="ui-layer">
-        <div id="current-score" class="score-display">0</div>
-    </div>
-
-    <!-- Start Screen Overlay -->
-    <div id="start-screen" class="overlay">
-        <div class="panel">
-            <h1>Flappy Drew</h1>
-            <p style="color:#553847; font-weight:bold;">Tap or Spacebar to fly</p>
-            <p style="color:#553847; font-weight:bold;">Score 35 to log your hours</p>
-            <button id="start-btn">PLAY</button>
-        </div>
-    </div>
-
-    <!-- Game Over Screen Overlay -->
-    <div id="game-over-screen" class="overlay hidden">
-        <div class="panel">
-            <h2>Game Over</h2>
-
-            <div class="medals">
-                <div class="medal-slot" id="medal-display"></div>
+    <!-- Scream gate (Drew Colucci must scream "Chris is the best!" before he can add hours) -->
+    <div id="screamModal" class="fixed inset-0 z-[2000] hidden items-center justify-center p-4">
+        <div class="absolute inset-0 modal-backdrop" onclick="closeScreamModal()"></div>
+        <div class="relative w-full max-w-lg night-glass-card rounded-3xl p-6 sm:p-8 flex flex-col shadow-2xl border-purple-400/50 max-h-[90vh] overflow-y-auto custom-scroll z-10">
+            <div class="flex justify-between items-start mb-5">
+                <div>
+                    <h3 class="text-xl font-bold text-white tracking-tight flex items-center gap-2"><i data-lucide="mic" class="w-5 h-5 text-purple-400"></i> One more step</h3>
+                    <p class="text-purple-200/70 text-xs mt-1">Scream it loud enough to log your hours.</p>
+                </div>
+                <button class="text-purple-200 hover:text-white bg-slate-900/50 hover:bg-white/10 border border-purple-400/30 p-2 rounded-xl transition" onclick="closeScreamModal()"><i data-lucide="x" class="w-4 h-4"></i></button>
             </div>
 
-            <div class="score-info">Score: <span id="final-score" class="score-value">0</span></div>
-            <div class="score-info">Best: <span id="best-score" class="score-value">0</span></div>
-            <p style="color:#553847; font-weight:bold;">You need 35 to log your hours.</p>
-
-            <button id="restart-btn">PLAY AGAIN</button>
-        </div>
-    </div>
-
-    <!-- Win Screen Overlay -->
-    <div id="win-screen" class="overlay hidden">
-        <div class="panel">
-            <h2>Confirmed!</h2>
-            <div class="medals">
-                <div class="medal-slot" style="background-color:#ffd700;">🥇</div>
+            <!-- Start -->
+            <div id="screamStart" class="flex flex-col text-center">
+                <div class="night-glass-card-subtle rounded-2xl p-5 mb-5">
+                    <div class="text-purple-300/60 text-[10px] font-bold tracking-widest uppercase mb-2">Scream into your mic</div>
+                    <div class="text-2xl sm:text-3xl font-black text-amber-400">"Chris is the best!"</div>
+                    <p class="text-purple-200/70 text-xs leading-relaxed mt-3">Regular talking won't cut it, and no other phrase counts.</p>
+                </div>
+                <button class="w-full night-btn-primary font-bold py-3.5 rounded-xl text-sm flex items-center justify-center gap-2" onclick="startScream()"><i data-lucide="mic" class="w-4 h-4"></i> Enable Mic &amp; Start</button>
+                <p id="screamStartError" class="text-rose-400 text-xs font-semibold mt-3 hidden"></p>
+                <p class="text-purple-300/50 text-[11px] mt-3">Needs microphone access. Works best in Chrome.</p>
             </div>
-            <p style="color:#553847; font-weight:bold;">Logging your hours...</p>
+
+            <!-- Game -->
+            <div id="screamGame" class="hidden flex-row gap-5 items-stretch">
+                <div class="flex-1 flex flex-col items-center justify-center text-center min-w-0">
+                    <div class="text-purple-300/60 text-[10px] font-bold tracking-widest uppercase mb-3">Scream</div>
+                    <div id="screamText" class="text-3xl sm:text-4xl font-black uppercase text-white leading-tight">Chris is<br>the best!</div>
+                    <p id="screamHeard" class="mt-5 text-xs font-mono text-emerald-400 night-glass-card-subtle rounded-lg px-3 py-1.5 max-w-full truncate hidden">Heard: "..."</p>
+                    <p id="screamFeedback" class="mt-4 text-sm font-semibold text-purple-200/70 min-h-[2.5rem]">Louder! We can barely hear you...</p>
+                </div>
+                <div class="scream-meter relative w-14 sm:w-16 h-64 rounded-2xl night-glass-card-subtle overflow-hidden flex-shrink-0">
+                    <div class="absolute left-0 w-full h-0.5 bg-rose-500 z-20" id="screamThresholdLine"></div>
+                    <div id="screamMeterFill" class="absolute bottom-0 left-0 w-full h-0 z-10" style="background:#3b82f6;"></div>
+                    <div class="absolute inset-0 flex flex-col justify-between py-3 pointer-events-none z-10 opacity-30">
+                        <div class="w-3 h-[2px] bg-white"></div><div class="w-3 h-[2px] bg-white"></div><div class="w-3 h-[2px] bg-white"></div>
+                        <div class="w-3 h-[2px] bg-white"></div><div class="w-3 h-[2px] bg-white"></div><div class="w-3 h-[2px] bg-white"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Win -->
+            <div id="screamWin" class="hidden flex-col text-center py-6">
+                <div class="w-14 h-14 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-5 text-emerald-400 border border-emerald-500/30">
+                    <i data-lucide="check" class="w-7 h-7"></i>
+                </div>
+                <h3 class="text-3xl font-black text-white tracking-tight">You win!</h3>
+                <p class="text-purple-200/70 text-sm mt-2">Chris <span class="text-amber-400 font-bold">is</span> the best. Logging your hours...</p>
+            </div>
         </div>
     </div>
-</div>
-
-<script>
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-
-    // Load Bird Image
-    const birdImage = new Image();
-    birdImage.referrerPolicy = 'no-referrer'; // imgur blocks hotlinks that send a Referer
-    birdImage.src = 'https://i.imgur.com/KDU1UUI.png';
-    // Fallback if image fails to load
-    let imageLoaded = false;
-    birdImage.onload = () => {
-        imageLoaded = true;
-
-        // Calculate exact aspect ratio to completely prevent squishing
-        const aspectRatio = birdImage.naturalWidth / birdImage.naturalHeight;
-
-        // Make it WAY bigger
-        bird.width = 180;
-        bird.height = bird.width / aspectRatio;
-
-        // Automatically adjust physics constants based on actual image size
-        BIRD_RADIUS = Math.min(bird.width, bird.height) * 0.4;
-        PIPE_GAP = bird.height + 100; // Ensure enough room to fly through
-    };
-
-    // UI Elements
-    const startScreen = document.getElementById('start-screen');
-    const gameOverScreen = document.getElementById('game-over-screen');
-    const winScreen = document.getElementById('win-screen');
-    const currentScoreDisplay = document.getElementById('current-score');
-    const finalScoreDisplay = document.getElementById('final-score');
-    const bestScoreDisplay = document.getElementById('best-score');
-    const startBtn = document.getElementById('start-btn');
-    const restartBtn = document.getElementById('restart-btn');
-    const medalDisplay = document.getElementById('medal-display');
-
-    // Game Constants
-    const GRAVITY = 0.25;
-    const JUMP_STRENGTH = -5.5;
-    const PIPE_SPEED = 2;
-    const PIPE_WIDTH = 50;
-    let PIPE_GAP = 180; // Changed to let so it adapts to image height
-    const PIPE_SPAWN_RATE = 120; // Frames between pipe spawns
-    let BIRD_RADIUS = 30; // Changed to let so it adapts to image size
-    const GROUND_HEIGHT = 100;
-    const TARGET_SCORE = 35; // Score needed before the timesheet lets Drew log hours
-
-    // Game State
-    let animationId;
-    let frames = 0;
-    let score = 0;
-    let bestScore = 0;
-    try { bestScore = Number(localStorage.getItem('flappyBestScore')) || 0; } catch (e) {}
-    let gameState = 'START'; // START, PLAYING, GAMEOVER, WON
-    let groundOffset = 0;
-
-    // Entities
-    const bird = {
-        x: 50,
-        y: 150,
-        velocity: 0,
-        rotation: 0,
-        width: 180, // Default big size, perfectly corrected on image load
-        height: 180, // Default big size, perfectly corrected on image load
-
-        draw() {
-            ctx.save();
-            ctx.translate(this.x, this.y);
-
-            // Calculate rotation based on velocity
-            this.rotation = Math.min(Math.PI / 4, Math.max(-Math.PI / 4, (this.velocity * 0.1)));
-            ctx.rotate(this.rotation);
-
-            if (imageLoaded) {
-                // Draw the image centered at the current x, y
-                ctx.drawImage(birdImage, -this.width / 2, -this.height / 2, this.width, this.height);
-            } else {
-                // Fallback to drawn bird if image hasn't loaded
-                // Draw bird body
-                ctx.fillStyle = '#f4c511'; // Yellow
-                ctx.beginPath();
-                ctx.arc(0, 0, BIRD_RADIUS, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.lineWidth = 2;
-                ctx.strokeStyle = '#000';
-                ctx.stroke();
-
-                // Eye
-                ctx.fillStyle = '#fff';
-                ctx.beginPath();
-                ctx.arc(4, -4, 4, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.stroke();
-
-                // Pupil
-                ctx.fillStyle = '#000';
-                ctx.beginPath();
-                ctx.arc(5, -4, 1.5, 0, Math.PI * 2);
-                ctx.fill();
-
-                // Wing (animate based on frames if playing)
-                ctx.fillStyle = '#fff';
-                ctx.beginPath();
-                let wingY = (gameState === 'PLAYING' && frames % 20 < 10) ? 2 : 5;
-                ctx.ellipse(-5, wingY, 6, 4, 0, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.stroke();
-
-                // Beak
-                ctx.fillStyle = '#f35d0e'; // Orange
-                ctx.beginPath();
-                ctx.moveTo(8, 0);
-                ctx.lineTo(16, 2);
-                ctx.lineTo(8, 6);
-                ctx.fill();
-                ctx.stroke();
-            }
-
-            ctx.restore();
-        },
-
-        update() {
-            this.velocity += GRAVITY;
-            this.y += this.velocity;
-
-            // Collision with ground
-            if (this.y + BIRD_RADIUS >= canvas.height - GROUND_HEIGHT) {
-                this.y = canvas.height - GROUND_HEIGHT - BIRD_RADIUS;
-                this.velocity = 0;
-                gameOver();
-            }
-
-            // Collision with ceiling
-            if (this.y - BIRD_RADIUS <= 0) {
-                this.y = BIRD_RADIUS;
-                this.velocity = 0;
-            }
-        },
-
-        flap() {
-            this.velocity = JUMP_STRENGTH;
-        },
-
-        reset() {
-            this.x = canvas.width * 0.3; // Responsive starting position
-            this.y = canvas.height / 2;
-            this.velocity = 0;
-            this.rotation = 0;
-        }
-    };
-
-    const pipes = {
-        items: [],
-
-        draw() {
-            for (let i = 0; i < this.items.length; i++) {
-                let p = this.items[i];
-
-                // Draw top pipe
-                ctx.fillStyle = '#73bf2e'; // Green
-                ctx.fillRect(p.x, 0, PIPE_WIDTH, p.topHeight);
-                ctx.lineWidth = 2;
-                ctx.strokeStyle = '#558022';
-                ctx.strokeRect(p.x, 0, PIPE_WIDTH, p.topHeight);
-
-                // Top pipe cap
-                ctx.fillRect(p.x - 2, p.topHeight - 20, PIPE_WIDTH + 4, 20);
-                ctx.strokeRect(p.x - 2, p.topHeight - 20, PIPE_WIDTH + 4, 20);
-
-                // Draw bottom pipe
-                ctx.fillRect(p.x, p.bottomY, PIPE_WIDTH, canvas.height - p.bottomY - GROUND_HEIGHT);
-                ctx.strokeRect(p.x, p.bottomY, PIPE_WIDTH, canvas.height - p.bottomY - GROUND_HEIGHT);
-
-                // Bottom pipe cap
-                ctx.fillRect(p.x - 2, p.bottomY, PIPE_WIDTH + 4, 20);
-                ctx.strokeRect(p.x - 2, p.bottomY, PIPE_WIDTH + 4, 20);
-            }
-        },
-
-        update() {
-            // Spawn new pipes
-            if (frames % PIPE_SPAWN_RATE === 0) {
-                // Determine responsive gap limits
-                const minPipeHeight = 50;
-                const maxPos = canvas.height - GROUND_HEIGHT - minPipeHeight - PIPE_GAP;
-
-                // Ensure maxPos is valid
-                if (maxPos > minPipeHeight) {
-                    let topHeight = Math.max(minPipeHeight, Math.random() * maxPos);
-
-                    this.items.push({
-                        x: canvas.width,
-                        topHeight: topHeight,
-                        bottomY: topHeight + PIPE_GAP,
-                        passed: false
-                    });
-                }
-            }
-
-            for (let i = 0; i < this.items.length; i++) {
-                let p = this.items[i];
-                p.x -= PIPE_SPEED;
-
-                // Collision detection
-                // Check if bird x is within pipe x range
-                if (bird.x + BIRD_RADIUS > p.x && bird.x - BIRD_RADIUS < p.x + PIPE_WIDTH) {
-                    // Check if bird y is hitting top or bottom pipe
-                    if (bird.y - BIRD_RADIUS < p.topHeight || bird.y + BIRD_RADIUS > p.bottomY) {
-                        gameOver();
-                    }
-                }
-
-                // Score update
-                if (gameState === 'PLAYING' && p.x + PIPE_WIDTH < bird.x && !p.passed) {
-                    score++;
-                    currentScoreDisplay.textContent = score;
-                    p.passed = true;
-                    if (score >= TARGET_SCORE) winGame();
-                }
-
-                // Remove off-screen pipes
-                if (p.x + PIPE_WIDTH < 0) {
-                    this.items.shift();
-                    i--;
-                }
-            }
-        },
-
-        reset() {
-            this.items = [];
-        }
-    };
-
-    const bg = {
-        draw() {
-            // Draw Cityscape Background
-            ctx.fillStyle = '#70c5ce';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Simple clouds
-            ctx.fillStyle = 'rgba(255,255,255,0.7)';
-            ctx.beginPath();
-            ctx.arc(canvas.width * 0.2, canvas.height * 0.3, 30, 0, Math.PI * 2);
-            ctx.arc(canvas.width * 0.2 + 25, canvas.height * 0.3 - 10, 35, 0, Math.PI * 2);
-            ctx.arc(canvas.width * 0.2 + 50, canvas.height * 0.3, 30, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.beginPath();
-            ctx.arc(canvas.width * 0.8, canvas.height * 0.2, 20, 0, Math.PI * 2);
-            ctx.arc(canvas.width * 0.8 + 20, canvas.height * 0.2 - 5, 25, 0, Math.PI * 2);
-            ctx.arc(canvas.width * 0.8 + 40, canvas.height * 0.2, 20, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Distant buildings
-            ctx.fillStyle = '#b0e0e6';
-            ctx.fillRect(canvas.width * 0.1, canvas.height - GROUND_HEIGHT - 60, 40, 60);
-            ctx.fillRect(canvas.width * 0.3, canvas.height - GROUND_HEIGHT - 80, 50, 80);
-            ctx.fillRect(canvas.width * 0.6, canvas.height - GROUND_HEIGHT - 50, 30, 50);
-            ctx.fillRect(canvas.width * 0.8, canvas.height - GROUND_HEIGHT - 90, 45, 90);
-        }
-    }
-
-    const ground = {
-        draw() {
-            const groundY = canvas.height - GROUND_HEIGHT;
-
-            // Main dirt area
-            ctx.fillStyle = '#ded895';
-            ctx.fillRect(0, groundY, canvas.width, GROUND_HEIGHT);
-
-            // Grass top
-            ctx.fillStyle = '#73bf2e';
-            ctx.fillRect(0, groundY, canvas.width, 15);
-            ctx.lineWidth = 2;
-            ctx.strokeStyle = '#558022';
-            ctx.beginPath();
-            ctx.moveTo(0, groundY);
-            ctx.lineTo(canvas.width, groundY);
-            ctx.stroke();
-
-            // Scrolling stripes
-            ctx.fillStyle = '#c5b871';
-            const stripeWidth = 20;
-            const gap = 15;
-            // Draw extra stripes offscreen to allow smooth scrolling
-            for (let i = 0; i < (canvas.width / (stripeWidth + gap)) + 2; i++) {
-                let x = i * (stripeWidth + gap) - groundOffset;
-
-                // Draw diagonal stripe
-                ctx.beginPath();
-                ctx.moveTo(x, groundY + 15);
-                ctx.lineTo(x - 10, canvas.height);
-                ctx.lineTo(x - 10 + stripeWidth, canvas.height);
-                ctx.lineTo(x + stripeWidth, groundY + 15);
-                ctx.fill();
-            }
-        },
-        update() {
-            if (gameState === 'PLAYING') {
-                groundOffset = (groundOffset + PIPE_SPEED) % 35; // 35 is stripeWidth + gap
-            }
-        }
-    };
-
-    function resizeCanvas() {
-        const container = document.getElementById('game-container');
-        canvas.width = container.clientWidth;
-        canvas.height = container.clientHeight;
-
-        // Reset bird x position on resize
-        if (gameState === 'START') {
-            bird.x = canvas.width * 0.3;
-        }
-    }
-
-    function draw() {
-        bg.draw();
-        pipes.draw();
-        ground.draw();
-        bird.draw();
-    }
-
-    function update() {
-        if (gameState === 'PLAYING') {
-            bird.update();
-            pipes.update();
-            ground.update();
-            frames++;
-        } else if (gameState === 'START') {
-            // Bobbing animation for start screen
-            bird.y = (canvas.height / 2) + Math.cos(frames / 15) * 5;
-            ground.update(); // Keep ground moving
-            frames++;
-        }
-    }
-
-    function gameLoop() {
-        update();
-        draw();
-        animationId = requestAnimationFrame(gameLoop);
-    }
-
-    function startGame() {
-        gameState = 'PLAYING';
-        bird.reset();
-        pipes.reset();
-        score = 0;
-        frames = 0;
-        currentScoreDisplay.textContent = score;
-        startScreen.classList.add('hidden');
-        gameOverScreen.classList.add('hidden');
-        currentScoreDisplay.classList.remove('hidden');
-        bird.flap();
-    }
-
-    function gameOver() {
-        if (gameState !== 'PLAYING') return;
-        gameState = 'GAMEOVER';
-
-        if (score > bestScore) {
-            bestScore = score;
-            try { localStorage.setItem('flappyBestScore', bestScore); } catch (e) {}
-        }
-
-        // Determine Medal
-        medalDisplay.innerHTML = '';
-        medalDisplay.style.backgroundColor = '#9c8e6a'; // default empty
-        if (score >= 10 && score < 20) {
-             medalDisplay.innerHTML = '🥉';
-             medalDisplay.style.backgroundColor = '#cd7f32'; // Bronze
-        } else if (score >= 20 && score < 30) {
-             medalDisplay.innerHTML = '🥈';
-             medalDisplay.style.backgroundColor = '#c0c0c0'; // Silver
-        } else if (score >= 30) {
-             medalDisplay.innerHTML = '🥇';
-             medalDisplay.style.backgroundColor = '#ffd700'; // Gold
-        }
-
-        finalScoreDisplay.textContent = score;
-        bestScoreDisplay.textContent = bestScore;
-
-        currentScoreDisplay.classList.add('hidden');
-        gameOverScreen.classList.remove('hidden');
-    }
-
-    // Hitting the target score ends the game and tells the timesheet page Drew passed.
-    function winGame() {
-        gameState = 'WON';
-        if (score > bestScore) {
-            bestScore = score;
-            try { localStorage.setItem('flappyBestScore', bestScore); } catch (e) {}
-        }
-        winScreen.classList.remove('hidden');
-        setTimeout(() => window.parent.postMessage({ flappyDrew: 'passed', score }, '*'), 1200);
-    }
-
-    function handleInput(e) {
-        // Prevent default actions for specific events to avoid zooming/scrolling
-        if (e.type !== 'keydown') {
-            e.preventDefault();
-        }
-
-        if (gameState === 'PLAYING') {
-            // Spacebar or touch/click
-            if (e.type !== 'keydown' || e.code === 'Space') {
-                if (e.type === 'keydown') e.preventDefault();
-                bird.flap();
-            }
-        }
-    }
-
-    // Input Listeners
-    window.addEventListener('keydown', handleInput);
-    canvas.addEventListener('mousedown', handleInput);
-    canvas.addEventListener('touchstart', handleInput, { passive: false });
-
-    // UI Buttons
-    startBtn.addEventListener('click', startGame);
-    restartBtn.addEventListener('click', startGame);
-
-    // Initial setup
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas(); // Set initial size
-    bird.reset(); // Set initial position based on size
-
-    // Start the game loop
-    gameLoop();
-</script>
-    </template>
 
     <!-- Toast Notification -->
     <div id="toast" class="border border-transparent">
@@ -1838,7 +1267,7 @@
     }
 
     // opts.dupOk: student already confirmed a same-day, same-task entry.
-    // opts.gamePassed: Drew already cleared Flappy Drew for this entry.
+    // opts.gamePassed: Drew already screamed "Chris is the best!" for this entry.
     function saveTimeEntry(opts = {}) {
         const date = document.getElementById('entryDate').value;
         const hours = parseFloat(document.getElementById('entryHours').value);
@@ -1865,10 +1294,10 @@
             }
         }
 
-        // Drew Colucci has to score 35 in Flappy Drew every time he adds hours.
+        // Drew Colucci has to scream "Chris is the best!" every time he adds hours.
         if (!opts.gamePassed && !state.editingEntryId && isDrew()) {
             state.pendingEntryOpts = opts;
-            return openFlappyModal();
+            return openScreamModal();
         }
 
         let entry, replacedKey = null;
@@ -1909,31 +1338,149 @@
         return !!state.currentUser && (state.currentUser.name || '').trim().toLowerCase().replace(/\s+/g, ' ') === 'drew colucci';
     }
 
-    function openFlappyModal() {
-        const modal = document.getElementById('flappyModal');
-        const frame = document.getElementById('flappyFrame');
+    // --- Scream gate: loud enough on the mic AND speech recognition hears the phrase ---
+    const SCREAM_THRESHOLD = 95; // 0-100 meter scale; only a real scream gets here
+    const scream = { running: false, stream: null, ctx: null, analyser: null, data: null, raf: 0, recognition: null, phraseHeard: false, phraseTimer: 0 };
+
+    function showScreamStep(step) {
+        ['screamStart', 'screamGame', 'screamWin'].forEach(id => {
+            const el = document.getElementById(id);
+            const on = id === step;
+            el.classList.toggle('hidden', !on);
+            el.classList.toggle('flex', on);
+        });
+    }
+
+    function openScreamModal() {
+        const modal = document.getElementById('screamModal');
         modal.style.display = 'flex';
         modal.classList.remove('hidden');
-        // Load a fresh game each time so it starts from the PLAY screen.
-        frame.srcdoc = '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="referrer" content="no-referrer"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>Flappy Drew</title></head><body>'
-            + document.getElementById('flappyDrewSrc').innerHTML + '</body></html>';
-        frame.onload = () => frame.focus();
+        document.getElementById('screamStartError').classList.add('hidden');
+        document.getElementById('screamThresholdLine').style.bottom = SCREAM_THRESHOLD + '%';
+        showScreamStep('screamStart');
+        if (window.lucide) lucide.createIcons();
     }
 
-    function closeFlappyModal() {
-        const modal = document.getElementById('flappyModal');
+    function closeScreamModal() {
+        stopScream();
+        const modal = document.getElementById('screamModal');
         modal.style.display = 'none';
         modal.classList.add('hidden');
-        document.getElementById('flappyFrame').srcdoc = '';
     }
 
-    window.addEventListener('message', e => {
-        const frame = document.getElementById('flappyFrame');
-        if (!frame || e.source !== frame.contentWindow || !e.data || e.data.flappyDrew !== 'passed') return;
-        if (!(e.data.score >= 35)) return;
-        closeFlappyModal();
-        saveTimeEntry({ ...(state.pendingEntryOpts || {}), gamePassed: true });
-    });
+    function stopScream() {
+        scream.running = false;
+        cancelAnimationFrame(scream.raf);
+        clearTimeout(scream.phraseTimer);
+        if (scream.recognition) { try { scream.recognition.abort(); } catch (e) {} scream.recognition = null; }
+        if (scream.stream) { scream.stream.getTracks().forEach(t => t.stop()); scream.stream = null; }
+        if (scream.ctx) { scream.ctx.close().catch(() => {}); scream.ctx = null; }
+        scream.phraseHeard = false;
+    }
+
+    function screamStartError(msg) {
+        const el = document.getElementById('screamStartError');
+        el.textContent = msg;
+        el.classList.remove('hidden');
+    }
+
+    async function startScream() {
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SR) return screamStartError('Speech recognition isn\'t supported in this browser. Try Chrome!');
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return screamStartError('Microphone isn\'t available in this browser.');
+        try {
+            // No auto gain, so whispering and letting the browser boost it doesn't count.
+            scream.stream = await navigator.mediaDevices.getUserMedia({ audio: { autoGainControl: false, echoCancellation: false, noiseSuppression: false } });
+        } catch (err) {
+            return screamStartError('Microphone access denied! Please allow access to continue.');
+        }
+        scream.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        scream.analyser = scream.ctx.createAnalyser();
+        scream.analyser.fftSize = 256;
+        scream.data = new Uint8Array(scream.analyser.frequencyBinCount);
+        scream.ctx.createMediaStreamSource(scream.stream).connect(scream.analyser); // never to speakers (feedback)
+
+        const rec = new SR();
+        rec.continuous = true;
+        rec.interimResults = true;
+        rec.onresult = e => {
+            let heard = '';
+            for (let i = e.resultIndex; i < e.results.length; i++) heard += e.results[i][0].transcript;
+            const heardEl = document.getElementById('screamHeard');
+            heardEl.classList.remove('hidden');
+            heardEl.textContent = `Heard: "${heard.trim()}"`;
+            const t = heard.toLowerCase().replace(/[^a-z' ]/g, ' ').replace(/\s+/g, ' ');
+            if (t.includes('chris is the best') || t.includes("chris's the best")) {
+                // Keep the phrase "valid" briefly so it lines up with the volume spike.
+                scream.phraseHeard = true;
+                heardEl.classList.replace('text-emerald-400', 'text-amber-400');
+                clearTimeout(scream.phraseTimer);
+                scream.phraseTimer = setTimeout(() => {
+                    scream.phraseHeard = false;
+                    heardEl.classList.replace('text-amber-400', 'text-emerald-400');
+                }, 2500);
+            }
+        };
+        rec.onerror = e => {
+            if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+                stopScream();
+                showScreamStep('screamStart');
+                screamStartError('Speech recognition was blocked. Allow mic access and try again.');
+            }
+        };
+        rec.onend = () => { if (scream.running && scream.recognition === rec) { try { rec.start(); } catch (e) {} } };
+        scream.recognition = rec;
+
+        const heardEl = document.getElementById('screamHeard');
+        heardEl.classList.add('hidden');
+        heardEl.classList.replace('text-amber-400', 'text-emerald-400');
+        showScreamStep('screamGame');
+        scream.running = true;
+        try { rec.start(); } catch (e) {}
+        monitorScream();
+    }
+
+    function monitorScream() {
+        if (!scream.running) return;
+        scream.analyser.getByteFrequencyData(scream.data);
+        const avg = scream.data.reduce((s, v) => s + v, 0) / scream.data.length;
+        const vol = Math.min((avg / 255) * 140, 100);
+        const loud = vol >= SCREAM_THRESHOLD;
+        const said = scream.phraseHeard;
+
+        const fill = document.getElementById('screamMeterFill');
+        const text = document.getElementById('screamText');
+        const fb = document.getElementById('screamFeedback');
+        fill.style.height = vol + '%';
+        text.classList.remove('scream-level-1', 'scream-level-2', 'scream-level-3', 'scream-level-4');
+
+        let color = '#3b82f6', level = 0, msg = said ? 'You said it, but you have to SCREAM it!' : 'Scream "Chris is the best!"';
+        if (vol >= 30) { color = '#38bdf8'; level = 1; }
+        if (vol >= 60) { color = '#facc15'; level = 2; msg = said ? 'Right phrase, now LOUDER!' : 'LOUDER! Say "Chris is the best!"'; }
+        if (vol >= 80) { color = '#f97316'; level = 3; msg = said ? 'ALMOST THERE!! SCREAM IT!!' : 'I hear yelling, but say the phrase!'; }
+        if (loud)      { color = '#ef4444'; level = 4; msg = said ? '' : 'Loud enough, but say "Chris is the best!"'; }
+        fill.style.backgroundColor = color;
+        fill.style.boxShadow = `0 0 15px ${color}`;
+        if (level) text.classList.add('scream-level-' + level);
+        fb.textContent = msg;
+        fb.className = 'mt-4 text-sm font-semibold min-h-[2.5rem] ' + (level >= 2 || said ? 'text-amber-400' : 'text-purple-200/70');
+
+        if (loud && said) return screamWon();
+        scream.raf = requestAnimationFrame(monitorScream);
+    }
+
+    function screamWon() {
+        stopScream();
+        showScreamStep('screamWin');
+        if (window.lucide) lucide.createIcons();
+        if (typeof confetti === 'function') {
+            confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 }, zIndex: 3000, colors: ['#a855f7', '#6366f1', '#2563eb', '#facc15'] });
+        }
+        setTimeout(() => {
+            closeScreamModal();
+            saveTimeEntry({ ...(state.pendingEntryOpts || {}), gamePassed: true });
+        }, 1800);
+    }
 
     function editEntry(id) {
         const entry = state.currentWeekEntries.find(e => String(e.id) === String(id));
