@@ -1309,7 +1309,9 @@
 
     // --- Connect 4: Drew (pink) has to beat a simple AI (blue) ---
     const C4_ROWS = 6, C4_COLS = 7, C4_PLAYER = 1, C4_AI = 2;
-    const c4 = { board: [], active: false, timer: 0 };
+    const C4_LUCKY_ODDS = 0.01; // chance a game gets the beatable AI; otherwise it looks ahead
+    const C4_DEPTH = 6;         // how many moves ahead the full-strength AI looks
+    const c4 = { board: [], active: false, timer: 0, lucky: false };
 
     function c4SetStatus(text, cls) {
         const el = document.getElementById('c4Status');
@@ -1325,6 +1327,7 @@
     function c4NewGame() {
         clearTimeout(c4.timer);
         c4.board = Array.from({ length: C4_ROWS }, () => Array(C4_COLS).fill(0));
+        c4.lucky = Math.random() < C4_LUCKY_ODDS;
         const boardEl = document.getElementById('c4Board');
         boardEl.innerHTML = '';
         for (let r = 0; r < C4_ROWS; r++) {
@@ -1398,6 +1401,19 @@
         if (!c4.active) return;
         const row = c4OpenRow(col);
         if (row === -1) return; // column full
+
+        // Outside a lucky game Drew never gets the winning spot: the AI snatches it and he goes again.
+        if (!c4.lucky) {
+            c4.board[row][col] = C4_PLAYER;
+            const wouldWin = c4WinsAt(row, col, C4_PLAYER);
+            c4.board[row][col] = 0;
+            if (wouldWin) {
+                c4SetActive(false);
+                c4SetStatus('Nope. The timesheet AI saw that coming.', 'text-rose-400');
+                c4.timer = setTimeout(() => c4AIPlay(row, col, 'It took your spot. Your move again.'), 900);
+                return;
+            }
+        }
         c4Place(row, col, C4_PLAYER);
 
         const win = c4CheckWin(C4_PLAYER);
@@ -1414,6 +1430,57 @@
     }
 
     function c4AIMove() {
+        if (c4.lucky) return c4CasualMove();
+        // Full strength: minimax with alpha-beta, middle columns tried first. Ties broken randomly.
+        let best = null;
+        for (const c of C4_ORDER) {
+            const r = c4OpenRow(c);
+            if (r === -1) continue;
+            c4.board[r][c] = C4_AI;
+            const score = c4WinsAt(r, c, C4_AI) ? 1e6 : c4Minimax(C4_DEPTH - 1, -Infinity, Infinity, false) + Math.random();
+            c4.board[r][c] = 0;
+            if (!best || score > best.score) best = { r, c, score };
+        }
+        c4AIPlay(best.r, best.c);
+    }
+
+    const C4_ORDER = [3, 2, 4, 1, 5, 0, 6];
+
+    // Score of the current board for the AI, looking `depth` moves ahead. Faster wins score higher.
+    function c4Minimax(depth, alpha, beta, aiTurn) {
+        if (c4BoardFull()) return 0;
+        if (depth === 0) return c4Score();
+        const who = aiTurn ? C4_AI : C4_PLAYER;
+        let best = aiTurn ? -Infinity : Infinity;
+        for (const c of C4_ORDER) {
+            const r = c4OpenRow(c);
+            if (r === -1) continue;
+            c4.board[r][c] = who;
+            const score = c4WinsAt(r, c, who) ? (aiTurn ? 1 : -1) * (1e5 + depth) : c4Minimax(depth - 1, alpha, beta, !aiTurn);
+            c4.board[r][c] = 0;
+            if (aiTurn) { best = Math.max(best, score); alpha = Math.max(alpha, best); }
+            else { best = Math.min(best, score); beta = Math.min(beta, best); }
+            if (alpha >= beta) break;
+        }
+        return best;
+    }
+
+    // Fast check: does the piece just placed at (r, c) make four in a row?
+    function c4WinsAt(r, c, who) {
+        const b = c4.board;
+        for (const [dr, dc] of [[0, 1], [1, 0], [1, 1], [-1, 1]]) {
+            let n = 1;
+            for (const s of [1, -1]) {
+                let rr = r + dr * s, cc = c + dc * s;
+                while (rr >= 0 && rr < C4_ROWS && cc >= 0 && cc < C4_COLS && b[rr][cc] === who) { n++; rr += dr * s; cc += dc * s; }
+            }
+            if (n >= 4) return true;
+        }
+        return false;
+    }
+
+    // The beatable AI Drew gets in a lucky game.
+    function c4CasualMove() {
         // 1. Win if it can, 2. block Drew's win.
         for (const who of [C4_AI, C4_PLAYER]) {
             for (let c = 0; c < C4_COLS; c++) {
@@ -1470,7 +1537,7 @@
         return score;
     }
 
-    function c4AIPlay(r, c) {
+    function c4AIPlay(r, c, yourMoveMsg) {
         c4Place(r, c, C4_AI);
         const win = c4CheckWin(C4_AI);
         if (win) {
@@ -1484,7 +1551,7 @@
             c4.timer = setTimeout(c4NewGame, 2000);
             return;
         }
-        c4SetStatus('Your move.', 'text-emerald-400');
+        c4SetStatus(yourMoveMsg || 'Your move.', yourMoveMsg ? 'text-amber-400' : 'text-emerald-400');
         c4SetActive(true);
     }
 
