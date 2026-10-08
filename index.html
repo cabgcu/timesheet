@@ -280,18 +280,15 @@
             box-shadow: 0 20px 40px rgba(0,0,0,0.4);
         }
 
-        /* Scream gate (Drew) — meter + shake levels */
-        .scream-meter { box-shadow: 0 0 20px rgba(0,0,0,0.5) inset; }
-        #screamMeterFill { transition: height 0.05s ease-out, background-color 0.2s; }
-        #screamText { transition: color 0.1s; }
-        @keyframes scream-shake-1 { 0%,100% { transform: translate(0,0); } 25% { transform: translate(1px,-1px); } 50% { transform: translate(-1px,1px); } 75% { transform: translate(1px,1px); } }
-        @keyframes scream-shake-2 { 0%,100% { transform: translate(0,0); } 25% { transform: translate(2px,-2px) rotate(1deg); } 50% { transform: translate(-2px,2px) rotate(-1deg); } 75% { transform: translate(2px,2px); } }
-        @keyframes scream-shake-3 { 0%,100% { transform: translate(0,0); } 25% { transform: translate(5px,-5px) rotate(2deg); } 50% { transform: translate(-5px,5px) rotate(-2deg); } 75% { transform: translate(5px,5px) rotate(1deg); } }
-        @keyframes scream-shake-4 { 0%,100% { transform: translate(0,0) scale(1.1); } 25% { transform: translate(8px,-8px) rotate(4deg) scale(1.1); } 50% { transform: translate(-8px,8px) rotate(-4deg) scale(1.1); } 75% { transform: translate(8px,8px) rotate(3deg) scale(1.1); } }
-        .scream-level-1 { animation: scream-shake-1 0.2s infinite; color: #38bdf8 !important; }
-        .scream-level-2 { animation: scream-shake-2 0.15s infinite; color: #facc15 !important; text-shadow: 0 0 10px #facc15; }
-        .scream-level-3 { animation: scream-shake-3 0.1s infinite; color: #f97316 !important; text-shadow: 0 0 20px #f97316; }
-        .scream-level-4 { animation: scream-shake-4 0.05s infinite; color: #ef4444 !important; text-shadow: 0 0 30px #ef4444; }
+        /* Item hunt (Drew) — camera scanner */
+        .hunt-scanner { position: relative; overflow: hidden; border: 2px solid var(--line-strong); transition: border-color 0.3s, box-shadow 0.3s; }
+        .hunt-scanner video { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .hunt-scan-line { position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: #10b981; box-shadow: 0 0 10px #10b981, 0 0 20px #10b981; animation: hunt-scan 2s linear infinite; }
+        @keyframes hunt-scan { 0% { top: 0; opacity: 0; } 10%, 90% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
+        .hunt-screen .hunt-scanner { border-color: #ef4444; box-shadow: 0 0 30px rgba(239, 68, 68, 0.4); }
+        .hunt-screen .hunt-scan-line { background: #ef4444; box-shadow: 0 0 10px #ef4444, 0 0 20px #ef4444; }
+        .hunt-spinner { border: 3px solid rgba(255,255,255,0.1); border-left-color: #10b981; border-radius: 50%; width: 24px; height: 24px; animation: hunt-spin 1s linear infinite; }
+        @keyframes hunt-spin { 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="text-white min-h-[100dvh] w-full relative overflow-x-hidden selection:bg-purple-500/30 font-sans flex flex-col items-center justify-start antialiased custom-scroll">
@@ -833,55 +830,55 @@
         </div>
     </div>
 
-    <!-- Scream gate (Drew Colucci must scream "Chris is the best!" before he can add hours) -->
-    <div id="screamModal" class="fixed inset-0 z-[2000] hidden items-center justify-center p-4">
-        <div class="absolute inset-0 modal-backdrop" onclick="closeScreamModal()"></div>
-        <div class="relative w-full max-w-lg night-glass-card rounded-3xl p-6 sm:p-8 flex flex-col shadow-2xl border-purple-400/50 max-h-[90vh] overflow-y-auto custom-scroll z-10">
+    <!-- Item hunt (Drew Colucci must show a random item to the camera before he can add hours) -->
+    <div id="huntModal" class="fixed inset-0 z-[2000] hidden items-center justify-center p-4">
+        <div class="absolute inset-0 modal-backdrop" onclick="closeHuntModal()"></div>
+        <div id="huntCard" class="relative w-full max-w-md night-glass-card rounded-3xl p-6 sm:p-8 flex flex-col shadow-2xl border-purple-400/50 max-h-[90vh] overflow-y-auto custom-scroll z-10">
             <div class="flex justify-between items-start mb-5">
                 <div>
-                    <h3 class="text-xl font-bold text-white tracking-tight flex items-center gap-2"><i data-lucide="mic" class="w-5 h-5 text-purple-400"></i> One more step</h3>
-                    <p class="text-purple-200/70 text-xs mt-1">Scream it loud enough to log your hours.</p>
+                    <h3 class="text-xl font-bold text-white tracking-tight flex items-center gap-2"><i data-lucide="scan-search" class="w-5 h-5 text-purple-400"></i> One more step</h3>
+                    <p class="text-purple-200/70 text-xs mt-1">Find this item and show it to your camera to log your hours.</p>
                 </div>
-                <button class="text-purple-200 hover:text-white bg-slate-900/50 hover:bg-white/10 border border-purple-400/30 p-2 rounded-xl transition" onclick="closeScreamModal()"><i data-lucide="x" class="w-4 h-4"></i></button>
+                <button class="text-purple-200 hover:text-white bg-slate-900/50 hover:bg-white/10 border border-purple-400/30 p-2 rounded-xl transition" onclick="closeHuntModal()"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+
+            <div class="night-glass-card-subtle rounded-2xl p-4 mb-5 text-center">
+                <div class="text-purple-300/60 text-[10px] font-bold tracking-widest uppercase mb-1">Go find a</div>
+                <div id="huntTarget" class="text-2xl sm:text-3xl font-black uppercase text-amber-400 transition-colors">...</div>
             </div>
 
             <!-- Start -->
-            <div id="screamStart" class="flex flex-col text-center">
-                <div class="night-glass-card-subtle rounded-2xl p-5 mb-5">
-                    <div class="text-purple-300/60 text-[10px] font-bold tracking-widest uppercase mb-2">Scream into your mic</div>
-                    <div class="text-2xl sm:text-3xl font-black text-amber-400">"Chris is the best!"</div>
-                    <p class="text-purple-200/70 text-xs leading-relaxed mt-3">Regular talking won't cut it, and no other phrase counts.</p>
-                </div>
-                <button class="w-full night-btn-primary font-bold py-3.5 rounded-xl text-sm flex items-center justify-center gap-2" onclick="startScream()"><i data-lucide="mic" class="w-4 h-4"></i> Enable Mic &amp; Start</button>
-                <p id="screamStartError" class="text-rose-400 text-xs font-semibold mt-3 hidden"></p>
-                <p class="text-purple-300/50 text-[11px] mt-3">Needs microphone access. Works best in Chrome.</p>
+            <div id="huntStart" class="flex flex-col text-center">
+                <button class="w-full night-btn-primary font-bold py-3.5 rounded-xl text-sm flex items-center justify-center gap-2" onclick="startHunt()"><i data-lucide="camera" class="w-4 h-4"></i> Open Camera &amp; Start</button>
+                <p id="huntStartError" class="text-rose-400 text-xs font-semibold mt-3 hidden"></p>
+                <p class="text-purple-300/50 text-[11px] mt-3">Real items only. Pictures on a screen don't count.</p>
             </div>
 
-            <!-- Game -->
-            <div id="screamGame" class="hidden flex-row gap-5 items-stretch">
-                <div class="flex-1 flex flex-col items-center justify-center text-center min-w-0">
-                    <div class="text-purple-300/60 text-[10px] font-bold tracking-widest uppercase mb-3">Scream</div>
-                    <div id="screamText" class="text-3xl sm:text-4xl font-black uppercase text-white leading-tight">Chris is<br>the best!</div>
-                    <p id="screamHeard" class="mt-5 text-xs font-mono text-emerald-400 night-glass-card-subtle rounded-lg px-3 py-1.5 max-w-full truncate hidden">Heard: "..."</p>
-                    <p id="screamFeedback" class="mt-4 text-sm font-semibold text-purple-200/70 min-h-[2.5rem]">Louder! We can barely hear you...</p>
-                </div>
-                <div class="scream-meter relative w-14 sm:w-16 h-64 rounded-2xl night-glass-card-subtle overflow-hidden flex-shrink-0">
-                    <div class="absolute left-0 w-full h-0.5 bg-rose-500 z-20" id="screamThresholdLine"></div>
-                    <div id="screamMeterFill" class="absolute bottom-0 left-0 w-full h-0 z-10" style="background:#3b82f6;"></div>
-                    <div class="absolute inset-0 flex flex-col justify-between py-3 pointer-events-none z-10 opacity-30">
-                        <div class="w-3 h-[2px] bg-white"></div><div class="w-3 h-[2px] bg-white"></div><div class="w-3 h-[2px] bg-white"></div>
-                        <div class="w-3 h-[2px] bg-white"></div><div class="w-3 h-[2px] bg-white"></div><div class="w-3 h-[2px] bg-white"></div>
+            <!-- Scanner -->
+            <div id="huntGame" class="hidden flex-col">
+                <div class="hunt-scanner rounded-2xl bg-slate-950 aspect-[4/3] w-full">
+                    <video id="huntVideo" autoplay playsinline muted></video>
+                    <div id="huntLoading" class="absolute inset-0 flex flex-col items-center justify-center gap-3 z-10 bg-slate-950/70">
+                        <div class="hunt-spinner"></div>
+                        <span id="huntLoadingText" class="text-[10px] text-emerald-400 font-bold tracking-widest uppercase">Starting camera...</span>
                     </div>
+                    <div id="huntScanLine" class="hunt-scan-line hidden"></div>
+                    <div id="huntScreenWarning" class="absolute inset-0 bg-red-900/80 flex flex-col items-center justify-center text-center px-4 opacity-0 pointer-events-none transition-opacity duration-300 z-20">
+                        <i data-lucide="monitor-x" class="w-10 h-10 text-red-300 mb-2"></i>
+                        <span class="font-bold text-white tracking-wider">SCREEN DETECTED</span>
+                        <span class="text-red-200 text-xs mt-1">Nice try. Show the real thing, not a picture of it.</span>
+                    </div>
+                    <span id="huntSeeing" class="absolute bottom-2 left-2 z-30 text-[10px] font-semibold bg-black/60 text-slate-300 px-2 py-1 rounded">Scanning...</span>
                 </div>
             </div>
 
             <!-- Win -->
-            <div id="screamWin" class="hidden flex-col text-center py-6">
+            <div id="huntWin" class="hidden flex-col text-center py-4">
                 <div class="w-14 h-14 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-5 text-emerald-400 border border-emerald-500/30">
                     <i data-lucide="check" class="w-7 h-7"></i>
                 </div>
-                <h3 class="text-3xl font-black text-white tracking-tight">You win!</h3>
-                <p class="text-purple-200/70 text-sm mt-2">Chris <span class="text-amber-400 font-bold">is</span> the best. Logging your hours...</p>
+                <h3 class="text-3xl font-black text-white tracking-tight">Found it!</h3>
+                <p class="text-purple-200/70 text-sm mt-2">Challenge complete. Logging your hours...</p>
             </div>
         </div>
     </div>
@@ -1267,7 +1264,7 @@
     }
 
     // opts.dupOk: student already confirmed a same-day, same-task entry.
-    // opts.gamePassed: Drew already screamed "Chris is the best!" for this entry.
+    // opts.gamePassed: Drew already finished the item hunt for this entry.
     function saveTimeEntry(opts = {}) {
         const date = document.getElementById('entryDate').value;
         const hours = parseFloat(document.getElementById('entryHours').value);
@@ -1294,10 +1291,10 @@
             }
         }
 
-        // Drew Colucci has to scream "Chris is the best!" every time he adds hours.
+        // Drew Colucci has to show a random item to the camera every time he adds hours.
         if (!opts.gamePassed && !state.editingEntryId && isDrew()) {
             state.pendingEntryOpts = opts;
-            return openScreamModal();
+            return openHuntModal();
         }
 
         let entry, replacedKey = null;
@@ -1338,12 +1335,35 @@
         return !!state.currentUser && (state.currentUser.name || '').trim().toLowerCase().replace(/\s+/g, ' ') === 'drew colucci';
     }
 
-    // --- Scream gate: loud enough on the mic AND speech recognition hears the phrase ---
-    const SCREAM_THRESHOLD = 80; // 0-100 meter scale; a good yell gets here, normal talking doesn't
-    const scream = { running: false, stream: null, ctx: null, analyser: null, data: null, raf: 0, recognition: null, phraseHeard: false, phraseTimer: 0 };
+    // --- Item hunt: the camera (COCO-SSD) has to spot a random item, with no screen in view ---
+    const HUNT_ITEMS = ['cup', 'bottle', 'potted plant', 'book', 'scissors', 'apple', 'banana', 'spoon', 'fork', 'toothbrush'];
+    const HUNT_SCREENS = ['tv', 'laptop', 'cell phone'];
+    const hunt = { running: false, stream: null, target: '', timer: 0 };
+    let huntModelPromise = null;
 
-    function showScreamStep(step) {
-        ['screamStart', 'screamGame', 'screamWin'].forEach(id => {
+    function loadScript(src) {
+        return new Promise((resolve, reject) => {
+            const el = document.createElement('script');
+            el.src = src;
+            el.onload = resolve;
+            el.onerror = () => reject(new Error('Failed to load ' + src));
+            document.head.appendChild(el);
+        });
+    }
+
+    // TensorFlow + the model are big, so only Drew ever downloads them, and only once.
+    function loadHuntModel() {
+        if (!huntModelPromise) {
+            huntModelPromise = loadScript('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js')
+                .then(() => loadScript('https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js'))
+                .then(() => cocoSsd.load())
+                .catch(err => { huntModelPromise = null; throw err; });
+        }
+        return huntModelPromise;
+    }
+
+    function showHuntStep(step) {
+        ['huntStart', 'huntGame', 'huntWin'].forEach(id => {
             const el = document.getElementById(id);
             const on = id === step;
             el.classList.toggle('hidden', !on);
@@ -1351,138 +1371,115 @@
         });
     }
 
-    function openScreamModal() {
-        const modal = document.getElementById('screamModal');
+    function openHuntModal() {
+        hunt.target = HUNT_ITEMS[Math.floor(Math.random() * HUNT_ITEMS.length)];
+        document.getElementById('huntTarget').textContent = hunt.target;
+        document.getElementById('huntStartError').classList.add('hidden');
+        const modal = document.getElementById('huntModal');
         modal.style.display = 'flex';
         modal.classList.remove('hidden');
-        document.getElementById('screamStartError').classList.add('hidden');
-        document.getElementById('screamThresholdLine').style.bottom = SCREAM_THRESHOLD + '%';
-        showScreamStep('screamStart');
+        showHuntStep('huntStart');
         if (window.lucide) lucide.createIcons();
+        loadHuntModel().catch(() => {}); // start downloading while he goes looking
     }
 
-    function closeScreamModal() {
-        stopScream();
-        const modal = document.getElementById('screamModal');
+    function closeHuntModal() {
+        stopHunt();
+        const modal = document.getElementById('huntModal');
         modal.style.display = 'none';
         modal.classList.add('hidden');
     }
 
-    function stopScream() {
-        scream.running = false;
-        cancelAnimationFrame(scream.raf);
-        clearTimeout(scream.phraseTimer);
-        if (scream.recognition) { try { scream.recognition.abort(); } catch (e) {} scream.recognition = null; }
-        if (scream.stream) { scream.stream.getTracks().forEach(t => t.stop()); scream.stream = null; }
-        if (scream.ctx) { scream.ctx.close().catch(() => {}); scream.ctx = null; }
-        scream.phraseHeard = false;
+    function stopHunt() {
+        hunt.running = false;
+        clearTimeout(hunt.timer);
+        if (hunt.stream) { hunt.stream.getTracks().forEach(t => t.stop()); hunt.stream = null; }
+        document.getElementById('huntVideo').srcObject = null;
+        setHuntScreen(false);
     }
 
-    function screamStartError(msg) {
-        const el = document.getElementById('screamStartError');
+    function huntStartError(msg) {
+        stopHunt();
+        showHuntStep('huntStart');
+        const el = document.getElementById('huntStartError');
         el.textContent = msg;
         el.classList.remove('hidden');
     }
 
-    async function startScream() {
-        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SR) return screamStartError('Speech recognition isn\'t supported in this browser. Try Chrome!');
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return screamStartError('Microphone isn\'t available in this browser.');
-        // Safari only lets audio run if it starts during the tap, so set it up before waiting on the mic prompt.
-        scream.ctx = new (window.AudioContext || window.webkitAudioContext)();
-        scream.ctx.resume().catch(() => {});
+    async function startHunt() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return huntStartError('Camera isn\'t available in this browser.');
+        const video = document.getElementById('huntVideo');
+        const loading = document.getElementById('huntLoading');
+        document.getElementById('huntStartError').classList.add('hidden');
+        document.getElementById('huntScanLine').classList.add('hidden');
+        document.getElementById('huntSeeing').textContent = 'Scanning...';
+        loading.classList.remove('hidden');
+        document.getElementById('huntLoadingText').textContent = 'Starting camera...';
+        showHuntStep('huntGame');
+        hunt.running = true;
         try {
-            // No auto gain, so whispering and letting the browser boost it doesn't count.
-            scream.stream = await navigator.mediaDevices.getUserMedia({ audio: { autoGainControl: false, echoCancellation: false, noiseSuppression: false } });
+            hunt.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
         } catch (err) {
-            stopScream();
-            return screamStartError('Microphone access denied! Please allow access to continue.');
+            return huntStartError('Camera access denied! Please allow access to continue.');
         }
-        scream.analyser = scream.ctx.createAnalyser();
-        scream.analyser.fftSize = 256;
-        scream.data = new Uint8Array(scream.analyser.frequencyBinCount);
-        scream.ctx.createMediaStreamSource(scream.stream).connect(scream.analyser); // never to speakers (feedback)
+        if (!hunt.running) return stopHunt(); // closed while the prompt was up
+        video.srcObject = hunt.stream;
+        // Mirror the front camera so it feels like a mirror; the back camera stays as-is.
+        const facing = (hunt.stream.getVideoTracks()[0].getSettings() || {}).facingMode;
+        video.style.transform = facing === 'environment' ? '' : 'scaleX(-1)';
+        try { await video.play(); } catch (e) {}
 
-        const rec = new SR();
-        rec.continuous = true;
-        rec.interimResults = true;
-        rec.onresult = e => {
-            let heard = '';
-            for (let i = e.resultIndex; i < e.results.length; i++) heard += e.results[i][0].transcript;
-            const heardEl = document.getElementById('screamHeard');
-            heardEl.classList.remove('hidden');
-            heardEl.textContent = `Heard: "${heard.trim()}"`;
-            const t = heard.toLowerCase().replace(/[^a-z' ]/g, ' ').replace(/\s+/g, ' ');
-            if (t.includes('chris is the best') || t.includes("chris's the best")) {
-                // Keep the phrase "valid" briefly so it lines up with the volume spike.
-                scream.phraseHeard = true;
-                heardEl.classList.replace('text-emerald-400', 'text-amber-400');
-                clearTimeout(scream.phraseTimer);
-                scream.phraseTimer = setTimeout(() => {
-                    scream.phraseHeard = false;
-                    heardEl.classList.replace('text-amber-400', 'text-emerald-400');
-                }, 2500);
-            }
-        };
-        rec.onerror = e => {
-            if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
-                stopScream();
-                showScreamStep('screamStart');
-                screamStartError('Speech recognition was blocked. Allow mic access and try again.');
-            }
-        };
-        rec.onend = () => { if (scream.running && scream.recognition === rec) { try { rec.start(); } catch (e) {} } };
-        scream.recognition = rec;
-
-        const heardEl = document.getElementById('screamHeard');
-        heardEl.classList.add('hidden');
-        heardEl.classList.replace('text-amber-400', 'text-emerald-400');
-        showScreamStep('screamGame');
-        scream.running = true;
-        try { rec.start(); } catch (e) {}
-        monitorScream();
+        document.getElementById('huntLoadingText').textContent = 'Loading item scanner...';
+        let model;
+        try {
+            model = await loadHuntModel();
+        } catch (err) {
+            return huntStartError('Couldn\'t load the item scanner. Check your connection and try again.');
+        }
+        if (!hunt.running) return;
+        loading.classList.add('hidden');
+        document.getElementById('huntScanLine').classList.remove('hidden');
+        scanHunt(model);
     }
 
-    function monitorScream() {
-        if (!scream.running) return;
-        scream.analyser.getByteFrequencyData(scream.data);
-        // Only the low bins (~0-6 kHz) carry a voice; the near-silent high ones would drag the average down.
-        const bins = scream.data.subarray(0, 32);
-        const avg = bins.reduce((s, v) => s + v, 0) / bins.length;
-        const vol = Math.min((avg / 255) * 150, 100);
-        const loud = vol >= SCREAM_THRESHOLD;
-        const said = scream.phraseHeard;
-
-        const fill = document.getElementById('screamMeterFill');
-        const text = document.getElementById('screamText');
-        const fb = document.getElementById('screamFeedback');
-        fill.style.height = vol + '%';
-        text.classList.remove('scream-level-1', 'scream-level-2', 'scream-level-3', 'scream-level-4');
-
-        let color = '#3b82f6', level = 0, msg = said ? 'You said it, but you have to SCREAM it!' : 'Scream "Chris is the best!"';
-        if (vol >= SCREAM_THRESHOLD * 0.35) { color = '#38bdf8'; level = 1; }
-        if (vol >= SCREAM_THRESHOLD * 0.65) { color = '#facc15'; level = 2; msg = said ? 'Right phrase, now LOUDER!' : 'LOUDER! Say "Chris is the best!"'; }
-        if (vol >= SCREAM_THRESHOLD * 0.85) { color = '#f97316'; level = 3; msg = said ? 'ALMOST THERE!! SCREAM IT!!' : 'I hear yelling, but say the phrase!'; }
-        if (loud)      { color = '#ef4444'; level = 4; msg = said ? '' : 'Loud enough, but say "Chris is the best!"'; }
-        fill.style.backgroundColor = color;
-        fill.style.boxShadow = `0 0 15px ${color}`;
-        if (level) text.classList.add('scream-level-' + level);
-        fb.textContent = msg;
-        fb.className = 'mt-4 text-sm font-semibold min-h-[2.5rem] ' + (level >= 2 || said ? 'text-amber-400' : 'text-purple-200/70');
-
-        if (loud && said) return screamWon();
-        scream.raf = requestAnimationFrame(monitorScream);
+    function setHuntScreen(on) {
+        document.getElementById('huntCard').classList.toggle('hunt-screen', on);
+        document.getElementById('huntScreenWarning').style.opacity = on ? '1' : '0';
+        const t = document.getElementById('huntTarget');
+        t.classList.toggle('text-amber-400', !on);
+        t.classList.toggle('text-rose-400', on);
     }
 
-    function screamWon() {
-        stopScream();
-        showScreamStep('screamWin');
+    async function scanHunt(model) {
+        if (!hunt.running) return;
+        const video = document.getElementById('huntVideo');
+        let predictions = [];
+        if (video.readyState >= 2) {
+            try { predictions = await model.detect(video); } catch (e) {}
+        }
+        if (!hunt.running) return;
+
+        const screen = predictions.some(p => HUNT_SCREENS.includes(p.class) && p.score > 0.4);
+        const found = predictions.some(p => p.class === hunt.target && p.score > 0.55);
+        setHuntScreen(screen);
+
+        const seeing = document.getElementById('huntSeeing');
+        const best = predictions.reduce((a, p) => (!a || p.score > a.score ? p : a), null);
+        seeing.textContent = screen ? 'Screens don\'t count!' : best && best.score > 0.4 ? `I see: ${best.class} (${Math.round(best.score * 100)}%)` : 'Scanning...';
+
+        if (found && !screen) return huntWon();
+        hunt.timer = setTimeout(() => scanHunt(model), 150);
+    }
+
+    function huntWon() {
+        stopHunt();
+        showHuntStep('huntWin');
         if (window.lucide) lucide.createIcons();
         if (typeof confetti === 'function') {
-            confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 }, zIndex: 3000, colors: ['#a855f7', '#6366f1', '#2563eb', '#facc15'] });
+            confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 }, zIndex: 3000, colors: ['#a855f7', '#6366f1', '#2563eb', '#10b981'] });
         }
         setTimeout(() => {
-            closeScreamModal();
+            closeHuntModal();
             saveTimeEntry({ ...(state.pendingEntryOpts || {}), gamePassed: true });
         }, 1800);
     }
