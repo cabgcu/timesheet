@@ -280,15 +280,18 @@
             box-shadow: 0 20px 40px rgba(0,0,0,0.4);
         }
 
-        /* Item hunt (Drew) — camera scanner */
-        .hunt-scanner { position: relative; overflow: hidden; border: 2px solid var(--line-strong); transition: border-color 0.3s, box-shadow 0.3s; }
-        .hunt-scanner video { width: 100%; height: 100%; object-fit: cover; display: block; }
-        .hunt-scan-line { position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: #10b981; box-shadow: 0 0 10px #10b981, 0 0 20px #10b981; animation: hunt-scan 2s linear infinite; }
-        @keyframes hunt-scan { 0% { top: 0; opacity: 0; } 10%, 90% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
-        .hunt-screen .hunt-scanner { border-color: #ef4444; box-shadow: 0 0 30px rgba(239, 68, 68, 0.4); }
-        .hunt-screen .hunt-scan-line { background: #ef4444; box-shadow: 0 0 10px #ef4444, 0 0 20px #ef4444; }
-        .hunt-spinner { border: 3px solid rgba(255,255,255,0.1); border-left-color: #10b981; border-radius: 50%; width: 24px; height: 24px; animation: hunt-spin 1s linear infinite; }
-        @keyframes hunt-spin { 100% { transform: rotate(360deg); } }
+        /* Connect 4 (Drew) */
+        .c4-board { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; padding: 10px; border-radius: 1rem; overflow: hidden; position: relative; isolation: isolate; }
+        .c4-cell { aspect-ratio: 1; background: rgba(255, 255, 255, 0.05); border-radius: 50%; box-shadow: inset 0 4px 6px rgba(0,0,0,0.3); cursor: pointer; position: relative; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s; }
+        .c4-board.c4-locked .c4-cell { cursor: default; }
+        /* Highlight the whole column under the pointer */
+        @media (hover: hover) {
+            .c4-board:not(.c4-locked) .c4-cell:hover::after { content: ''; position: absolute; top: -1000px; bottom: 0; left: 0; right: 0; background: rgba(236, 72, 153, 0.1); border-radius: 50px; z-index: -1; pointer-events: none; }
+        }
+        .c4-player { background: radial-gradient(circle at 30% 30%, #f472b6, #db2777); box-shadow: 0 0 15px rgba(219, 39, 119, 0.6), inset 0 -4px 6px rgba(0,0,0,0.3); transform: scale(0.95); }
+        .c4-ai { background: radial-gradient(circle at 30% 30%, #38bdf8, #0284c7); box-shadow: 0 0 15px rgba(2, 132, 199, 0.6), inset 0 -4px 6px rgba(0,0,0,0.3); transform: scale(0.95); }
+        .c4-win { animation: c4-pulse 1s infinite; }
+        @keyframes c4-pulse { 0%, 100% { transform: scale(0.95); filter: brightness(1); } 50% { transform: scale(1.05); filter: brightness(1.5); } }
     </style>
 </head>
 <body class="text-white min-h-[100dvh] w-full relative overflow-x-hidden selection:bg-purple-500/30 font-sans flex flex-col items-center justify-start antialiased custom-scroll">
@@ -830,55 +833,24 @@
         </div>
     </div>
 
-    <!-- Item hunt (Drew Colucci must show a random item to the camera before he can add hours) -->
-    <div id="huntModal" class="fixed inset-0 z-[2000] hidden items-center justify-center p-4">
-        <div class="absolute inset-0 modal-backdrop" onclick="closeHuntModal()"></div>
-        <div id="huntCard" class="relative w-full max-w-md night-glass-card rounded-3xl p-6 sm:p-8 flex flex-col shadow-2xl border-purple-400/50 max-h-[90vh] overflow-y-auto custom-scroll z-10">
+    <!-- Connect 4 (Drew Colucci must beat the timesheet AI before he can add hours) -->
+    <div id="c4Modal" class="fixed inset-0 z-[2000] hidden items-center justify-center p-4">
+        <div class="absolute inset-0 modal-backdrop" onclick="closeC4Modal()"></div>
+        <div class="relative w-full max-w-md night-glass-card rounded-3xl p-6 sm:p-8 flex flex-col shadow-2xl border-purple-400/50 max-h-[90vh] overflow-y-auto custom-scroll z-10">
             <div class="flex justify-between items-start mb-5">
                 <div>
-                    <h3 class="text-xl font-bold text-white tracking-tight flex items-center gap-2"><i data-lucide="scan-search" class="w-5 h-5 text-purple-400"></i> One more step</h3>
-                    <p class="text-purple-200/70 text-xs mt-1">Find this item and show it to your camera to log your hours.</p>
+                    <h3 class="text-xl font-bold text-white tracking-tight flex items-center gap-2"><i data-lucide="grid-3x3" class="w-5 h-5 text-purple-400"></i> One more step</h3>
+                    <p class="text-purple-200/70 text-xs mt-1">Beat the timesheet AI at Connect 4 to log your hours. You're <span class="text-pink-400 font-bold">pink</span>.</p>
                 </div>
-                <button class="text-purple-200 hover:text-white bg-slate-900/50 hover:bg-white/10 border border-purple-400/30 p-2 rounded-xl transition" onclick="closeHuntModal()"><i data-lucide="x" class="w-4 h-4"></i></button>
+                <button class="text-purple-200 hover:text-white bg-slate-900/50 hover:bg-white/10 border border-purple-400/30 p-2 rounded-xl transition" onclick="closeC4Modal()"><i data-lucide="x" class="w-4 h-4"></i></button>
             </div>
 
-            <div class="night-glass-card-subtle rounded-2xl p-4 mb-5 text-center">
-                <div class="text-purple-300/60 text-[10px] font-bold tracking-widest uppercase mb-1">Go find a</div>
-                <div id="huntTarget" class="text-2xl sm:text-3xl font-black uppercase text-amber-400 transition-colors">...</div>
-            </div>
+            <div id="c4Status" class="text-center text-sm font-semibold text-emerald-400 mb-4 min-h-[1.25rem]">Your move.</div>
+            <div id="c4Board" class="c4-board night-glass-card-subtle w-full"></div>
 
-            <!-- Start -->
-            <div id="huntStart" class="flex flex-col text-center">
-                <button class="w-full night-btn-primary font-bold py-3.5 rounded-xl text-sm flex items-center justify-center gap-2" onclick="startHunt()"><i data-lucide="camera" class="w-4 h-4"></i> Open Camera &amp; Start</button>
-                <p id="huntStartError" class="text-rose-400 text-xs font-semibold mt-3 hidden"></p>
-                <p class="text-purple-300/50 text-[11px] mt-3">Real items only. Pictures on a screen don't count.</p>
-            </div>
-
-            <!-- Scanner -->
-            <div id="huntGame" class="hidden flex-col">
-                <div class="hunt-scanner rounded-2xl bg-slate-950 aspect-[4/3] w-full">
-                    <video id="huntVideo" autoplay playsinline muted></video>
-                    <div id="huntLoading" class="absolute inset-0 flex flex-col items-center justify-center gap-3 z-10 bg-slate-950/70">
-                        <div class="hunt-spinner"></div>
-                        <span id="huntLoadingText" class="text-[10px] text-emerald-400 font-bold tracking-widest uppercase">Starting camera...</span>
-                    </div>
-                    <div id="huntScanLine" class="hunt-scan-line hidden"></div>
-                    <div id="huntScreenWarning" class="absolute inset-0 bg-red-900/80 flex flex-col items-center justify-center text-center px-4 opacity-0 pointer-events-none transition-opacity duration-300 z-20">
-                        <i data-lucide="monitor-x" class="w-10 h-10 text-red-300 mb-2"></i>
-                        <span class="font-bold text-white tracking-wider">SCREEN DETECTED</span>
-                        <span class="text-red-200 text-xs mt-1">Nice try. Show the real thing, not a picture of it.</span>
-                    </div>
-                    <span id="huntSeeing" class="absolute bottom-2 left-2 z-30 text-[10px] font-semibold bg-black/60 text-slate-300 px-2 py-1 rounded">Scanning...</span>
-                </div>
-            </div>
-
-            <!-- Win -->
-            <div id="huntWin" class="hidden flex-col text-center py-4">
-                <div class="w-14 h-14 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-5 text-emerald-400 border border-emerald-500/30">
-                    <i data-lucide="check" class="w-7 h-7"></i>
-                </div>
-                <h3 class="text-3xl font-black text-white tracking-tight">Found it!</h3>
-                <p class="text-purple-200/70 text-sm mt-2">Challenge complete. Logging your hours...</p>
+            <div id="c4Win" class="hidden flex-col text-center pt-6">
+                <h3 class="text-2xl font-black text-white tracking-tight">You beat the AI!</h3>
+                <p class="text-purple-200/70 text-sm mt-1">Logging your hours...</p>
             </div>
         </div>
     </div>
@@ -1264,7 +1236,7 @@
     }
 
     // opts.dupOk: student already confirmed a same-day, same-task entry.
-    // opts.gamePassed: Drew already finished the item hunt for this entry.
+    // opts.gamePassed: Drew already beat the AI at Connect 4 for this entry.
     function saveTimeEntry(opts = {}) {
         const date = document.getElementById('entryDate').value;
         const hours = parseFloat(document.getElementById('entryHours').value);
@@ -1291,10 +1263,10 @@
             }
         }
 
-        // Drew Colucci has to show a random item to the camera every time he adds hours.
+        // Drew Colucci has to beat the AI at Connect 4 every time he adds hours.
         if (!opts.gamePassed && !state.editingEntryId && isDrew()) {
             state.pendingEntryOpts = opts;
-            return openHuntModal();
+            return openC4Modal();
         }
 
         let entry, replacedKey = null;
@@ -1335,151 +1307,159 @@
         return !!state.currentUser && (state.currentUser.name || '').trim().toLowerCase().replace(/\s+/g, ' ') === 'drew colucci';
     }
 
-    // --- Item hunt: the camera (COCO-SSD) has to spot a random item, with no screen in view ---
-    const HUNT_ITEMS = ['cup', 'bottle', 'potted plant', 'book', 'scissors', 'apple', 'banana', 'spoon', 'fork', 'toothbrush'];
-    const HUNT_SCREENS = ['tv', 'laptop', 'cell phone'];
-    const hunt = { running: false, stream: null, target: '', timer: 0 };
-    let huntModelPromise = null;
+    // --- Connect 4: Drew (pink) has to beat a simple AI (blue) ---
+    const C4_ROWS = 6, C4_COLS = 7, C4_PLAYER = 1, C4_AI = 2;
+    const c4 = { board: [], active: false, timer: 0 };
 
-    function loadScript(src) {
-        return new Promise((resolve, reject) => {
-            const el = document.createElement('script');
-            el.src = src;
-            el.onload = resolve;
-            el.onerror = () => reject(new Error('Failed to load ' + src));
-            document.head.appendChild(el);
-        });
+    function c4SetStatus(text, cls) {
+        const el = document.getElementById('c4Status');
+        el.textContent = text;
+        el.className = 'text-center text-sm font-semibold mb-4 min-h-[1.25rem] ' + cls;
     }
 
-    // TensorFlow + the model are big, so only Drew ever downloads them, and only once.
-    function loadHuntModel() {
-        if (!huntModelPromise) {
-            huntModelPromise = loadScript('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js')
-                .then(() => loadScript('https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js'))
-                .then(() => cocoSsd.load())
-                .catch(err => { huntModelPromise = null; throw err; });
+    function c4SetActive(on) {
+        c4.active = on;
+        document.getElementById('c4Board').classList.toggle('c4-locked', !on);
+    }
+
+    function c4NewGame() {
+        clearTimeout(c4.timer);
+        c4.board = Array.from({ length: C4_ROWS }, () => Array(C4_COLS).fill(0));
+        const boardEl = document.getElementById('c4Board');
+        boardEl.innerHTML = '';
+        for (let r = 0; r < C4_ROWS; r++) {
+            for (let c = 0; c < C4_COLS; c++) {
+                const cell = document.createElement('div');
+                cell.className = 'c4-cell';
+                cell.dataset.row = r;
+                cell.dataset.col = c;
+                cell.addEventListener('click', () => c4PlayerMove(c));
+                boardEl.appendChild(cell);
+            }
         }
-        return huntModelPromise;
+        c4SetStatus('Your move.', 'text-emerald-400');
+        c4SetActive(true);
     }
 
-    function showHuntStep(step) {
-        ['huntStart', 'huntGame', 'huntWin'].forEach(id => {
-            const el = document.getElementById(id);
-            const on = id === step;
-            el.classList.toggle('hidden', !on);
-            el.classList.toggle('flex', on);
-        });
-    }
-
-    function openHuntModal() {
-        hunt.target = HUNT_ITEMS[Math.floor(Math.random() * HUNT_ITEMS.length)];
-        document.getElementById('huntTarget').textContent = hunt.target;
-        document.getElementById('huntStartError').classList.add('hidden');
-        const modal = document.getElementById('huntModal');
+    function openC4Modal() {
+        const modal = document.getElementById('c4Modal');
         modal.style.display = 'flex';
         modal.classList.remove('hidden');
-        showHuntStep('huntStart');
+        document.getElementById('c4Board').classList.remove('hidden');
+        const win = document.getElementById('c4Win');
+        win.classList.add('hidden');
+        win.classList.remove('flex');
+        c4NewGame();
         if (window.lucide) lucide.createIcons();
-        loadHuntModel().catch(() => {}); // start downloading while he goes looking
     }
 
-    function closeHuntModal() {
-        stopHunt();
-        const modal = document.getElementById('huntModal');
+    function closeC4Modal() {
+        clearTimeout(c4.timer);
+        c4SetActive(false);
+        const modal = document.getElementById('c4Modal');
         modal.style.display = 'none';
         modal.classList.add('hidden');
     }
 
-    function stopHunt() {
-        hunt.running = false;
-        clearTimeout(hunt.timer);
-        if (hunt.stream) { hunt.stream.getTracks().forEach(t => t.stop()); hunt.stream = null; }
-        document.getElementById('huntVideo').srcObject = null;
-        setHuntScreen(false);
+    function c4Cell(r, c) {
+        return document.querySelector(`#c4Board .c4-cell[data-row="${r}"][data-col="${c}"]`);
     }
 
-    function huntStartError(msg) {
-        stopHunt();
-        showHuntStep('huntStart');
-        const el = document.getElementById('huntStartError');
-        el.textContent = msg;
-        el.classList.remove('hidden');
+    function c4OpenRow(col) {
+        for (let r = C4_ROWS - 1; r >= 0; r--) if (c4.board[r][col] === 0) return r;
+        return -1;
     }
 
-    async function startHunt() {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return huntStartError('Camera isn\'t available in this browser.');
-        const video = document.getElementById('huntVideo');
-        const loading = document.getElementById('huntLoading');
-        document.getElementById('huntStartError').classList.add('hidden');
-        document.getElementById('huntScanLine').classList.add('hidden');
-        document.getElementById('huntSeeing').textContent = 'Scanning...';
-        loading.classList.remove('hidden');
-        document.getElementById('huntLoadingText').textContent = 'Starting camera...';
-        showHuntStep('huntGame');
-        hunt.running = true;
-        try {
-            hunt.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
-        } catch (err) {
-            return huntStartError('Camera access denied! Please allow access to continue.');
+    function c4Place(r, c, who) {
+        c4.board[r][c] = who;
+        c4Cell(r, c).classList.add(who === C4_PLAYER ? 'c4-player' : 'c4-ai');
+    }
+
+    // Returns the four winning cells, or null.
+    function c4CheckWin(who) {
+        const b = c4.board;
+        const dirs = [[0, 1], [1, 0], [1, 1], [-1, 1]];
+        for (let r = 0; r < C4_ROWS; r++) {
+            for (let c = 0; c < C4_COLS; c++) {
+                for (const [dr, dc] of dirs) {
+                    const cells = [0, 1, 2, 3].map(i => [r + dr * i, c + dc * i]);
+                    if (cells.every(([rr, cc]) => rr >= 0 && rr < C4_ROWS && cc < C4_COLS && b[rr][cc] === who)) return cells;
+                }
+            }
         }
-        if (!hunt.running) return stopHunt(); // closed while the prompt was up
-        video.srcObject = hunt.stream;
-        // Mirror the front camera so it feels like a mirror; the back camera stays as-is.
-        const facing = (hunt.stream.getVideoTracks()[0].getSettings() || {}).facingMode;
-        video.style.transform = facing === 'environment' ? '' : 'scaleX(-1)';
-        try { await video.play(); } catch (e) {}
+        return null;
+    }
 
-        document.getElementById('huntLoadingText').textContent = 'Loading item scanner...';
-        let model;
-        try {
-            model = await loadHuntModel();
-        } catch (err) {
-            return huntStartError('Couldn\'t load the item scanner. Check your connection and try again.');
+    function c4BoardFull() {
+        return c4.board[0].every(v => v !== 0);
+    }
+
+    function c4PlayerMove(col) {
+        if (!c4.active) return;
+        const row = c4OpenRow(col);
+        if (row === -1) return; // column full
+        c4Place(row, col, C4_PLAYER);
+
+        const win = c4CheckWin(C4_PLAYER);
+        if (win) return c4PlayerWon(win);
+        if (c4BoardFull()) {
+            c4SetActive(false);
+            c4SetStatus('Draw. Resetting the board...', 'text-amber-400');
+            c4.timer = setTimeout(c4NewGame, 2000);
+            return;
         }
-        if (!hunt.running) return;
-        loading.classList.add('hidden');
-        document.getElementById('huntScanLine').classList.remove('hidden');
-        scanHunt(model);
+        c4SetActive(false);
+        c4SetStatus('AI is thinking...', 'text-sky-400');
+        c4.timer = setTimeout(c4AIMove, 600);
     }
 
-    function setHuntScreen(on) {
-        document.getElementById('huntCard').classList.toggle('hunt-screen', on);
-        document.getElementById('huntScreenWarning').style.opacity = on ? '1' : '0';
-        const t = document.getElementById('huntTarget');
-        t.classList.toggle('text-amber-400', !on);
-        t.classList.toggle('text-rose-400', on);
-    }
-
-    async function scanHunt(model) {
-        if (!hunt.running) return;
-        const video = document.getElementById('huntVideo');
-        let predictions = [];
-        if (video.readyState >= 2) {
-            try { predictions = await model.detect(video); } catch (e) {}
+    function c4AIMove() {
+        // 1. Win if it can, 2. block Drew's win, 3. take the center, else random.
+        for (const who of [C4_AI, C4_PLAYER]) {
+            for (let c = 0; c < C4_COLS; c++) {
+                const r = c4OpenRow(c);
+                if (r === -1) continue;
+                c4.board[r][c] = who;
+                const wins = c4CheckWin(who);
+                c4.board[r][c] = 0;
+                if (wins) return c4AIPlay(r, c);
+            }
         }
-        if (!hunt.running) return;
-
-        const screen = predictions.some(p => HUNT_SCREENS.includes(p.class) && p.score > 0.4);
-        const found = predictions.some(p => p.class === hunt.target && p.score > 0.55);
-        setHuntScreen(screen);
-
-        const seeing = document.getElementById('huntSeeing');
-        const best = predictions.reduce((a, p) => (!a || p.score > a.score ? p : a), null);
-        seeing.textContent = screen ? 'Screens don\'t count!' : best && best.score > 0.4 ? `I see: ${best.class} (${Math.round(best.score * 100)}%)` : 'Scanning...';
-
-        if (found && !screen) return huntWon();
-        hunt.timer = setTimeout(() => scanHunt(model), 150);
+        const open = [...Array(C4_COLS).keys()].filter(c => c4OpenRow(c) !== -1);
+        const col = open.includes(3) ? 3 : open[Math.floor(Math.random() * open.length)];
+        c4AIPlay(c4OpenRow(col), col);
     }
 
-    function huntWon() {
-        stopHunt();
-        showHuntStep('huntWin');
-        if (window.lucide) lucide.createIcons();
+    function c4AIPlay(r, c) {
+        c4Place(r, c, C4_AI);
+        const win = c4CheckWin(C4_AI);
+        if (win) {
+            win.forEach(([rr, cc]) => c4Cell(rr, cc).classList.add('c4-win'));
+            c4SetStatus('The AI wins. Hours denied. Resetting...', 'text-rose-400');
+            c4.timer = setTimeout(c4NewGame, 3000);
+            return;
+        }
+        if (c4BoardFull()) {
+            c4SetStatus('Draw. Resetting the board...', 'text-amber-400');
+            c4.timer = setTimeout(c4NewGame, 2000);
+            return;
+        }
+        c4SetStatus('Your move.', 'text-emerald-400');
+        c4SetActive(true);
+    }
+
+    function c4PlayerWon(win) {
+        c4SetActive(false);
+        win.forEach(([r, c]) => c4Cell(r, c).classList.add('c4-win'));
+        c4SetStatus('AI defeated!', 'text-pink-400');
+        const box = document.getElementById('c4Win');
+        box.classList.remove('hidden');
+        box.classList.add('flex');
         if (typeof confetti === 'function') {
-            confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 }, zIndex: 3000, colors: ['#a855f7', '#6366f1', '#2563eb', '#10b981'] });
+            confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 }, zIndex: 3000, colors: ['#ec4899', '#a855f7', '#2563eb', '#38bdf8'] });
         }
-        setTimeout(() => {
-            closeHuntModal();
+        c4.timer = setTimeout(() => {
+            closeC4Modal();
             saveTimeEntry({ ...(state.pendingEntryOpts || {}), gamePassed: true });
         }, 1800);
     }
