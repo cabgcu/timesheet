@@ -1414,7 +1414,7 @@
     }
 
     function c4AIMove() {
-        // 1. Win if it can, 2. block Drew's win, 3. take the center, else random.
+        // 1. Win if it can, 2. block Drew's win.
         for (const who of [C4_AI, C4_PLAYER]) {
             for (let c = 0; c < C4_COLS; c++) {
                 const r = c4OpenRow(c);
@@ -1425,9 +1425,49 @@
                 if (wins) return c4AIPlay(r, c);
             }
         }
-        const open = [...Array(C4_COLS).keys()].filter(c => c4OpenRow(c) !== -1);
-        const col = open.includes(3) ? 3 : open[Math.floor(Math.random() * open.length)];
-        c4AIPlay(c4OpenRow(col), col);
+        // 3. Otherwise score every move: never set Drew up with a winning spot on top of it,
+        //    and prefer building its own lines and taking the middle. Ties are broken randomly.
+        let best = null;
+        for (let c = 0; c < C4_COLS; c++) {
+            const r = c4OpenRow(c);
+            if (r === -1) continue;
+            c4.board[r][c] = C4_AI;
+            let score = c4Score() + Math.random();
+            if (r > 0) {
+                c4.board[r - 1][c] = C4_PLAYER;
+                if (c4CheckWin(C4_PLAYER)) score -= 1000;
+                c4.board[r - 1][c] = 0;
+            }
+            c4.board[r][c] = 0;
+            if (!best || score > best.score) best = { r, c, score };
+        }
+        c4AIPlay(best.r, best.c);
+    }
+
+    // Board score from the AI's side: open 2s and 3s in every row/column/diagonal, plus the center column.
+    function c4Score() {
+        const b = c4.board;
+        let score = 0;
+        for (let r = 0; r < C4_ROWS; r++) if (b[r][3] === C4_AI) score += 3;
+        const dirs = [[0, 1], [1, 0], [1, 1], [-1, 1]];
+        for (let r = 0; r < C4_ROWS; r++) {
+            for (let c = 0; c < C4_COLS; c++) {
+                for (const [dr, dc] of dirs) {
+                    const end = [r + dr * 3, c + dc * 3];
+                    if (end[0] < 0 || end[0] >= C4_ROWS || end[1] >= C4_COLS) continue;
+                    let ai = 0, me = 0;
+                    for (let i = 0; i < 4; i++) {
+                        const v = b[r + dr * i][c + dc * i];
+                        if (v === C4_AI) ai++; else if (v === C4_PLAYER) me++;
+                    }
+                    if (me === 0 && ai === 3) score += 5;
+                    else if (me === 0 && ai === 2) score += 2;
+                    else if (ai === 0 && me === 3) score -= 4;
+                    else if (ai === 0 && me === 2) score -= 1;
+                }
+            }
+        }
+        return score;
     }
 
     function c4AIPlay(r, c) {
