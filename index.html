@@ -413,6 +413,19 @@
                         </button>
                     </div>
 
+                    <!-- Games (Drew only) -->
+                    <div id="gamesSection" class="hidden night-glass-card-subtle rounded-2xl p-4 sm:p-6 border-purple-400/30 mb-6 sm:mb-8">
+                        <h4 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2 mb-4"><i data-lucide="gamepad-2" class="w-4 h-4 text-purple-400"></i> Games</h4>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button class="night-btn-link text-white font-bold py-3.5 rounded-xl transition flex justify-center items-center gap-2 border-purple-400/30 text-sm" onclick="openC4Modal()">
+                                <i data-lucide="grid-3x3" class="w-4 h-4 text-pink-400"></i> Connect 4
+                            </button>
+                            <button class="night-btn-link text-white font-bold py-3.5 rounded-xl transition flex justify-center items-center gap-2 border-purple-400/30 text-sm" onclick="openFlappyModal()">
+                                <i data-lucide="bird" class="w-4 h-4 text-amber-400"></i> Flappy Drew
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="border-t border-purple-500/20 pt-6 text-center">
                         <p class="text-[11px] text-purple-200/60 leading-relaxed px-4"><span class="text-emerald-400 font-semibold">Hours are recorded as soon as you add them</span> &mdash; there's nothing else to submit. Each week runs Monday&ndash;Sunday (AZ time) and a fresh week starts automatically every Monday at 12:00 AM.</p>
                     </div>
@@ -833,14 +846,14 @@
         </div>
     </div>
 
-    <!-- Connect 4 (Drew Colucci must beat the timesheet AI before he can add hours) -->
+    <!-- Connect 4 (a game in Drew's Games section) -->
     <div id="c4Modal" class="fixed inset-0 z-[2000] hidden items-center justify-center p-4">
         <div class="absolute inset-0 modal-backdrop" onclick="closeC4Modal()"></div>
         <div class="relative w-full max-w-md night-glass-card rounded-3xl p-6 sm:p-8 flex flex-col shadow-2xl border-purple-400/50 max-h-[90vh] overflow-y-auto custom-scroll z-10">
             <div class="flex justify-between items-start mb-5">
                 <div>
-                    <h3 class="text-xl font-bold text-white tracking-tight flex items-center gap-2"><i data-lucide="grid-3x3" class="w-5 h-5 text-purple-400"></i> One more step</h3>
-                    <p class="text-purple-200/70 text-xs mt-1">Beat the timesheet AI at Connect 4 to log your hours. You're <span class="text-pink-400 font-bold">pink</span>.</p>
+                    <h3 class="text-xl font-bold text-white tracking-tight flex items-center gap-2"><i data-lucide="grid-3x3" class="w-5 h-5 text-purple-400"></i> Connect 4</h3>
+                    <p class="text-purple-200/70 text-xs mt-1">Try to beat the timesheet AI. You're <span class="text-pink-400 font-bold">pink</span>.</p>
                 </div>
                 <button class="text-purple-200 hover:text-white bg-slate-900/50 hover:bg-white/10 border border-purple-400/30 p-2 rounded-xl transition" onclick="closeC4Modal()"><i data-lucide="x" class="w-4 h-4"></i></button>
             </div>
@@ -850,10 +863,620 @@
 
             <div id="c4Win" class="hidden flex-col text-center pt-6">
                 <h3 class="text-2xl font-black text-white tracking-tight">You beat the AI!</h3>
-                <p class="text-purple-200/70 text-sm mt-1">Logging your hours...</p>
+                <button class="mt-4 w-full night-btn-link text-white font-bold py-3 rounded-xl transition border-purple-400/30 text-sm" onclick="openC4Modal()">Play Again</button>
             </div>
         </div>
     </div>
+
+    <!-- Flappy Drew (a game in Drew's Games section) -->
+    <div id="flappyModal" class="fixed inset-0 z-[2000] hidden items-center justify-center p-4">
+        <div class="absolute inset-0 modal-backdrop" onclick="closeFlappyModal()"></div>
+        <div class="relative z-10 flex flex-col items-center gap-3">
+            <div class="flex items-center justify-between w-full gap-4">
+                <p class="text-purple-200 text-sm font-bold">Flappy Drew</p>
+                <button class="night-btn-link text-white font-bold py-2 px-4 rounded-xl transition border-purple-400/30 text-sm" onclick="closeFlappyModal()">Close</button>
+            </div>
+            <iframe id="flappyFrame" title="Flappy Drew" referrerpolicy="no-referrer" class="rounded-[10px] border-0 bg-[#222]" style="width:min(400px, 92vw);height:min(600px, 80vh);"></iframe>
+        </div>
+    </div>
+
+    <template id="flappyDrewSrc">
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background-color: #222;
+        font-family: 'Courier New', Courier, monospace;
+        overflow: hidden; /* Prevent scrolling on mobile */
+        touch-action: none; /* Disable default touch actions to prevent zooming/scrolling */
+    }
+
+    #game-container {
+        position: relative;
+        width: 100%;
+        max-width: 400px;
+        height: 100%;
+        max-height: 600px;
+        background-color: #70c5ce; /* Sky blue */
+        box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        overflow: hidden;
+        border-radius: 10px;
+    }
+
+    canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+    }
+
+    #ui-layer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none; /* Let clicks pass through to canvas */
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .score-display {
+        font-size: 48px;
+        color: white;
+        text-align: center;
+        margin-top: 20px;
+        text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000;
+        z-index: 10;
+    }
+
+    .overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 20;
+        pointer-events: auto; /* Catch clicks on overlays */
+    }
+
+    .hidden {
+        display: none !important;
+    }
+
+    .panel {
+        background-color: #ded895;
+        border: 4px solid #553847;
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+        box-shadow: inset 0 -4px 0 rgba(0,0,0,0.1), 0 4px 8px rgba(0,0,0,0.5);
+        width: 80%;
+        max-width: 300px;
+    }
+
+    h1, h2 {
+        margin: 0 0 10px 0;
+        color: #e86101;
+        text-shadow: 2px 2px 0 #fff;
+        text-transform: uppercase;
+    }
+
+    .medals {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+
+    .medal-slot {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background-color: #9c8e6a;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 24px;
+    }
+
+    button {
+        background-color: #e86101;
+        color: white;
+        border: 2px solid #fff;
+        padding: 10px 20px;
+        font-size: 20px;
+        font-family: inherit;
+        border-radius: 5px;
+        cursor: pointer;
+        text-shadow: 1px 1px 0 #000;
+        box-shadow: 0 4px 0 #9c3f00;
+        transition: transform 0.1s, box-shadow 0.1s;
+        margin-top: 10px;
+    }
+
+    button:active {
+        transform: translateY(4px);
+        box-shadow: 0 0 0 #9c3f00;
+    }
+
+    .score-info {
+        font-size: 18px;
+        color: #553847;
+        font-weight: bold;
+        margin: 5px 0;
+    }
+
+    .score-value {
+        font-size: 24px;
+        color: white;
+        text-shadow: 1px 1px 0 #000;
+        background: #e86101;
+        padding: 2px 8px;
+        border-radius: 4px;
+        border: 1px solid white;
+    }
+</style>
+
+<div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="ui-layer">
+        <div id="current-score" class="score-display">0</div>
+    </div>
+
+    <!-- Start Screen Overlay -->
+    <div id="start-screen" class="overlay">
+        <div class="panel">
+            <h1>Flappy Drew</h1>
+            <p style="color:#553847; font-weight:bold;">Tap or Spacebar to fly</p>
+            <button id="start-btn">PLAY</button>
+        </div>
+    </div>
+
+    <!-- Game Over Screen Overlay -->
+    <div id="game-over-screen" class="overlay hidden">
+        <div class="panel">
+            <h2>Game Over</h2>
+
+            <div class="medals">
+                <div class="medal-slot" id="medal-display"></div>
+            </div>
+
+            <div class="score-info">Score: <span id="final-score" class="score-value">0</span></div>
+            <div class="score-info">Best: <span id="best-score" class="score-value">0</span></div>
+
+            <button id="restart-btn">PLAY AGAIN</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Load Bird Image
+    const birdImage = new Image();
+    birdImage.referrerPolicy = 'no-referrer'; // imgur blocks hotlinks that send a Referer
+    birdImage.src = 'https://i.imgur.com/KDU1UUI.png';
+    // Fallback if image fails to load
+    let imageLoaded = false;
+    birdImage.onload = () => {
+        imageLoaded = true;
+
+        // Calculate exact aspect ratio to completely prevent squishing
+        const aspectRatio = birdImage.naturalWidth / birdImage.naturalHeight;
+
+        // Make it WAY bigger
+        bird.width = 180;
+        bird.height = bird.width / aspectRatio;
+
+        // Automatically adjust physics constants based on actual image size
+        BIRD_RADIUS = Math.min(bird.width, bird.height) * 0.4;
+        PIPE_GAP = bird.height + 100; // Ensure enough room to fly through
+    };
+
+    // UI Elements
+    const startScreen = document.getElementById('start-screen');
+    const gameOverScreen = document.getElementById('game-over-screen');
+    const currentScoreDisplay = document.getElementById('current-score');
+    const finalScoreDisplay = document.getElementById('final-score');
+    const bestScoreDisplay = document.getElementById('best-score');
+    const startBtn = document.getElementById('start-btn');
+    const restartBtn = document.getElementById('restart-btn');
+    const medalDisplay = document.getElementById('medal-display');
+
+    // Game Constants
+    const GRAVITY = 0.25;
+    const JUMP_STRENGTH = -5.5;
+    const PIPE_SPEED = 2;
+    const PIPE_WIDTH = 50;
+    let PIPE_GAP = 180; // Changed to let so it adapts to image height
+    const PIPE_SPAWN_RATE = 120; // Frames between pipe spawns
+    let BIRD_RADIUS = 30; // Changed to let so it adapts to image size
+    const GROUND_HEIGHT = 100;
+
+    // Game State
+    let animationId;
+    let frames = 0;
+    let score = 0;
+    let bestScore = 0;
+    try { bestScore = Number(localStorage.getItem('flappyBestScore')) || 0; } catch (e) {}
+    let gameState = 'START'; // START, PLAYING, GAMEOVER
+    let groundOffset = 0;
+
+    // Entities
+    const bird = {
+        x: 50,
+        y: 150,
+        velocity: 0,
+        rotation: 0,
+        width: 180, // Default big size, perfectly corrected on image load
+        height: 180, // Default big size, perfectly corrected on image load
+
+        draw() {
+            ctx.save();
+            ctx.translate(this.x, this.y);
+
+            // Calculate rotation based on velocity
+            this.rotation = Math.min(Math.PI / 4, Math.max(-Math.PI / 4, (this.velocity * 0.1)));
+            ctx.rotate(this.rotation);
+
+            if (imageLoaded) {
+                // Draw the image centered at the current x, y
+                ctx.drawImage(birdImage, -this.width / 2, -this.height / 2, this.width, this.height);
+            } else {
+                // Fallback to drawn bird if image hasn't loaded
+                // Draw bird body
+                ctx.fillStyle = '#f4c511'; // Yellow
+                ctx.beginPath();
+                ctx.arc(0, 0, BIRD_RADIUS, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#000';
+                ctx.stroke();
+
+                // Eye
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.arc(4, -4, 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                // Pupil
+                ctx.fillStyle = '#000';
+                ctx.beginPath();
+                ctx.arc(5, -4, 1.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Wing (animate based on frames if playing)
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                let wingY = (gameState === 'PLAYING' && frames % 20 < 10) ? 2 : 5;
+                ctx.ellipse(-5, wingY, 6, 4, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                // Beak
+                ctx.fillStyle = '#f35d0e'; // Orange
+                ctx.beginPath();
+                ctx.moveTo(8, 0);
+                ctx.lineTo(16, 2);
+                ctx.lineTo(8, 6);
+                ctx.fill();
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        },
+
+        update() {
+            this.velocity += GRAVITY;
+            this.y += this.velocity;
+
+            // Collision with ground
+            if (this.y + BIRD_RADIUS >= canvas.height - GROUND_HEIGHT) {
+                this.y = canvas.height - GROUND_HEIGHT - BIRD_RADIUS;
+                this.velocity = 0;
+                gameOver();
+            }
+
+            // Collision with ceiling
+            if (this.y - BIRD_RADIUS <= 0) {
+                this.y = BIRD_RADIUS;
+                this.velocity = 0;
+            }
+        },
+
+        flap() {
+            this.velocity = JUMP_STRENGTH;
+        },
+
+        reset() {
+            this.x = canvas.width * 0.3; // Responsive starting position
+            this.y = canvas.height / 2;
+            this.velocity = 0;
+            this.rotation = 0;
+        }
+    };
+
+    const pipes = {
+        items: [],
+
+        draw() {
+            for (let i = 0; i < this.items.length; i++) {
+                let p = this.items[i];
+
+                // Draw top pipe
+                ctx.fillStyle = '#73bf2e'; // Green
+                ctx.fillRect(p.x, 0, PIPE_WIDTH, p.topHeight);
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#558022';
+                ctx.strokeRect(p.x, 0, PIPE_WIDTH, p.topHeight);
+
+                // Top pipe cap
+                ctx.fillRect(p.x - 2, p.topHeight - 20, PIPE_WIDTH + 4, 20);
+                ctx.strokeRect(p.x - 2, p.topHeight - 20, PIPE_WIDTH + 4, 20);
+
+                // Draw bottom pipe
+                ctx.fillRect(p.x, p.bottomY, PIPE_WIDTH, canvas.height - p.bottomY - GROUND_HEIGHT);
+                ctx.strokeRect(p.x, p.bottomY, PIPE_WIDTH, canvas.height - p.bottomY - GROUND_HEIGHT);
+
+                // Bottom pipe cap
+                ctx.fillRect(p.x - 2, p.bottomY, PIPE_WIDTH + 4, 20);
+                ctx.strokeRect(p.x - 2, p.bottomY, PIPE_WIDTH + 4, 20);
+            }
+        },
+
+        update() {
+            // Spawn new pipes
+            if (frames % PIPE_SPAWN_RATE === 0) {
+                // Determine responsive gap limits
+                const minPipeHeight = 50;
+                const maxPos = canvas.height - GROUND_HEIGHT - minPipeHeight - PIPE_GAP;
+
+                // Ensure maxPos is valid
+                if (maxPos > minPipeHeight) {
+                    let topHeight = Math.max(minPipeHeight, Math.random() * maxPos);
+
+                    this.items.push({
+                        x: canvas.width,
+                        topHeight: topHeight,
+                        bottomY: topHeight + PIPE_GAP,
+                        passed: false
+                    });
+                }
+            }
+
+            for (let i = 0; i < this.items.length; i++) {
+                let p = this.items[i];
+                p.x -= PIPE_SPEED;
+
+                // Collision detection
+                // Check if bird x is within pipe x range
+                if (bird.x + BIRD_RADIUS > p.x && bird.x - BIRD_RADIUS < p.x + PIPE_WIDTH) {
+                    // Check if bird y is hitting top or bottom pipe
+                    if (bird.y - BIRD_RADIUS < p.topHeight || bird.y + BIRD_RADIUS > p.bottomY) {
+                        gameOver();
+                    }
+                }
+
+                // Score update
+                if (gameState === 'PLAYING' && p.x + PIPE_WIDTH < bird.x && !p.passed) {
+                    score++;
+                    currentScoreDisplay.textContent = score;
+                    p.passed = true;
+                }
+
+                // Remove off-screen pipes
+                if (p.x + PIPE_WIDTH < 0) {
+                    this.items.shift();
+                    i--;
+                }
+            }
+        },
+
+        reset() {
+            this.items = [];
+        }
+    };
+
+    const bg = {
+        draw() {
+            // Draw Cityscape Background
+            ctx.fillStyle = '#70c5ce';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Simple clouds
+            ctx.fillStyle = 'rgba(255,255,255,0.7)';
+            ctx.beginPath();
+            ctx.arc(canvas.width * 0.2, canvas.height * 0.3, 30, 0, Math.PI * 2);
+            ctx.arc(canvas.width * 0.2 + 25, canvas.height * 0.3 - 10, 35, 0, Math.PI * 2);
+            ctx.arc(canvas.width * 0.2 + 50, canvas.height * 0.3, 30, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(canvas.width * 0.8, canvas.height * 0.2, 20, 0, Math.PI * 2);
+            ctx.arc(canvas.width * 0.8 + 20, canvas.height * 0.2 - 5, 25, 0, Math.PI * 2);
+            ctx.arc(canvas.width * 0.8 + 40, canvas.height * 0.2, 20, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Distant buildings
+            ctx.fillStyle = '#b0e0e6';
+            ctx.fillRect(canvas.width * 0.1, canvas.height - GROUND_HEIGHT - 60, 40, 60);
+            ctx.fillRect(canvas.width * 0.3, canvas.height - GROUND_HEIGHT - 80, 50, 80);
+            ctx.fillRect(canvas.width * 0.6, canvas.height - GROUND_HEIGHT - 50, 30, 50);
+            ctx.fillRect(canvas.width * 0.8, canvas.height - GROUND_HEIGHT - 90, 45, 90);
+        }
+    }
+
+    const ground = {
+        draw() {
+            const groundY = canvas.height - GROUND_HEIGHT;
+
+            // Main dirt area
+            ctx.fillStyle = '#ded895';
+            ctx.fillRect(0, groundY, canvas.width, GROUND_HEIGHT);
+
+            // Grass top
+            ctx.fillStyle = '#73bf2e';
+            ctx.fillRect(0, groundY, canvas.width, 15);
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#558022';
+            ctx.beginPath();
+            ctx.moveTo(0, groundY);
+            ctx.lineTo(canvas.width, groundY);
+            ctx.stroke();
+
+            // Scrolling stripes
+            ctx.fillStyle = '#c5b871';
+            const stripeWidth = 20;
+            const gap = 15;
+            // Draw extra stripes offscreen to allow smooth scrolling
+            for (let i = 0; i < (canvas.width / (stripeWidth + gap)) + 2; i++) {
+                let x = i * (stripeWidth + gap) - groundOffset;
+
+                // Draw diagonal stripe
+                ctx.beginPath();
+                ctx.moveTo(x, groundY + 15);
+                ctx.lineTo(x - 10, canvas.height);
+                ctx.lineTo(x - 10 + stripeWidth, canvas.height);
+                ctx.lineTo(x + stripeWidth, groundY + 15);
+                ctx.fill();
+            }
+        },
+        update() {
+            if (gameState === 'PLAYING') {
+                groundOffset = (groundOffset + PIPE_SPEED) % 35; // 35 is stripeWidth + gap
+            }
+        }
+    };
+
+    function resizeCanvas() {
+        const container = document.getElementById('game-container');
+        canvas.width = container.clientWidth;
+        canvas.height = container.clientHeight;
+
+        // Reset bird x position on resize
+        if (gameState === 'START') {
+            bird.x = canvas.width * 0.3;
+        }
+    }
+
+    function draw() {
+        bg.draw();
+        pipes.draw();
+        ground.draw();
+        bird.draw();
+    }
+
+    function update() {
+        if (gameState === 'PLAYING') {
+            bird.update();
+            pipes.update();
+            ground.update();
+            frames++;
+        } else if (gameState === 'START') {
+            // Bobbing animation for start screen
+            bird.y = (canvas.height / 2) + Math.cos(frames / 15) * 5;
+            ground.update(); // Keep ground moving
+            frames++;
+        }
+    }
+
+    function gameLoop() {
+        update();
+        draw();
+        animationId = requestAnimationFrame(gameLoop);
+    }
+
+    function startGame() {
+        gameState = 'PLAYING';
+        bird.reset();
+        pipes.reset();
+        score = 0;
+        frames = 0;
+        currentScoreDisplay.textContent = score;
+        startScreen.classList.add('hidden');
+        gameOverScreen.classList.add('hidden');
+        currentScoreDisplay.classList.remove('hidden');
+        bird.flap();
+    }
+
+    function gameOver() {
+        if (gameState !== 'PLAYING') return;
+        gameState = 'GAMEOVER';
+
+        if (score > bestScore) {
+            bestScore = score;
+            try { localStorage.setItem('flappyBestScore', bestScore); } catch (e) {}
+        }
+
+        // Determine Medal
+        medalDisplay.innerHTML = '';
+        medalDisplay.style.backgroundColor = '#9c8e6a'; // default empty
+        if (score >= 10 && score < 20) {
+             medalDisplay.innerHTML = '🥉';
+             medalDisplay.style.backgroundColor = '#cd7f32'; // Bronze
+        } else if (score >= 20 && score < 30) {
+             medalDisplay.innerHTML = '🥈';
+             medalDisplay.style.backgroundColor = '#c0c0c0'; // Silver
+        } else if (score >= 30) {
+             medalDisplay.innerHTML = '🥇';
+             medalDisplay.style.backgroundColor = '#ffd700'; // Gold
+        }
+
+        finalScoreDisplay.textContent = score;
+        bestScoreDisplay.textContent = bestScore;
+
+        currentScoreDisplay.classList.add('hidden');
+        gameOverScreen.classList.remove('hidden');
+    }
+
+    function handleInput(e) {
+        // Prevent default actions for specific events to avoid zooming/scrolling
+        if (e.type !== 'keydown') {
+            e.preventDefault();
+        }
+
+        if (gameState === 'PLAYING') {
+            // Spacebar or touch/click
+            if (e.type !== 'keydown' || e.code === 'Space') {
+                if (e.type === 'keydown') e.preventDefault();
+                bird.flap();
+            }
+        }
+    }
+
+    // Input Listeners
+    window.addEventListener('keydown', handleInput);
+    canvas.addEventListener('mousedown', handleInput);
+    canvas.addEventListener('touchstart', handleInput, { passive: false });
+
+    // UI Buttons
+    startBtn.addEventListener('click', startGame);
+    restartBtn.addEventListener('click', startGame);
+
+    // Initial setup
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas(); // Set initial size
+    bird.reset(); // Set initial position based on size
+
+    // Start the game loop
+    gameLoop();
+</script>
+    </template>
+
 
     <!-- Toast Notification -->
     <div id="toast" class="border border-transparent">
@@ -1170,6 +1793,7 @@
                 teamBtn.classList.add('hidden');
                 teamBtn.classList.remove('flex');
             }
+            document.getElementById('gamesSection').classList.toggle('hidden', !isDrew());
 
             // Hours used to sit in a "pending" draft until the week ended. They're now
             // written straight to submissions, so fold any draft left over from the old
@@ -1236,7 +1860,6 @@
     }
 
     // opts.dupOk: student already confirmed a same-day, same-task entry.
-    // opts.gamePassed: Drew already beat the AI at Connect 4 for this entry.
     function saveTimeEntry(opts = {}) {
         const date = document.getElementById('entryDate').value;
         const hours = parseFloat(document.getElementById('entryHours').value);
@@ -1261,12 +1884,6 @@
                     `You already logged <b class="text-white">${escapeHTML(dup.task)}</b> (${formatHours(dup.hours)} hrs) on ${formatDay(date)}. Add another entry anyway?`,
                     'Add Anyway', () => saveTimeEntry({ ...opts, dupOk: true }), 'neutral');
             }
-        }
-
-        // Drew Colucci has to beat the AI at Connect 4 every time he adds hours.
-        if (!opts.gamePassed && !state.editingEntryId && isDrew()) {
-            state.pendingEntryOpts = opts;
-            return openC4Modal();
         }
 
         let entry, replacedKey = null;
@@ -1307,7 +1924,7 @@
         return !!state.currentUser && (state.currentUser.name || '').trim().toLowerCase().replace(/\s+/g, ' ') === 'drew colucci';
     }
 
-    // --- Connect 4: Drew (pink) has to beat a simple AI (blue) ---
+    // --- Connect 4: Drew (pink) vs. the timesheet AI (blue) ---
     const C4_ROWS = 6, C4_COLS = 7, C4_PLAYER = 1, C4_AI = 2;
     const C4_LUCKY_ODDS = 0.01; // chance a game gets the beatable AI; otherwise it looks ahead
     const C4_DEPTH = 6;         // how many moves ahead the full-strength AI looks
@@ -1542,7 +2159,7 @@
         const win = c4CheckWin(C4_AI);
         if (win) {
             win.forEach(([rr, cc]) => c4Cell(rr, cc).classList.add('c4-win'));
-            c4SetStatus('The AI wins. Hours denied. Resetting...', 'text-rose-400');
+            c4SetStatus('The AI wins. Resetting...', 'text-rose-400');
             c4.timer = setTimeout(c4NewGame, 3000);
             return;
         }
@@ -1565,10 +2182,24 @@
         if (typeof confetti === 'function') {
             confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 }, zIndex: 3000, colors: ['#ec4899', '#a855f7', '#2563eb', '#38bdf8'] });
         }
-        c4.timer = setTimeout(() => {
-            closeC4Modal();
-            saveTimeEntry({ ...(state.pendingEntryOpts || {}), gamePassed: true });
-        }, 1800);
+    }
+
+    function openFlappyModal() {
+        const modal = document.getElementById('flappyModal');
+        const frame = document.getElementById('flappyFrame');
+        modal.style.display = 'flex';
+        modal.classList.remove('hidden');
+        // Load a fresh game each time so it starts from the PLAY screen.
+        frame.srcdoc = '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="referrer" content="no-referrer"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>Flappy Drew</title></head><body>'
+            + document.getElementById('flappyDrewSrc').innerHTML + '</body></html>';
+        frame.onload = () => frame.focus();
+    }
+
+    function closeFlappyModal() {
+        const modal = document.getElementById('flappyModal');
+        modal.style.display = 'none';
+        modal.classList.add('hidden');
+        document.getElementById('flappyFrame').srcdoc = '';
     }
 
     function editEntry(id) {
