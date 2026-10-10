@@ -341,6 +341,7 @@
                         <div>
                             <h3 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white" id="ts-greeting">Hello Student,</h3>
                             <p class="text-purple-300 font-medium text-sm mt-1"><span id="ts-position">Position</span> &bull; <span id="ts-team">Team Name</span></p>
+                            <div id="ts-manOfCab" class="hidden mt-2 items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-widest text-amber-300 bg-amber-500/15 border border-amber-400/40 px-2.5 py-1 rounded-full shadow-[0_0_12px_rgba(251,191,36,0.25)]"><i data-lucide="trophy" class="w-3.5 h-3.5 text-amber-400"></i> 2026 Man of CAB</div>
                         </div>
                         <div class="sm:text-right">
                             <div class="text-purple-200/70 text-[10px] font-bold uppercase tracking-widest mb-1" id="ts-hoursLabel">This Week</div>
@@ -741,6 +742,7 @@
                 <div>
                     <h3 class="text-2xl font-extrabold text-white tracking-tight" id="detailModalName">Student Name</h3>
                     <p class="text-purple-300 text-sm font-semibold mt-1 bg-slate-900/50 px-2 py-0.5 rounded inline-block border border-purple-500/20" id="detailModalTeam">Team Name</p>
+                    <div><div id="detailModalManOfCab" class="hidden mt-2 items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-widest text-amber-300 bg-amber-500/15 border border-amber-400/40 px-2.5 py-1 rounded-full shadow-[0_0_12px_rgba(251,191,36,0.25)]"><i data-lucide="trophy" class="w-3.5 h-3.5 text-amber-400"></i> 2026 Man of CAB</div></div>
                 </div>
                 <div class="flex items-center gap-2">
                     <button id="deleteStudentBtn" class="text-rose-400 hover:text-white bg-slate-900/50 hover:bg-rose-500/80 p-2.5 rounded-xl transition flex items-center justify-center gap-1.5 border border-rose-500/20 shadow-md" onclick="promptDeleteStudent()" title="Permanently Delete Student">
@@ -793,6 +795,7 @@
                 <div>
                     <h3 class="text-2xl font-extrabold text-white tracking-tight" id="teamMemberModalName">Student Name</h3>
                     <p class="text-purple-300 text-sm font-semibold mt-1 bg-slate-900/50 px-2 py-0.5 rounded inline-block border border-purple-500/20" id="teamMemberModalPosition">Position</p>
+                    <div><div id="teamMemberModalManOfCab" class="hidden mt-2 items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-widest text-amber-300 bg-amber-500/15 border border-amber-400/40 px-2.5 py-1 rounded-full shadow-[0_0_12px_rgba(251,191,36,0.25)]"><i data-lucide="trophy" class="w-3.5 h-3.5 text-amber-400"></i> 2026 Man of CAB</div></div>
                 </div>
                 <button class="text-purple-200 hover:text-white bg-slate-900/50 hover:bg-white/10 border border-purple-400/30 p-2.5 rounded-xl transition shadow-md" onclick="closeTeamMemberModal()">
                     <i data-lucide="x" class="w-4 h-4"></i>
@@ -1770,6 +1773,7 @@
             document.getElementById('ts-greeting').textContent = `Hello ${state.currentUser.name.split(' ')[0]},`;
             document.getElementById('ts-team').textContent = state.currentUser.team || 'No Team';
             document.getElementById('ts-position').textContent = state.currentUser.position || 'Student';
+            showManOfCabBadge('ts-manOfCab', state.currentUser.name);
 
             // Find required hours for this student's position
             const userPosition = state.positions.find(p => p.name === state.currentUser.position);
@@ -1918,6 +1922,14 @@
             .reduce((s, l) => s + (Number(l.hours) || 0), 0);
         if (already + hours > 24) return `That would put ${formatDay(date)} over 24 hours (${formatHours(already)} already logged that day).`;
         return '';
+    }
+
+    const MAN_OF_CAB_2026 = ['tanner bargren', 'brandon fonseca'];
+    function showManOfCabBadge(elId, name) {
+        const key = (name || '').trim().toLowerCase().replace(/\s+/g, ' ');
+        const el = document.getElementById(elId);
+        el.classList.toggle('hidden', !MAN_OF_CAB_2026.includes(key));
+        el.classList.toggle('inline-flex', MAN_OF_CAB_2026.includes(key));
     }
 
     function isDrew() {
@@ -2722,6 +2734,7 @@
 
         document.getElementById('teamMemberModalName').textContent = student.name;
         document.getElementById('teamMemberModalPosition').textContent = `${student.position || 'Student'} • ${student.team}`;
+        showManOfCabBadge('teamMemberModalManOfCab', student.name);
 
         const studentSubs = (state.teamSubmissions || []).filter(s => s.studentId === student.id);
         const grouped = {};
@@ -3215,6 +3228,7 @@
         const studentSubs = state.submissions.filter(s => s.studentId === state.viewingStudentId && s.academicYear === document.getElementById('adminYearFilter').value);
         document.getElementById('detailModalName').textContent = rosterStudent.name;
         document.getElementById('detailModalTeam').textContent = `${rosterStudent.position || 'Student'} • ${rosterStudent.team}`;
+        showManOfCabBadge('detailModalManOfCab', rosterStudent.name);
 
         // Group existing logs
         const grouped = {};
