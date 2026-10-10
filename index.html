@@ -292,6 +292,17 @@
         .c4-ai { background: radial-gradient(circle at 30% 30%, #38bdf8, #0284c7); box-shadow: 0 0 15px rgba(2, 132, 199, 0.6), inset 0 -4px 6px rgba(0,0,0,0.3); transform: scale(0.95); }
         .c4-win { animation: c4-pulse 1s infinite; }
         @keyframes c4-pulse { 0%, 100% { transform: scale(0.95); filter: brightness(1); } 50% { transform: scale(1.05); filter: brightness(1.5); } }
+
+        /* Disposable camera */
+        .cam-flash { position: fixed; inset: 0; background: #fff; z-index: 5000; pointer-events: none; opacity: 0; }
+        .cam-print { background: #f8f5ee; padding: 8px 8px 40px; border-radius: 4px; box-shadow: 0 8px 20px rgba(0,0,0,0.45); position: relative; cursor: pointer; transition: transform 0.2s; }
+        .cam-print:hover { transform: rotate(-1deg) scale(1.02); }
+        .cam-print .cam-img { aspect-ratio: 1; width: 100%; object-fit: cover; background: #2a2a2e; display: block; filter: saturate(1.15) contrast(1.05) sepia(0.12); }
+        .cam-stamp { font-family: 'Courier New', monospace; font-weight: 700; color: #ff8a1f; text-shadow: 0 0 4px rgba(255, 110, 0, 0.8); letter-spacing: 0.05em; }
+        .cam-print .cam-stamp { position: absolute; right: 14px; bottom: 46px; font-size: 11px; }
+        .cam-print .cam-caption { position: absolute; left: 10px; right: 10px; bottom: 5px; font-size: 10px; color: #52525b; font-weight: 600; line-height: 1.3; }
+        .cam-print .cam-caption > span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .cam-note { font-family: 'Segoe Print', 'Bradley Hand', 'Comic Sans MS', cursive; color: #1e3a8a; font-weight: 400; font-size: 11px; }
     </style>
 </head>
 <body class="text-white min-h-[100dvh] w-full relative overflow-x-hidden selection:bg-purple-500/30 font-sans flex flex-col items-center justify-start antialiased custom-scroll">
@@ -427,6 +438,29 @@
                         </div>
                     </div>
 
+                    <!-- Disposable camera -->
+                    <div id="cameraSection" class="hidden night-glass-card-subtle rounded-2xl p-4 sm:p-6 border-amber-400/30 mb-6 sm:mb-8">
+                        <div class="flex items-start justify-between gap-3 mb-4">
+                            <div>
+                                <h4 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2"><i data-lucide="camera" class="w-4 h-4 text-amber-400"></i> Disposable Camera</h4>
+                                <p id="cameraBlurb" class="text-[11px] text-purple-200/60 mt-1 leading-relaxed"></p>
+                            </div>
+                            <div class="text-right shrink-0">
+                                <div class="cam-stamp text-2xl leading-none" id="cameraCount">10</div>
+                                <div class="text-[9px] text-purple-200/50 font-bold uppercase tracking-widest mt-1">Shots left<br>this week</div>
+                            </div>
+                        </div>
+                        <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden" onchange="snapPhoto(this)" />
+                        <div class="grid grid-cols-2 gap-3" id="cameraButtons">
+                            <button id="cameraSnapBtn" class="night-btn-link text-white font-bold py-3.5 rounded-xl transition flex justify-center items-center gap-2 border-amber-400/30 text-sm" onclick="document.getElementById('cameraInput').click()">
+                                <i data-lucide="aperture" class="w-4 h-4 text-amber-400"></i> <span id="cameraSnapText">Take a Picture</span>
+                            </button>
+                            <button id="cameraViewBtn" class="night-btn-link text-white font-bold py-3.5 rounded-xl transition flex justify-center items-center gap-2 border-amber-400/30 text-sm" onclick="openCameraGallery(state.activeYear, false)">
+                                <i data-lucide="images" class="w-4 h-4 text-amber-400"></i> View Photos
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="border-t border-purple-500/20 pt-6 text-center">
                         <p class="text-[11px] text-purple-200/60 leading-relaxed px-4"><span class="text-emerald-400 font-semibold">Hours are recorded as soon as you add them</span> &mdash; there's nothing else to submit. Each week runs Monday&ndash;Sunday (AZ time) and a fresh week starts automatically every Monday at 12:00 AM.</p>
                     </div>
@@ -522,6 +556,9 @@
                         <div class="h-6 w-px bg-purple-500/30 hidden md:block mx-1"></div>
                         <button onclick="downloadExcel()" class="flex-1 md:flex-none justify-center night-btn-link !bg-emerald-900/30 hover:!bg-emerald-800/50 !border-emerald-500/40 text-emerald-300 py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center gap-2">
                             <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Export
+                        </button>
+                        <button onclick="openCameraAdmin()" class="flex-1 md:flex-none justify-center night-btn-link text-white py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center gap-2">
+                            <i data-lucide="camera" class="w-4 h-4 text-amber-400"></i> Camera
                         </button>
                         <button onclick="switchView('settings')" class="flex-1 md:flex-none justify-center night-btn-link text-white py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center gap-2">
                             <i data-lucide="settings" class="w-4 h-4 text-purple-400"></i> Setup
@@ -880,6 +917,105 @@
                 <button class="night-btn-link text-white font-bold py-2 px-4 rounded-xl transition border-purple-400/30 text-sm" onclick="closeFlappyModal()">Close</button>
             </div>
             <iframe id="flappyFrame" title="Flappy Drew" referrerpolicy="no-referrer" class="rounded-[10px] border-0 bg-[#222]" style="width:min(400px, 92vw);height:min(600px, 80vh);"></iframe>
+        </div>
+    </div>
+
+    <!-- Disposable camera: admin controls -->
+    <div id="cameraAdminModal" class="fixed inset-0 z-[2000] hidden items-center justify-center p-4">
+        <div class="absolute inset-0 modal-backdrop" onclick="closeModalEl('cameraAdminModal')"></div>
+        <div class="relative w-full max-w-md night-glass-card rounded-3xl p-6 sm:p-8 flex flex-col shadow-2xl border-purple-400/50 max-h-[90vh] overflow-y-auto custom-scroll z-10">
+            <div class="flex justify-between items-start mb-5">
+                <div>
+                    <h3 class="text-xl font-bold text-white tracking-tight flex items-center gap-2"><i data-lucide="camera" class="w-5 h-5 text-amber-400"></i> Disposable Camera</h3>
+                    <p class="text-purple-200/70 text-xs mt-1" id="camAdminYear"></p>
+                </div>
+                <button class="text-purple-200 hover:text-white bg-slate-900/50 hover:bg-white/10 border border-purple-400/30 p-2 rounded-xl transition" onclick="closeModalEl('cameraAdminModal')"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <div class="grid grid-cols-2 gap-3 mb-5">
+                <div class="night-glass-card-subtle rounded-2xl p-4 border-purple-400/20 text-center">
+                    <div class="text-3xl font-black text-white" id="camAdminPhotos">0</div>
+                    <div class="text-[10px] text-purple-200/60 font-bold uppercase tracking-widest mt-1">Shots this week</div>
+                </div>
+                <div class="night-glass-card-subtle rounded-2xl p-4 border-purple-400/20 text-center">
+                    <div class="text-3xl font-black text-white" id="camAdminPeople">0</div>
+                    <div class="text-[10px] text-purple-200/60 font-bold uppercase tracking-widest mt-1">Photographers</div>
+                </div>
+            </div>
+            <div id="camAdminStatus" class="text-center text-sm font-semibold mb-5"></div>
+            <div class="flex flex-col gap-3">
+                <button id="camAdminDevelopBtn" class="w-full night-btn-primary text-white font-bold py-3 rounded-xl transition text-sm flex justify-center items-center gap-2" onclick="toggleCameraDeveloped()"></button>
+                <button class="w-full night-btn-link text-white font-bold py-3 rounded-xl transition border-purple-400/30 text-sm flex justify-center items-center gap-2" onclick="openCameraGallery(cameraAdminYear(), true)">
+                    <i data-lucide="images" class="w-4 h-4 text-amber-400"></i> View &amp; Moderate Photos
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Disposable camera: add a note to the shot just taken -->
+    <div id="cameraNoteModal" class="fixed inset-0 z-[2000] hidden items-center justify-center p-4">
+        <div class="absolute inset-0 modal-backdrop" onclick="cancelCameraPhoto()"></div>
+        <div class="relative w-full max-w-sm night-glass-card rounded-3xl p-6 sm:p-8 flex flex-col shadow-2xl border-purple-400/50 z-10">
+            <h3 class="text-xl font-bold text-white tracking-tight flex items-center gap-2"><i data-lucide="aperture" class="w-5 h-5 text-amber-400"></i> Click!</h3>
+            <p class="text-purple-200/70 text-xs mt-1 mb-5">Got it. You won't see it until it develops on Monday. Want to write a note on the back?</p>
+            <label for="cameraNoteInput" class="form-label">Note (optional)</label>
+            <textarea id="cameraNoteInput" maxlength="120" rows="2" class="control-input resize-none mb-5" placeholder="e.g. Bonfire setup crew, 11pm"></textarea>
+            <div class="grid grid-cols-2 gap-3">
+                <button class="night-btn-link text-white font-bold py-3 rounded-xl transition border-purple-400/30 text-sm" onclick="cancelCameraPhoto()">Toss It</button>
+                <button id="cameraSealBtn" class="night-btn-primary text-white font-bold py-3 rounded-xl transition text-sm flex justify-center items-center gap-2" onclick="sealCameraPhoto()"><i data-lucide="lock" class="w-4 h-4"></i> Seal It</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Disposable camera: this week's sealed shots (for deleting accidental ones) -->
+    <div id="cameraSealedModal" class="fixed inset-0 z-[2000] hidden items-center justify-center p-4">
+        <div class="absolute inset-0 modal-backdrop" onclick="closeModalEl('cameraSealedModal')"></div>
+        <div class="relative w-full max-w-md night-glass-card rounded-3xl p-6 sm:p-8 flex flex-col shadow-2xl border-purple-400/50 max-h-[90vh] z-10">
+            <div class="flex justify-between items-start mb-5">
+                <div>
+                    <h3 class="text-xl font-bold text-white tracking-tight flex items-center gap-2"><i data-lucide="film" class="w-5 h-5 text-amber-400"></i> Your Sealed Shots</h3>
+                    <p class="text-purple-200/70 text-xs mt-1">No peeking until Monday, but you can delete any you took by accident. You'll get the shot back.</p>
+                </div>
+                <button class="text-purple-200 hover:text-white bg-slate-900/50 hover:bg-white/10 border border-purple-400/30 p-2 rounded-xl transition" onclick="closeModalEl('cameraSealedModal')"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <div id="camSealedList" class="flex flex-col gap-2 overflow-y-auto custom-scroll pr-1"></div>
+        </div>
+    </div>
+
+    <!-- Disposable camera: the developed photos -->
+    <div id="cameraGalleryModal" class="fixed inset-0 z-[2100] hidden items-center justify-center p-4">
+        <div class="absolute inset-0 modal-backdrop" onclick="closeModalEl('cameraGalleryModal')"></div>
+        <div class="relative w-full max-w-4xl night-glass-card rounded-3xl p-5 sm:p-8 flex flex-col shadow-2xl border-purple-400/50 max-h-[92vh] z-10">
+            <div class="flex justify-between items-start gap-3 mb-4">
+                <div>
+                    <h3 class="text-xl font-bold text-white tracking-tight flex items-center gap-2"><i data-lucide="images" class="w-5 h-5 text-amber-400"></i> <span id="camGalleryTitle">Developed Photos</span></h3>
+                    <p class="text-purple-200/70 text-xs mt-1" id="camGallerySub"></p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <select id="camGalleryFilter" class="control-input !mb-0 !w-auto py-2 px-3 rounded-xl text-xs font-bold" onchange="renderCameraGallery()"></select>
+                    <button class="text-purple-200 hover:text-white bg-slate-900/50 hover:bg-white/10 border border-purple-400/30 p-2 rounded-xl transition" onclick="closeModalEl('cameraGalleryModal')"><i data-lucide="x" class="w-4 h-4"></i></button>
+                </div>
+            </div>
+            <div id="camGalleryGrid" class="overflow-y-auto custom-scroll p-1 pb-4"></div>
+        </div>
+    </div>
+
+    <!-- Disposable camera: one photo, full size -->
+    <div id="cameraPhotoModal" class="fixed inset-0 z-[2200] hidden items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/85" onclick="closeModalEl('cameraPhotoModal')"></div>
+        <div class="relative z-10 flex flex-col items-center gap-3 max-w-full">
+            <div class="cam-print !p-3 !pb-3 !cursor-default hover:!transform-none w-fit">
+                <div class="relative w-fit">
+                    <img id="camPhotoImg" alt="" class="block max-w-[88vw] max-h-[66vh] object-contain" style="filter: saturate(1.15) contrast(1.05) sepia(0.12);" />
+                    <div class="cam-stamp absolute right-3 bottom-2 text-sm" id="camPhotoStamp"></div>
+                </div>
+                <div id="camPhotoNote" class="cam-note !text-base mt-2 w-0 min-w-full break-words"></div>
+                <div class="text-xs text-zinc-600 font-semibold mt-1 w-0 min-w-full truncate" id="camPhotoCaption"></div>
+            </div>
+            <div class="flex gap-2">
+                <a id="camPhotoDownload" class="night-btn-link text-white font-bold py-2 px-4 rounded-xl transition border-purple-400/30 text-sm flex items-center gap-2"><i data-lucide="download" class="w-4 h-4 text-amber-400"></i> Save</a>
+                <button id="camPhotoDelete" class="hidden night-btn-link !border-rose-500/40 text-rose-300 font-bold py-2 px-4 rounded-xl transition text-sm items-center gap-2" onclick="deleteCameraPhoto()"><i data-lucide="trash-2" class="w-4 h-4"></i> Delete</button>
+                <button class="night-btn-link text-white font-bold py-2 px-4 rounded-xl transition border-purple-400/30 text-sm" onclick="closeModalEl('cameraPhotoModal')">Close</button>
+            </div>
         </div>
     </div>
 
@@ -1521,7 +1657,17 @@
         async delete(table, query) {
             const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${query}`, { method: 'DELETE', headers: sb._h() });
             if (!res.ok) throw new Error(await res.text());
-        }
+        },
+        // Supabase Storage (file storage; used for camera photos)
+        async upload(bucket, path, blob) {
+            const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${bucket}/${path}`, { method: 'POST', headers: sb._h({ 'Content-Type': blob.type }), body: blob });
+            if (!res.ok) throw new Error(await res.text());
+        },
+        async removeFile(bucket, path) {
+            const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${bucket}/${path}`, { method: 'DELETE', headers: sb._h() });
+            if (!res.ok && res.status !== 404) throw new Error(await res.text());
+        },
+        publicUrl(bucket, path) { return `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${path}`; }
     };
 
     // Date Helpers
@@ -1798,6 +1944,7 @@
                 teamBtn.classList.remove('flex');
             }
             document.getElementById('gamesSection').classList.toggle('hidden', !isDrew());
+            loadCamera();
 
             // Hours used to sit in a "pending" draft until the week ended. They're now
             // written straight to submissions, so fold any draft left over from the old
@@ -1930,6 +2077,334 @@
         const el = document.getElementById(elId);
         el.classList.toggle('hidden', !MAN_OF_CAB_2026.includes(key));
         el.classList.toggle('inline-flex', MAN_OF_CAB_2026.includes(key));
+    }
+
+    // --- Disposable camera: each week's roll stays sealed until Monday 12:00 AM (AZ), or until an admin develops it early ---
+    const CAMERA_SHOTS_PER_WEEK = 10;
+    const CAMERA_BUCKET = 'camera';
+    const cam = { year: '', admin: false, photos: [], viewingId: null, pendingImage: null, sealed: [] };
+
+    function openModalEl(id) {
+        const m = document.getElementById(id);
+        m.style.display = 'flex';
+        m.classList.remove('hidden');
+        lucide.createIcons();
+    }
+    function closeModalEl(id) {
+        const m = document.getElementById(id);
+        m.style.display = 'none';
+        m.classList.add('hidden');
+    }
+
+    // Past weeks are always developed; the current week only if an admin developed it early
+    async function isWeekDevelopedEarly(weekId) {
+        const rows = await sb.select('settings', `key=eq.${encodeURIComponent('CameraDeveloped_' + weekId)}`);
+        return rows[0]?.value === 'true';
+    }
+
+    async function loadCamera() {
+        const section = document.getElementById('cameraSection');
+        const user = state.currentUser, year = state.activeYear;
+        if (!user) return;
+        try {
+            const [early, mine] = await Promise.all([
+                isWeekDevelopedEarly(CURRENT_WEEK_ID_AZ),
+                sb.select('camera_photos', `academic_year=eq.${encodeURIComponent(year)}&student_id=eq.${encodeURIComponent(user.id)}&week_identifier=eq.${CURRENT_WEEK_ID_AZ}&select=id,note,image_path,created_at&order=created_at.asc`)
+            ]);
+            if (state.currentUser !== user) return;
+            cam.sealed = early ? [] : mine;
+            const left = Math.max(0, CAMERA_SHOTS_PER_WEEK - mine.length);
+            document.getElementById('cameraCount').textContent = String(left).padStart(2, '0');
+            const waiting = mine.length ? ` You have <span class="text-amber-300 font-semibold">${mine.length}</span> waiting &mdash; <button class="underline text-amber-300 hover:text-white font-semibold" onclick="openSealedShots()">took one by accident?</button>` : '';
+            document.getElementById('cameraBlurb').innerHTML = early
+                ? `This week's roll was developed early!${left ? ' New shots develop Monday at 12:00 AM.' : ''}`
+                : `Snap moments with the crew. This week's roll develops <span class="text-amber-300 font-semibold">Monday at 12:00 AM</span> &mdash; nobody sees it until then, not even you.${waiting}`;
+            const snapBtn = document.getElementById('cameraSnapBtn');
+            snapBtn.disabled = left === 0;
+            snapBtn.classList.toggle('opacity-50', left === 0);
+            document.getElementById('cameraSnapText').textContent = left === 0 ? 'Out of Film Until Monday' : 'Take a Picture';
+            section.classList.remove('hidden');
+        } catch (e) {
+            // camera_photos table not created yet (camera.sql) — just leave the camera hidden
+            section.classList.add('hidden');
+        }
+    }
+
+    // Shrink the photo (a 1280px JPEG is ~100-200 KB) so lots of rolls fit in file storage
+    function compressPhoto(file, maxSide = 1280, quality = 0.7) {
+        return new Promise((resolve, reject) => {
+            const url = URL.createObjectURL(file);
+            const img = new Image();
+            img.onload = () => {
+                const scale = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+                const canvas = document.createElement('canvas');
+                canvas.width = Math.round(img.naturalWidth * scale);
+                canvas.height = Math.round(img.naturalHeight * scale);
+                canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                URL.revokeObjectURL(url);
+                canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Could not read that photo.')), 'image/jpeg', quality);
+            };
+            img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not read that photo.')); };
+            img.src = url;
+        });
+    }
+
+    function cameraFlash() {
+        const flash = document.createElement('div');
+        flash.className = 'cam-flash';
+        document.body.appendChild(flash);
+        gsap.timeline({ onComplete: () => flash.remove() })
+            .to(flash, { opacity: 0.95, duration: 0.05 })
+            .to(flash, { opacity: 0, duration: 0.6, ease: 'power2.out' });
+    }
+
+    // Step 1: the shutter. The photo isn't shown — it's a disposable — just ask for a note.
+    async function snapPhoto(input) {
+        const file = input.files && input.files[0];
+        input.value = '';
+        if (!file || !state.currentUser) return;
+        try {
+            cam.pendingImage = await compressPhoto(file);
+        } catch (e) {
+            return showToast("That one didn't take. Try again.", true);
+        }
+        cameraFlash();
+        document.getElementById('cameraNoteInput').value = '';
+        openModalEl('cameraNoteModal');
+        setTimeout(() => document.getElementById('cameraNoteInput').focus(), 50);
+    }
+
+    function cancelCameraPhoto() {
+        cam.pendingImage = null;
+        closeModalEl('cameraNoteModal');
+    }
+
+    // Step 2: seal it with the note
+    async function sealCameraPhoto() {
+        const user = state.currentUser, image = cam.pendingImage;
+        if (!user || !image) return closeModalEl('cameraNoteModal');
+        const btn = document.getElementById('cameraSealBtn');
+        btn.disabled = true;
+        // Random file name so sealed photos can't be guessed from their URL
+        const path = `${state.activeYear}/${CURRENT_WEEK_ID_AZ}/${crypto.randomUUID()}.jpg`;
+        let uploaded = false;
+        try {
+            await sb.upload(CAMERA_BUCKET, path, image);
+            uploaded = true;
+            await sb.insert('camera_photos', {
+                academic_year: state.activeYear, week_identifier: CURRENT_WEEK_ID_AZ,
+                student_id: user.id, student_name: user.name, team: user.team,
+                note: document.getElementById('cameraNoteInput').value.trim().slice(0, 120) || null,
+                image_path: path
+            });
+            cam.pendingImage = null;
+            closeModalEl('cameraNoteModal');
+            showToast("Click! Sealed until Monday.");
+        } catch (e) {
+            if (uploaded) sb.removeFile(CAMERA_BUCKET, path).catch(() => {});
+            showToast("Couldn't save that shot. Try again.", true);
+        }
+        btn.disabled = false;
+        await loadCamera();
+    }
+
+    // --- Gallery ---
+    async function openCameraGallery(year, admin) {
+        cam.year = year; cam.admin = admin; cam.photos = [];
+        const grid = document.getElementById('camGalleryGrid');
+        grid.innerHTML = '<div class="text-center text-purple-200/60 text-sm py-10">Developing...</div>';
+        document.getElementById('camGalleryTitle').textContent = admin ? 'All Photos' : 'Developed Photos';
+        openModalEl('cameraGalleryModal');
+        try {
+            // Students see past weeks, plus this week if it was developed early; admins see everything
+            const weekFilter = admin ? '' : `&week_identifier=${(await isWeekDevelopedEarly(CURRENT_WEEK_ID_AZ)) ? 'lte' : 'lt'}.${CURRENT_WEEK_ID_AZ}`;
+            cam.photos = await sb.select('camera_photos', `academic_year=eq.${encodeURIComponent(year)}${weekFilter}&select=id,student_id,student_name,team,note,image_path,week_identifier,created_at&order=created_at.desc`);
+        } catch (e) {
+            grid.innerHTML = '<div class="text-center text-rose-300 text-sm py-10">Couldn\'t load the photos.</div>';
+            return;
+        }
+        const teams = [...new Set(cam.photos.map(p => p.team).filter(Boolean))].sort();
+        const filter = document.getElementById('camGalleryFilter');
+        filter.innerHTML = '<option value="all">Everyone</option>'
+            + (!admin && state.currentUser ? '<option value="mine">My Shots</option>' : '')
+            + teams.map(t => `<option value="team:${escapeHTML(t)}">${escapeHTML(t)}</option>`).join('');
+        renderCameraGallery();
+    }
+
+    function cameraStamp(iso) {
+        const [y, m, d] = new Date(iso).toLocaleDateString('en-CA', { timeZone: 'America/Phoenix' }).split('-');
+        return `${+m} ${+d} '${y.slice(2)}`;
+    }
+
+    function renderCameraGallery() {
+        const f = document.getElementById('camGalleryFilter').value;
+        const list = cam.photos.filter(p => f === 'all' ? true
+            : f === 'mine' ? p.student_id === state.currentUser?.id
+            : p.team === f.slice(5));
+        const people = new Set(list.map(p => p.student_id)).size;
+        document.getElementById('camGallerySub').textContent = `${list.length} photo${list.length === 1 ? '' : 's'} by ${people} ${people === 1 ? 'person' : 'people'} • ${cam.year}`
+            + (cam.admin ? ' • Admin view: tap a photo to delete it' : '');
+        const grid = document.getElementById('camGalleryGrid');
+        if (!list.length) {
+            grid.innerHTML = `<div class="text-center text-purple-200/60 text-sm py-10">${cam.admin ? 'No photos yet.' : 'Nothing developed yet. Check back Monday!'}</div>`;
+            return;
+        }
+        // One section per weekly roll, newest first
+        const weeks = [];
+        list.forEach(p => {
+            const w = weeks.find(w => w.id === p.week_identifier);
+            w ? w.photos.push(p) : weeks.push({ id: p.week_identifier, photos: [p] });
+        });
+        let i = 0;
+        grid.innerHTML = weeks.map(w => `
+            <div class="mb-6">
+                <div class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-purple-200/70 mb-3 px-1">
+                    <i data-lucide="film" class="w-3.5 h-3.5 text-amber-400"></i> ${w.id ? escapeHTML(formatWeekRange(w.id)) : 'Undated'}
+                    <span class="text-purple-200/40">&bull; ${w.photos.length} shot${w.photos.length === 1 ? '' : 's'}</span>
+                    ${cam.admin && w.id === CURRENT_WEEK_ID_AZ ? '<span class="text-amber-300 bg-amber-500/15 border border-amber-400/30 px-1.5 py-0.5 rounded">This week</span>' : ''}
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                    ${w.photos.map(p => `
+                    <div class="cam-print" style="transform: rotate(${((i++ * 37) % 7) - 3}deg)" onclick="openCameraPhoto(${p.id})">
+                        <img class="cam-img" loading="lazy" alt="Photo by ${escapeHTML(p.student_name)}" src="${escapeHTML(cameraPhotoUrl(p))}" />
+                        <div class="cam-stamp">${cameraStamp(p.created_at)}</div>
+                        <div class="cam-caption">${p.note ? `<span class="cam-note">${escapeHTML(p.note)}</span>` : ''}<span>&mdash; ${escapeHTML(p.student_name)}</span></div>
+                    </div>`).join('')}
+                </div>
+            </div>`).join('');
+        lucide.createIcons();
+    }
+
+    function cameraPhotoUrl(p) { return p.image_path ? sb.publicUrl(CAMERA_BUCKET, p.image_path) : ''; }
+
+    function openCameraPhoto(id) {
+        const p = cam.photos.find(x => x.id === id);
+        if (!p) return;
+        cam.viewingId = id;
+        const src = cameraPhotoUrl(p);
+        document.getElementById('camPhotoImg').src = src;
+        // ?download= makes Supabase send it as a file (the download attribute is ignored cross-origin)
+        document.getElementById('camPhotoDownload').href = `${src}?download=${encodeURIComponent(`cab-${p.student_name.replace(/\s+/g, '-').toLowerCase()}-${p.id}.jpg`)}`;
+        document.getElementById('camPhotoStamp').textContent = cameraStamp(p.created_at);
+        const note = document.getElementById('camPhotoNote');
+        note.textContent = p.note || '';
+        note.classList.toggle('hidden', !p.note);
+        document.getElementById('camPhotoCaption').textContent = `— ${p.student_name}${p.team ? ', ' + p.team : ''}`;
+        const del = document.getElementById('camPhotoDelete');
+        const canDelete = canDeleteCameraPhoto(p);
+        del.classList.toggle('hidden', !canDelete);
+        del.classList.toggle('flex', canDelete);
+        openModalEl('cameraPhotoModal');
+    }
+
+    // Admins can delete any photo; everyone can delete their own
+    function canDeleteCameraPhoto(p) {
+        return cam.admin || (!!state.currentUser && p.student_id === state.currentUser.id);
+    }
+
+    async function removeCameraPhoto(id) {
+        const path = [...cam.photos, ...cam.sealed].find(p => p.id === id)?.image_path;
+        await sb.delete('camera_photos', `id=eq.${id}` + (cam.admin ? '' : `&student_id=eq.${encodeURIComponent(state.currentUser.id)}`));
+        if (path) await sb.removeFile(CAMERA_BUCKET, path).catch(() => {}); // the row is already gone; a leftover file only takes up space
+        cam.photos = cam.photos.filter(p => p.id !== id);
+        cam.sealed = cam.sealed.filter(p => p.id !== id);
+        if (cam.admin) refreshCameraAdmin(); else loadCamera();
+    }
+
+    async function deleteCameraPhoto() {
+        const id = cam.viewingId;
+        const p = cam.photos.find(x => x.id === id);
+        if (!p || !canDeleteCameraPhoto(p) || !confirm('Delete this photo for good?')) return;
+        try {
+            await removeCameraPhoto(id);
+            closeModalEl('cameraPhotoModal');
+            renderCameraGallery();
+            showToast('Photo deleted.');
+        } catch (e) {
+            showToast("Couldn't delete that photo.", true);
+        }
+    }
+
+    // This week's still-sealed shots: no peeking, but accidental ones can be tossed (and the shot comes back)
+    function openSealedShots() {
+        cam.admin = false;
+        renderSealedShots();
+        openModalEl('cameraSealedModal');
+    }
+
+    function renderSealedShots() {
+        const list = document.getElementById('camSealedList');
+        if (!cam.sealed.length) {
+            list.innerHTML = '<div class="text-center text-purple-200/60 text-sm py-6">No sealed shots this week.</div>';
+            return;
+        }
+        list.innerHTML = cam.sealed.map((p, i) => {
+            const when = new Date(p.created_at).toLocaleString('en-US', { timeZone: 'America/Phoenix', weekday: 'short', hour: 'numeric', minute: '2-digit' });
+            return `
+            <div class="flex items-center gap-3 night-glass-card-subtle rounded-xl p-3 border-purple-400/20">
+                <div class="w-10 h-10 shrink-0 rounded-md bg-slate-900 border border-amber-400/30 flex items-center justify-center"><i data-lucide="film" class="w-4 h-4 text-amber-400/70"></i></div>
+                <div class="min-w-0 flex-1">
+                    <div class="text-sm font-bold text-white">Shot #${i + 1} <span class="text-purple-200/50 font-medium text-xs">&bull; ${escapeHTML(when)}</span></div>
+                    <div class="text-xs truncate ${p.note ? 'text-purple-200/80 italic' : 'text-purple-200/40'}">${p.note ? escapeHTML(p.note) : 'No note'}</div>
+                </div>
+                <button class="shrink-0 text-rose-300 hover:text-white bg-slate-900/50 hover:bg-rose-500/80 border border-rose-500/30 px-3 py-2 rounded-xl transition text-xs font-bold flex items-center gap-1.5" onclick="deleteSealedShot(${p.id})"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Delete</button>
+            </div>`;
+        }).join('');
+        lucide.createIcons();
+    }
+
+    async function deleteSealedShot(id) {
+        if (!confirm("Delete this shot? You'll get it back to use again.")) return;
+        try {
+            await removeCameraPhoto(id);
+            renderSealedShots();
+            showToast('Shot deleted. You got it back.');
+        } catch (e) {
+            showToast("Couldn't delete that shot.", true);
+        }
+    }
+
+    // --- Admin controls ---
+    function cameraAdminYear() { return document.getElementById('adminYearFilter').value || state.activeYear; }
+
+    function openCameraAdmin() {
+        openModalEl('cameraAdminModal');
+        refreshCameraAdmin();
+    }
+
+    async function refreshCameraAdmin() {
+        const year = cameraAdminYear();
+        const status = document.getElementById('camAdminStatus');
+        const btn = document.getElementById('camAdminDevelopBtn');
+        document.getElementById('camAdminYear').textContent = `This week: ${formatWeekRange(CURRENT_WEEK_ID_AZ)}`;
+        try {
+            const [early, rows] = await Promise.all([
+                isWeekDevelopedEarly(CURRENT_WEEK_ID_AZ),
+                sb.select('camera_photos', `academic_year=eq.${encodeURIComponent(year)}&week_identifier=eq.${CURRENT_WEEK_ID_AZ}&select=student_id`)
+            ]);
+            document.getElementById('camAdminPhotos').textContent = rows.length;
+            document.getElementById('camAdminPeople').textContent = new Set(rows.map(r => r.student_id)).size;
+            status.className = `text-center text-sm font-semibold mb-5 ${early ? 'text-emerald-400' : 'text-amber-300'}`;
+            status.textContent = early ? "This week's roll was developed early — everyone can see it." : "This week's roll is sealed. It develops Monday at 12:00 AM.";
+            btn.innerHTML = early
+                ? '<i data-lucide="lock" class="w-4 h-4"></i> Seal This Week Again'
+                : '<i data-lucide="sparkles" class="w-4 h-4"></i> Develop This Week Early';
+            lucide.createIcons();
+        } catch (e) {
+            status.className = 'text-center text-sm font-semibold mb-5 text-rose-300';
+            status.textContent = "Camera isn't set up yet. Run camera.sql in the Supabase SQL editor.";
+        }
+    }
+
+    async function toggleCameraDeveloped() {
+        try {
+            const early = await isWeekDevelopedEarly(CURRENT_WEEK_ID_AZ);
+            if (!early && !confirm("Develop this week's photos now? Everyone will be able to see them.")) return;
+            await sb.upsert('settings', [{ key: `CameraDeveloped_${CURRENT_WEEK_ID_AZ}`, value: early ? 'false' : 'true' }], 'key');
+            if (!early) { cameraFlash(); showToast('Developed! The photos are out.'); }
+            else showToast("This week's photos are sealed again.");
+        } catch (e) { showToast("Couldn't update the camera.", true); }
+        refreshCameraAdmin();
     }
 
     function isDrew() {
