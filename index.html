@@ -450,6 +450,7 @@
                                 <div class="text-[9px] text-purple-200/50 font-bold uppercase tracking-widest mt-1">Shots left<br>this week</div>
                             </div>
                         </div>
+                        <p class="text-[11px] text-amber-200/80 bg-amber-500/10 border border-amber-400/20 rounded-lg px-3 py-2 mb-4 flex items-start gap-2"><i data-lucide="eye" class="w-3.5 h-3.5 mt-px shrink-0 text-amber-400"></i> <span>Heads up: once they develop, <span class="font-semibold text-amber-200">everyone</span> can see your photos and notes. Use good judgment.</span></p>
                         <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden" onchange="snapPhoto(this)" />
                         <div class="grid grid-cols-2 gap-3" id="cameraButtons">
                             <button id="cameraSnapBtn" class="night-btn-link text-white font-bold py-3.5 rounded-xl transition flex justify-center items-center gap-2 border-amber-400/30 text-sm" onclick="document.getElementById('cameraInput').click()">
@@ -956,7 +957,7 @@
         <div class="absolute inset-0 modal-backdrop" onclick="cancelCameraPhoto()"></div>
         <div class="relative w-full max-w-sm night-glass-card rounded-3xl p-6 sm:p-8 flex flex-col shadow-2xl border-purple-400/50 z-10">
             <h3 class="text-xl font-bold text-white tracking-tight flex items-center gap-2"><i data-lucide="aperture" class="w-5 h-5 text-amber-400"></i> Click!</h3>
-            <p class="text-purple-200/70 text-xs mt-1 mb-5">Got it. You won't see it until it develops on Monday. Want to write a note on the back?</p>
+            <p class="text-purple-200/70 text-xs mt-1 mb-5">Got it. You won't see it until it develops on Monday, and then <span class="text-amber-300 font-semibold">everyone</span> will see it, note included. Want to write a note on the back?</p>
             <label for="cameraNoteInput" class="form-label">Note (optional)</label>
             <textarea id="cameraNoteInput" maxlength="120" rows="2" class="control-input resize-none mb-5" placeholder="e.g. Bonfire setup crew, 11pm"></textarea>
             <div class="grid grid-cols-2 gap-3">
