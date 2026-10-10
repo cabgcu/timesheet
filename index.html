@@ -966,6 +966,21 @@
         </div>
     </div>
 
+    <!-- Disposable camera: this week's sealed shots (for deleting accidental ones) -->
+    <div id="cameraSealedModal" class="fixed inset-0 z-[2000] hidden items-center justify-center p-4">
+        <div class="absolute inset-0 modal-backdrop" onclick="closeModalEl('cameraSealedModal')"></div>
+        <div class="relative w-full max-w-md night-glass-card rounded-3xl p-6 sm:p-8 flex flex-col shadow-2xl border-purple-400/50 max-h-[90vh] z-10">
+            <div class="flex justify-between items-start mb-5">
+                <div>
+                    <h3 class="text-xl font-bold text-white tracking-tight flex items-center gap-2"><i data-lucide="film" class="w-5 h-5 text-amber-400"></i> Your Sealed Shots</h3>
+                    <p class="text-purple-200/70 text-xs mt-1">No peeking until Monday, but you can delete any you took by accident. You'll get the shot back.</p>
+                </div>
+                <button class="text-purple-200 hover:text-white bg-slate-900/50 hover:bg-white/10 border border-purple-400/30 p-2 rounded-xl transition" onclick="closeModalEl('cameraSealedModal')"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <div id="camSealedList" class="flex flex-col gap-2 overflow-y-auto custom-scroll pr-1"></div>
+        </div>
+    </div>
+
     <!-- Disposable camera: the developed photos -->
     <div id="cameraGalleryModal" class="fixed inset-0 z-[2100] hidden items-center justify-center p-4">
         <div class="absolute inset-0 modal-backdrop" onclick="closeModalEl('cameraGalleryModal')"></div>
@@ -2056,7 +2071,7 @@
 
     // --- Disposable camera: each week's roll stays sealed until Monday 12:00 AM (AZ), or until an admin develops it early ---
     const CAMERA_SHOTS_PER_WEEK = 10;
-    const cam = { year: '', admin: false, photos: [], images: {}, observer: null, viewingId: null, pendingImage: null };
+    const cam = { year: '', admin: false, photos: [], images: {}, observer: null, viewingId: null, pendingImage: null, sealed: [] };
 
     function openModalEl(id) {
         const m = document.getElementById(id);
@@ -2083,12 +2098,13 @@
         try {
             const [early, mine] = await Promise.all([
                 isWeekDevelopedEarly(CURRENT_WEEK_ID_AZ),
-                sb.select('camera_photos', `academic_year=eq.${encodeURIComponent(year)}&student_id=eq.${encodeURIComponent(user.id)}&week_identifier=eq.${CURRENT_WEEK_ID_AZ}&select=id`)
+                sb.select('camera_photos', `academic_year=eq.${encodeURIComponent(year)}&student_id=eq.${encodeURIComponent(user.id)}&week_identifier=eq.${CURRENT_WEEK_ID_AZ}&select=id,note,created_at&order=created_at.asc`)
             ]);
             if (state.currentUser !== user) return;
+            cam.sealed = early ? [] : mine;
             const left = Math.max(0, CAMERA_SHOTS_PER_WEEK - mine.length);
             document.getElementById('cameraCount').textContent = String(left).padStart(2, '0');
-            const waiting = mine.length ? ` You have <span class="text-amber-300 font-semibold">${mine.length}</span> waiting.` : '';
+            const waiting = mine.length ? ` You have <span class="text-amber-300 font-semibold">${mine.length}</span> waiting &mdash; <button class="underline text-amber-300 hover:text-white font-semibold" onclick="openSealedShots()">took one by accident?</button>` : '';
             document.getElementById('cameraBlurb').innerHTML = early
                 ? `This week's roll was developed early!${left ? ' New shots develop Monday at 12:00 AM.' : ''}`
                 : `Snap moments with the crew. This week's roll develops <span class="text-amber-300 font-semibold">Monday at 12:00 AM</span> &mdash; nobody sees it until then, not even you.${waiting}`;
@@ -2275,8 +2291,9 @@
         note.classList.toggle('hidden', !p.note);
         document.getElementById('camPhotoCaption').textContent = `— ${p.student_name}${p.team ? ', ' + p.team : ''}`;
         const del = document.getElementById('camPhotoDelete');
-        del.classList.toggle('hidden', !cam.admin);
-        del.classList.toggle('flex', cam.admin);
+        const canDelete = canDeleteCameraPhoto(p);
+        del.classList.toggle('hidden', !canDelete);
+        del.classList.toggle('flex', canDelete);
         openModalEl('cameraPhotoModal');
         const src = await loadCameraImage(id);
         if (src && cam.viewingId === id) {
@@ -2287,19 +2304,69 @@
         }
     }
 
+    // Admins can delete any photo; everyone can delete their own
+    function canDeleteCameraPhoto(p) {
+        return cam.admin || (!!state.currentUser && p.student_id === state.currentUser.id);
+    }
+
+    async function removeCameraPhoto(id) {
+        await sb.delete('camera_photos', `id=eq.${id}` + (cam.admin ? '' : `&student_id=eq.${encodeURIComponent(state.currentUser.id)}`));
+        cam.photos = cam.photos.filter(p => p.id !== id);
+        cam.sealed = cam.sealed.filter(p => p.id !== id);
+        delete cam.images[id];
+        if (cam.admin) refreshCameraAdmin(); else loadCamera();
+    }
+
     async function deleteCameraPhoto() {
         const id = cam.viewingId;
-        if (!cam.admin || !id || !confirm('Delete this photo for good?')) return;
+        const p = cam.photos.find(x => x.id === id);
+        if (!p || !canDeleteCameraPhoto(p) || !confirm('Delete this photo for good?')) return;
         try {
-            await sb.delete('camera_photos', `id=eq.${id}`);
-            cam.photos = cam.photos.filter(p => p.id !== id);
-            delete cam.images[id];
+            await removeCameraPhoto(id);
             closeModalEl('cameraPhotoModal');
             renderCameraGallery();
             showToast('Photo deleted.');
-            refreshCameraAdmin();
         } catch (e) {
             showToast("Couldn't delete that photo.", true);
+        }
+    }
+
+    // This week's still-sealed shots: no peeking, but accidental ones can be tossed (and the shot comes back)
+    function openSealedShots() {
+        cam.admin = false;
+        renderSealedShots();
+        openModalEl('cameraSealedModal');
+    }
+
+    function renderSealedShots() {
+        const list = document.getElementById('camSealedList');
+        if (!cam.sealed.length) {
+            list.innerHTML = '<div class="text-center text-purple-200/60 text-sm py-6">No sealed shots this week.</div>';
+            return;
+        }
+        list.innerHTML = cam.sealed.map((p, i) => {
+            const when = new Date(p.created_at).toLocaleString('en-US', { timeZone: 'America/Phoenix', weekday: 'short', hour: 'numeric', minute: '2-digit' });
+            return `
+            <div class="flex items-center gap-3 night-glass-card-subtle rounded-xl p-3 border-purple-400/20">
+                <div class="w-10 h-10 shrink-0 rounded-md bg-slate-900 border border-amber-400/30 flex items-center justify-center"><i data-lucide="film" class="w-4 h-4 text-amber-400/70"></i></div>
+                <div class="min-w-0 flex-1">
+                    <div class="text-sm font-bold text-white">Shot #${i + 1} <span class="text-purple-200/50 font-medium text-xs">&bull; ${escapeHTML(when)}</span></div>
+                    <div class="text-xs truncate ${p.note ? 'text-purple-200/80 italic' : 'text-purple-200/40'}">${p.note ? escapeHTML(p.note) : 'No note'}</div>
+                </div>
+                <button class="shrink-0 text-rose-300 hover:text-white bg-slate-900/50 hover:bg-rose-500/80 border border-rose-500/30 px-3 py-2 rounded-xl transition text-xs font-bold flex items-center gap-1.5" onclick="deleteSealedShot(${p.id})"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Delete</button>
+            </div>`;
+        }).join('');
+        lucide.createIcons();
+    }
+
+    async function deleteSealedShot(id) {
+        if (!confirm("Delete this shot? You'll get it back to use again.")) return;
+        try {
+            await removeCameraPhoto(id);
+            renderSealedShots();
+            showToast('Shot deleted. You got it back.');
+        } catch (e) {
+            showToast("Couldn't delete that shot.", true);
         }
     }
 
