@@ -2118,7 +2118,7 @@
             const waiting = mine.length ? ` You have <span class="text-amber-300 font-semibold">${mine.length}</span> waiting &mdash; <button class="underline text-amber-300 hover:text-white font-semibold" onclick="openSealedShots()">took one by accident?</button>` : '';
             document.getElementById('cameraBlurb').innerHTML = early
                 ? `This week's roll was developed early!${left ? ' New shots develop Monday at 12:00 AM.' : ''}`
-                : `Snap moments with the crew. This week's roll develops <span class="text-amber-300 font-semibold">Monday at 12:00 AM</span> &mdash; nobody sees it until then, not even you.${waiting}`;
+                : `Snap moments. This week's roll develops <span class="text-amber-300 font-semibold">Monday at 12:00 AM</span> &mdash; nobody sees it until then, not even you.${waiting}`;
             const snapBtn = document.getElementById('cameraSnapBtn');
             snapBtn.disabled = left === 0;
             snapBtn.classList.toggle('opacity-50', left === 0);
