@@ -1719,8 +1719,10 @@
             if (!res.ok) throw new Error(await res.text());
         },
         // Supabase Storage (file storage; used for camera photos)
+        // Files never change once uploaded (random names), so browsers may keep them for a year
+        // instead of re-downloading them hourly (Supabase's default), which eats the cached egress quota.
         async upload(bucket, path, blob) {
-            const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${bucket}/${path}`, { method: 'POST', headers: sb._h({ 'Content-Type': blob.type }), body: blob });
+            const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${bucket}/${path}`, { method: 'POST', headers: sb._h({ 'Content-Type': blob.type, 'Cache-Control': 'max-age=31536000' }), body: blob });
             if (!res.ok) throw new Error(await res.text());
         },
         async removeFile(bucket, path) {
@@ -2142,6 +2144,7 @@
     // --- Disposable camera: each week's roll stays sealed until Monday 12:00 AM (AZ), or until an admin develops it early ---
     const CAMERA_SHOTS_PER_WEEK = 10;
     const CAMERA_BUCKET = 'camera';
+    const CAMERA_THUMB_SIDE = 480;
     const cam = { year: '', admin: false, photos: [], viewingId: null, social: false, comments: [], pendingImage: null, sealed: [], fresh: [], pending: [], developingCount: 0 };
 
     // Developed photos this student hasn't opened the gallery to see yet. Photo ids only go up and
@@ -2178,7 +2181,7 @@
             : 'Disposable Camera';
         btn.setAttribute('aria-label', btn.title);
         previews.innerHTML = cam.fresh.slice(0, 3).map((p, i) =>
-            `<span class="cam-mini" style="transform: rotate(${[-8, 3, 10][i]}deg)"><img alt="" loading="lazy" src="${escapeHTML(cameraPhotoUrl(p))}" /></span>`).join('');
+            `<span class="cam-mini" style="transform: rotate(${[-8, 3, 10][i]}deg)"><img alt="" loading="lazy" ${cameraThumbAttrs(p)} /></span>`).join('');
     }
 
     // New photos waiting: open them. Otherwise jump down to the camera.
@@ -2247,19 +2250,26 @@
         }
     }
 
+    // Draw a loaded image no bigger than maxSide on its longest side and encode it as a JPEG
+    function imageToJpeg(img, maxSide, quality) {
+        return new Promise((resolve, reject) => {
+            const scale = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.round(img.naturalWidth * scale);
+            canvas.height = Math.round(img.naturalHeight * scale);
+            canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+            canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Could not read that photo.')), 'image/jpeg', quality);
+        });
+    }
+
     // Shrink the photo (a 1280px JPEG is ~100-200 KB) so lots of rolls fit in file storage
     function compressPhoto(file, maxSide = 1280, quality = 0.7) {
         return new Promise((resolve, reject) => {
             const url = URL.createObjectURL(file);
             const img = new Image();
             img.onload = () => {
-                const scale = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
-                const canvas = document.createElement('canvas');
-                canvas.width = Math.round(img.naturalWidth * scale);
-                canvas.height = Math.round(img.naturalHeight * scale);
-                canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
                 URL.revokeObjectURL(url);
-                canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Could not read that photo.')), 'image/jpeg', quality);
+                imageToJpeg(img, maxSide, quality).then(resolve, reject);
             };
             img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not read that photo.')); };
             img.src = url;
@@ -2306,8 +2316,11 @@
         const path = `${state.activeYear}/${CURRENT_WEEK_ID_AZ}/${crypto.randomUUID()}.jpg`;
         let uploaded = false;
         try {
+            // Plus a small copy (~20-40 KB) for the gallery grid, so browsing doesn't pull every full photo
+            const thumb = await compressPhoto(image, CAMERA_THUMB_SIDE).catch(() => null);
             await sb.upload(CAMERA_BUCKET, path, image);
             uploaded = true;
+            if (thumb) await sb.upload(CAMERA_BUCKET, cameraThumbPath(path), thumb).catch(() => {});
             await sb.insert('camera_photos', {
                 academic_year: state.activeYear, week_identifier: CURRENT_WEEK_ID_AZ,
                 student_id: user.id, student_name: user.name, team: user.team,
@@ -2318,7 +2331,10 @@
             closeModalEl('cameraNoteModal');
             showToast("Click! Sealed until Monday.");
         } catch (e) {
-            if (uploaded) sb.removeFile(CAMERA_BUCKET, path).catch(() => {});
+            if (uploaded) {
+                sb.removeFile(CAMERA_BUCKET, path).catch(() => {});
+                sb.removeFile(CAMERA_BUCKET, cameraThumbPath(path)).catch(() => {});
+            }
             showToast("Couldn't save that shot. Try again.", true);
         }
         btn.disabled = false;
@@ -2419,7 +2435,7 @@
                 <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                     ${w.photos.map(p => `
                     <div class="cam-print" style="transform: rotate(${((i++ * 37) % 7) - 3}deg)" onclick="openCameraPhoto(${p.id})">
-                        <img class="cam-img" loading="lazy" alt="Photo by ${escapeHTML(p.student_name)}" src="${escapeHTML(cameraPhotoUrl(p))}" />
+                        <img class="cam-img" loading="lazy" alt="Photo by ${escapeHTML(p.student_name)}" ${cameraThumbAttrs(p)} />
                         <div class="cam-stamp">${cameraStamp(p.created_at)}</div>
                         ${cameraSocialPill(p)}
                         <div class="cam-caption">${p.note ? `<span class="cam-note">${escapeHTML(p.note)}</span>` : ''}<span>&mdash; ${escapeHTML(p.student_name)}</span></div>
@@ -2449,6 +2465,31 @@
     }
 
     function cameraPhotoUrl(p) { return p.image_path ? sb.publicUrl(CAMERA_BUCKET, p.image_path) : ''; }
+    function cameraThumbPath(path) { return path.replace(/\.jpg$/, '_thumb.jpg'); }
+
+    // Grid tiles and the header previews show the small copy; the full photo loads only when opened
+    function cameraThumbAttrs(p) {
+        if (!p.image_path) return 'src=""';
+        return `src="${escapeHTML(sb.publicUrl(CAMERA_BUCKET, cameraThumbPath(p.image_path)))}" data-path="${escapeHTML(p.image_path)}" onerror="cameraThumbMissing(this)"`;
+    }
+
+    // Photos taken before small copies existed: show the full photo this once, and make and upload
+    // the small copy from it so nobody has to download the full one for the grid again.
+    const camThumbsMade = new Set();
+    function cameraThumbMissing(img) {
+        const path = img.dataset.path;
+        img.onerror = () => { img.onerror = null; img.onload = null; img.removeAttribute('crossorigin'); img.src = sb.publicUrl(CAMERA_BUCKET, path); };
+        img.onload = () => {
+            img.onload = null;
+            if (camThumbsMade.has(path)) return;
+            camThumbsMade.add(path);
+            imageToJpeg(img, CAMERA_THUMB_SIDE, 0.7)
+                .then(blob => sb.upload(CAMERA_BUCKET, cameraThumbPath(path), blob))
+                .catch(() => {});
+        };
+        img.crossOrigin = 'anonymous'; // so the canvas can read it
+        img.src = sb.publicUrl(CAMERA_BUCKET, path);
+    }
 
     function openCameraPhoto(id) {
         const p = cam.photos.find(x => x.id === id);
@@ -2706,7 +2747,10 @@
     async function removeCameraPhoto(id) {
         const path = [...cam.photos, ...cam.sealed].find(p => p.id === id)?.image_path;
         await sb.delete('camera_photos', `id=eq.${id}` + (cam.admin ? '' : `&student_id=eq.${encodeURIComponent(state.currentUser.id)}`));
-        if (path) await sb.removeFile(CAMERA_BUCKET, path).catch(() => {}); // the row is already gone; a leftover file only takes up space
+        if (path) { // the row is already gone; a leftover file only takes up space
+            await sb.removeFile(CAMERA_BUCKET, path).catch(() => {});
+            await sb.removeFile(CAMERA_BUCKET, cameraThumbPath(path)).catch(() => {});
+        }
         cam.photos = cam.photos.filter(p => p.id !== id);
         cam.sealed = cam.sealed.filter(p => p.id !== id);
         if (cam.admin) refreshCameraAdmin(); else loadCamera();
