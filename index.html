@@ -314,6 +314,11 @@
         .cam-shortcut.hidden, .cam-mini-stack.hidden { display: none; }
         .cam-section-pulse { animation: cam-pulse 1.2s ease-out 1; }
         @keyframes cam-pulse { 0% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.55); } 100% { box-shadow: 0 0 0 18px rgba(251, 191, 36, 0); } }
+        /* An undeveloped print: the shot exists, but there's nothing to see until Monday */
+        .cam-print.cam-pending { cursor: default; }
+        .cam-print.cam-pending:hover { transform: none; }
+        .cam-unexposed { aspect-ratio: 1; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; background: radial-gradient(circle at 50% 40%, #3b2f1f, #1c1917 70%); color: rgba(251, 191, 36, 0.55); font-size: 9px; font-weight: 800; letter-spacing: 0.15em; text-transform: uppercase; animation: cam-develop 3s ease-in-out infinite; }
+        @keyframes cam-develop { 0%, 100% { filter: brightness(0.85); } 50% { filter: brightness(1.15); } }
         .cam-note { font-family: 'Segoe Print', 'Bradley Hand', 'Comic Sans MS', cursive; color: #1e3a8a; font-weight: 400; font-size: 11px; }
     </style>
 </head>
@@ -2103,7 +2108,7 @@
     // --- Disposable camera: each week's roll stays sealed until Monday 12:00 AM (AZ), or until an admin develops it early ---
     const CAMERA_SHOTS_PER_WEEK = 10;
     const CAMERA_BUCKET = 'camera';
-    const cam = { year: '', admin: false, photos: [], viewingId: null, pendingImage: null, sealed: [], fresh: [] };
+    const cam = { year: '', admin: false, photos: [], viewingId: null, pendingImage: null, sealed: [], fresh: [], pending: [] };
 
     // Developed photos this student hasn't opened the gallery to see yet. Photo ids only go up and
     // rolls develop oldest week first, so "new" is just every visible photo above the last id seen.
@@ -2276,21 +2281,27 @@
 
     // --- Gallery ---
     async function openCameraGallery(year, admin) {
-        cam.year = year; cam.admin = admin; cam.photos = [];
+        cam.year = year; cam.admin = admin; cam.photos = []; cam.pending = [];
         const grid = document.getElementById('camGalleryGrid');
         grid.innerHTML = '<div class="text-center text-purple-200/60 text-sm py-10">Developing...</div>';
         document.getElementById('camGalleryTitle').textContent = admin ? 'All Photos' : 'Developed Photos';
         openModalEl('cameraGalleryModal');
         try {
             // Students see past weeks, plus this week if it was developed early; admins see everything
-            const weekFilter = admin ? '' : `&week_identifier=${(await isWeekDevelopedEarly(CURRENT_WEEK_ID_AZ)) ? 'lte' : 'lt'}.${CURRENT_WEEK_ID_AZ}`;
-            cam.photos = await sb.select('camera_photos', `academic_year=eq.${encodeURIComponent(year)}${weekFilter}&select=id,student_id,student_name,team,note,image_path,week_identifier,created_at&order=created_at.desc`);
+            const early = admin || await isWeekDevelopedEarly(CURRENT_WEEK_ID_AZ);
+            const weekFilter = admin ? '' : `&week_identifier=${early ? 'lte' : 'lt'}.${CURRENT_WEEK_ID_AZ}`;
+            [cam.photos, cam.pending] = await Promise.all([
+                sb.select('camera_photos', `academic_year=eq.${encodeURIComponent(year)}${weekFilter}&select=id,student_id,student_name,team,note,image_path,week_identifier,created_at&order=created_at.desc`),
+                // Everyone's still-sealed shots this week, shown as blank prints. No note or
+                // image_path is fetched, so nothing about the picture leaks before Monday.
+                early ? [] : sb.select('camera_photos', `academic_year=eq.${encodeURIComponent(year)}&week_identifier=eq.${CURRENT_WEEK_ID_AZ}&select=id,student_id,student_name,team,created_at&order=created_at.desc`).catch(() => [])
+            ]);
             if (!admin && state.currentUser) markCameraSeen(state.currentUser, year, cam.photos);
         } catch (e) {
             grid.innerHTML = '<div class="text-center text-rose-300 text-sm py-10">Couldn\'t load the photos.</div>';
             return;
         }
-        const teams = [...new Set(cam.photos.map(p => p.team).filter(Boolean))].sort();
+        const teams = [...new Set(cam.photos.concat(cam.pending).map(p => p.team).filter(Boolean))].sort();
         const filter = document.getElementById('camGalleryFilter');
         filter.innerHTML = '<option value="all">Everyone</option>'
             + (!admin && state.currentUser ? '<option value="mine">My Shots</option>' : '')
@@ -2305,13 +2316,38 @@
 
     function renderCameraGallery() {
         const f = document.getElementById('camGalleryFilter').value;
-        const list = cam.photos.filter(p => f === 'all' ? true
+        const matches = p => f === 'all' ? true
             : f === 'mine' ? p.student_id === state.currentUser?.id
-            : p.team === f.slice(5));
+            : p.team === f.slice(5);
+        const list = cam.photos.filter(matches);
+        const pending = (cam.pending || []).filter(matches);
         const people = new Set(list.map(p => p.student_id)).size;
         document.getElementById('camGallerySub').textContent = `${list.length} photo${list.length === 1 ? '' : 's'} by ${people} ${people === 1 ? 'person' : 'people'} • ${cam.year}`
+            + (pending.length ? ` • ${pending.length} developing` : '')
             + (cam.admin ? ' • Admin view: tap a photo to delete it' : '');
         const grid = document.getElementById('camGalleryGrid');
+        let i = 0;
+        const pendingHtml = !pending.length ? '' : `
+            <div class="mb-6">
+                <div class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-purple-200/70 mb-3 px-1 flex-wrap">
+                    <i data-lucide="hourglass" class="w-3.5 h-3.5 text-amber-400"></i> This week's roll
+                    <span class="text-purple-200/40">&bull; ${pending.length} shot${pending.length === 1 ? '' : 's'}</span>
+                    <span class="text-amber-300 bg-amber-500/15 border border-amber-400/30 px-1.5 py-0.5 rounded">All develop Monday 12:00 AM</span>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                    ${pending.map(p => `
+                    <div class="cam-print cam-pending" style="transform: rotate(${((i++ * 37) % 7) - 3}deg)">
+                        <div class="cam-unexposed"><i data-lucide="film" class="w-5 h-5"></i>Developing</div>
+                        <div class="cam-stamp">${cameraStamp(p.created_at)}</div>
+                        <div class="cam-caption"><span>&mdash; ${escapeHTML(p.student_name)}</span></div>
+                    </div>`).join('')}
+                </div>
+            </div>`;
+        if (!list.length && pendingHtml) {
+            grid.innerHTML = pendingHtml;
+            lucide.createIcons();
+            return;
+        }
         if (!list.length) {
             grid.innerHTML = `<div class="text-center text-purple-200/60 text-sm py-10">${cam.admin ? 'No photos yet.' : 'Nothing developed yet. Check back Monday!'}</div>`;
             return;
@@ -2322,8 +2358,7 @@
             const w = weeks.find(w => w.id === p.week_identifier);
             w ? w.photos.push(p) : weeks.push({ id: p.week_identifier, photos: [p] });
         });
-        let i = 0;
-        grid.innerHTML = weeks.map(w => `
+        grid.innerHTML = pendingHtml + weeks.map(w => `
             <div class="mb-6">
                 <div class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-purple-200/70 mb-3 px-1">
                     <i data-lucide="film" class="w-3.5 h-3.5 text-amber-400"></i> ${w.id ? escapeHTML(formatWeekRange(w.id)) : 'Undated'}
