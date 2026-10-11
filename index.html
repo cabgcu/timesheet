@@ -293,6 +293,14 @@
         .c4-win { animation: c4-pulse 1s infinite; }
         @keyframes c4-pulse { 0%, 100% { transform: scale(0.95); filter: brightness(1); } 50% { transform: scale(1.05); filter: brightness(1.5); } }
 
+        /* Simon verification (Drew logging hours) */
+        .simon-btn { transition: all 0.1s ease; opacity: 0.3; transform: scale(1); box-shadow: inset 0 0 20px rgba(0,0,0,0.5); user-select: none; -webkit-user-select: none; }
+        .simon-btn.active { opacity: 1; transform: scale(0.96); box-shadow: 0 0 30px currentColor, inset 0 0 10px rgba(255,255,255,0.5); z-index: 10; }
+        .simon-btn:active { transform: scale(0.92); }
+        .simon-btn:disabled { cursor: not-allowed; }
+        .simon-shake { animation: simon-shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes simon-shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-8px); } 40%, 80% { transform: translateX(8px); } }
+
         /* Disposable camera */
         .cam-flash { position: fixed; inset: 0; background: #fff; z-index: 5000; pointer-events: none; opacity: 0; }
         .cam-print { background: #f8f5ee; padding: 8px 8px 40px; border-radius: 4px; box-shadow: 0 8px 20px rgba(0,0,0,0.45); position: relative; cursor: pointer; transition: transform 0.2s; }
@@ -938,6 +946,36 @@
                 <h3 class="text-2xl font-black text-white tracking-tight">You beat the AI!</h3>
                 <button class="mt-4 w-full night-btn-link text-white font-bold py-3 rounded-xl transition border-purple-400/30 text-sm" onclick="openC4Modal()">Play Again</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Simon verification: Drew has to pass this before his hours save -->
+    <div id="simonModal" class="fixed inset-0 z-[2000] hidden items-center justify-center p-4">
+        <div class="absolute inset-0 modal-backdrop" onclick="closeSimonModal()"></div>
+        <div class="relative w-full max-w-md night-glass-card rounded-3xl p-6 sm:p-8 flex flex-col items-center shadow-2xl border-purple-400/50 max-h-[90vh] overflow-y-auto custom-scroll z-10">
+            <div class="flex justify-between items-start mb-5 w-full">
+                <div>
+                    <h3 class="text-xl font-bold text-white tracking-tight flex items-center gap-2"><i data-lucide="calendar-check" class="w-5 h-5 text-purple-400"></i> Identity Verification</h3>
+                    <p class="text-purple-200/70 text-xs mt-1">Employee: DREW | Required to log hours</p>
+                </div>
+                <button class="text-purple-200 hover:text-white bg-slate-900/50 hover:bg-white/10 border border-purple-400/30 p-2 rounded-xl transition" onclick="closeSimonModal()"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+
+            <div class="w-full night-glass-card-subtle rounded-lg p-3 mb-5 flex justify-between items-center">
+                <span class="text-xs text-purple-200/70 uppercase tracking-wider font-semibold">Security Level:</span>
+                <span id="simonLevel" class="font-mono text-amber-400 text-sm font-bold bg-amber-400/10 px-2 py-0.5 rounded">Lvl 1</span>
+            </div>
+
+            <p id="simonStatus" class="text-center text-sm text-slate-300 mb-5 min-h-[2.5rem] flex items-center justify-center font-medium"></p>
+
+            <div id="simonBoard" class="grid grid-cols-2 gap-3 w-56 h-56 sm:w-64 sm:h-64 mb-6">
+                <button class="simon-btn rounded-tl-2xl bg-red-500 border-2 border-slate-800" style="color: #ef4444;" onclick="simonInput(0)"></button>
+                <button class="simon-btn rounded-tr-2xl bg-green-500 border-2 border-slate-800" style="color: #22c55e;" onclick="simonInput(1)"></button>
+                <button class="simon-btn rounded-bl-2xl bg-blue-500 border-2 border-slate-800" style="color: #3b82f6;" onclick="simonInput(2)"></button>
+                <button class="simon-btn rounded-br-2xl bg-yellow-400 border-2 border-slate-800" style="color: #eab308;" onclick="simonInput(3)"></button>
+            </div>
+
+            <button id="simonStartBtn" onclick="simonStart()" class="w-full py-3.5 px-6 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold tracking-wide transition-all duration-200 shadow-lg shadow-indigo-900/30 border border-indigo-400/20 active:scale-95">START VERIFICATION</button>
         </div>
     </div>
 
@@ -2070,6 +2108,9 @@
             }
         }
 
+        // Drew has to pass a Simon round before his hours go in.
+        if (isDrew() && !opts.simonOk) return openSimonModal(() => saveTimeEntry({ ...opts, dupOk: true, simonOk: true }));
+
         let entry, replacedKey = null;
         if (state.editingEntryId) {
             const index = state.currentWeekEntries.findIndex(e => String(e.id) === String(state.editingEntryId));
@@ -2530,6 +2571,150 @@
 
     function isDrew() {
         return !!state.currentUser && (state.currentUser.name || '').trim().toLowerCase().replace(/\s+/g, ' ') === 'drew colucci';
+    }
+
+    // --- Simon verification: Drew repeats a color sequence before each save. One step longer and a bit
+    // faster every time he passes, capped so he can always get his hours in. ---
+    const SIMON_MAX_LEVEL = 6; // passes beyond this stop making it harder (sequence of 3 + 6 = 9)
+    const SIMON_FREQS = [329.63, 261.63, 220.00, 164.81]; // E4, C4, A3, E3
+    const simon = { seq: [], input: [], round: 0, target: 3, flash: 450, pause: 250, playing: false, awaiting: false, onPass: null, audio: null, run: 0 };
+
+    function simonKey() { return `simon_passes_${state.currentUser.id}`; }
+    function simonPasses() {
+        try { return Number(localStorage.getItem(simonKey())) || 0; } catch (e) { return 0; }
+    }
+
+    function simonStatus(html) { document.getElementById('simonStatus').innerHTML = html; }
+    function simonButtons() { return document.querySelectorAll('#simonBoard .simon-btn'); }
+    function simonSetEnabled(on) {
+        simonButtons().forEach(b => { b.disabled = !on; b.style.cursor = on ? 'pointer' : 'not-allowed'; });
+    }
+    const simonSleep = ms => new Promise(r => setTimeout(r, ms));
+
+    function simonTone(freq, type, secs, endFreq) {
+        try {
+            if (!simon.audio) simon.audio = new (window.AudioContext || window.webkitAudioContext)();
+            const ctx = simon.audio;
+            if (ctx.state === 'suspended') ctx.resume();
+            const osc = ctx.createOscillator(), gain = ctx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, ctx.currentTime);
+            if (endFreq) osc.frequency.exponentialRampToValueAtTime(endFreq, ctx.currentTime + secs);
+            gain.gain.setValueAtTime(type === 'sine' ? 0.15 : 0.2, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + secs);
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.start(); osc.stop(ctx.currentTime + secs);
+        } catch (e) {}
+    }
+
+    function openSimonModal(onPass) {
+        const level = Math.min(simonPasses(), SIMON_MAX_LEVEL);
+        simon.onPass = onPass;
+        simon.target = 3 + level;
+        simon.flash = Math.max(120, 450 - level * 35);
+        simon.pause = Math.max(50, 250 - level * 20);
+        simon.playing = false;
+        simon.awaiting = false;
+        simon.run++;
+        document.getElementById('simonLevel').textContent = `Lvl ${simonPasses() + 1}`;
+        simonStatus('Initiate verification sequence to log hours.');
+        const start = document.getElementById('simonStartBtn');
+        start.textContent = 'START VERIFICATION';
+        start.classList.remove('hidden', 'bg-red-600', 'hover:bg-red-500');
+        start.classList.add('bg-indigo-600', 'hover:bg-indigo-500');
+        simonSetEnabled(false);
+        openModalEl('simonModal');
+    }
+
+    function closeSimonModal() {
+        simon.run++; // stops any sequence still playing
+        simon.playing = false;
+        simon.awaiting = false;
+        simon.onPass = null;
+        simonButtons().forEach(b => b.classList.remove('active'));
+        closeModalEl('simonModal');
+    }
+
+    async function simonStart() {
+        if (simon.playing) return;
+        simon.playing = true;
+        simon.seq = [];
+        simon.round = 0;
+        const run = simon.run;
+        document.getElementById('simonStartBtn').classList.add('hidden');
+        simonStatus('<span class="text-indigo-400 animate-pulse">Establishing secure connection...</span>');
+        await simonSleep(1000);
+        if (run === simon.run) simonNextRound();
+    }
+
+    async function simonNextRound() {
+        const run = simon.run;
+        simon.awaiting = false;
+        simon.input = [];
+        simon.round++;
+        simonSetEnabled(false);
+        simonStatus(`<span class="text-amber-400 font-mono">Calibrating Sequence ${simon.round}/${simon.target}...</span>`);
+        simon.seq.push(Math.floor(Math.random() * 4));
+        await simonSleep(800);
+        for (const i of simon.seq) {
+            if (run !== simon.run) return;
+            await simonFlash(i);
+            await simonSleep(simon.pause);
+        }
+        if (run !== simon.run) return;
+        simonStatus('<span class="text-emerald-400 font-bold">YOUR TURN</span>');
+        simon.awaiting = true;
+        simonSetEnabled(true);
+    }
+
+    async function simonFlash(i) {
+        const btn = simonButtons()[i];
+        btn.classList.add('active');
+        simonTone(SIMON_FREQS[i], 'sine', simon.flash / 1000);
+        await simonSleep(simon.flash);
+        btn.classList.remove('active');
+    }
+
+    function simonInput(i) {
+        if (!simon.awaiting) return;
+        simonFlash(i);
+        simon.input.push(i);
+        const at = simon.input.length - 1;
+
+        if (simon.input[at] !== simon.seq[at]) {
+            simon.awaiting = false;
+            simon.playing = false;
+            simonSetEnabled(false);
+            simonTone(100, 'sawtooth', 0.5, 40);
+            const board = document.getElementById('simonBoard');
+            board.classList.add('simon-shake');
+            setTimeout(() => board.classList.remove('simon-shake'), 400);
+            simonStatus('<span class="text-red-400 font-bold">VERIFICATION FAILED. Memory lapse detected.</span>');
+            const start = document.getElementById('simonStartBtn');
+            start.textContent = 'RESTART VERIFICATION';
+            start.classList.remove('hidden', 'bg-indigo-600', 'hover:bg-indigo-500');
+            start.classList.add('bg-red-600', 'hover:bg-red-500');
+            return;
+        }
+
+        if (simon.input.length !== simon.seq.length) return;
+        simon.awaiting = false;
+        simonSetEnabled(false);
+        if (simon.round < simon.target) {
+            simonStatus('<span class="text-slate-400">Sequence accepted. Generating next...</span>');
+            const run = simon.run;
+            setTimeout(() => { if (run === simon.run) simonNextRound(); }, 1000);
+            return;
+        }
+
+        try { localStorage.setItem(simonKey(), String(simonPasses() + 1)); } catch (e) {}
+        simonStatus('<span class="text-emerald-400 animate-pulse">Verification Complete. Logging hours...</span>');
+        const onPass = simon.onPass, run = simon.run;
+        setTimeout(() => {
+            if (run !== simon.run) return;
+            closeSimonModal();
+            if (onPass) onPass();
+        }, 1200);
     }
 
     // --- Connect 4: Drew (pink) vs. the timesheet AI (blue) ---
