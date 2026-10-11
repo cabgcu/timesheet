@@ -325,6 +325,15 @@
         .cam-unexposed { aspect-ratio: 1; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; background: radial-gradient(circle at 50% 40%, #3b2f1f, #1c1917 70%); color: rgba(251, 191, 36, 0.55); font-size: 9px; font-weight: 800; letter-spacing: 0.15em; text-transform: uppercase; animation: cam-develop 3s ease-in-out infinite; }
         @keyframes cam-develop { 0%, 100% { filter: brightness(0.85); } 50% { filter: brightness(1.15); } }
         .cam-note { font-family: 'Segoe Print', 'Bradley Hand', 'Comic Sans MS', cursive; color: #1e3a8a; font-weight: 400; font-size: 11px; }
+        /* Likes and comments on developed photos */
+        .cam-social-pill { position: absolute; top: 12px; right: 12px; display: flex; gap: 6px; padding: 2px 7px; border-radius: 9999px; background: rgba(15, 23, 42, 0.72); color: #fff; font-size: 10px; font-weight: 700; line-height: 16px; }
+        .cam-social-pill > span { display: inline-flex; align-items: center; gap: 3px; }
+        .cam-social-pill .liked { color: #fb7185; }
+        .cam-like-btn { width: 42px; height: 42px; flex-shrink: 0; border-radius: 9999px; display: flex; align-items: center; justify-content: center; color: #e9d5ff; background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(192, 132, 252, 0.3); transition: transform 0.15s, background 0.2s, color 0.2s; }
+        .cam-like-btn:hover { background: rgba(244, 63, 94, 0.15); }
+        .cam-like-btn:active { transform: scale(0.88); }
+        .cam-like-btn.liked { color: #fb7185; border-color: rgba(251, 113, 133, 0.6); background: rgba(244, 63, 94, 0.15); }
+        .cam-like-btn.liked svg { fill: currentColor; }
     </style>
 </head>
 <body class="text-white min-h-[100dvh] w-full relative overflow-x-hidden selection:bg-purple-500/30 font-sans flex flex-col items-center justify-start antialiased custom-scroll">
@@ -1032,22 +1041,40 @@
         </div>
     </div>
 
-    <!-- Disposable camera: one photo, full size -->
-    <div id="cameraPhotoModal" class="fixed inset-0 z-[2200] hidden items-center justify-center p-4">
-        <div class="absolute inset-0 bg-black/85" onclick="closeModalEl('cameraPhotoModal')"></div>
-        <div class="relative z-10 flex flex-col items-center gap-3 max-w-full">
-            <div class="cam-print !p-3 !pb-3 !cursor-default hover:!transform-none w-fit">
-                <div class="relative w-fit">
-                    <img id="camPhotoImg" alt="" class="block max-w-[88vw] max-h-[66vh] object-contain" style="filter: saturate(1.15) contrast(1.05) sepia(0.12);" />
-                    <div class="cam-stamp absolute right-3 bottom-2 text-sm" id="camPhotoStamp"></div>
+    <!-- Disposable camera: one photo, full size, with likes and comments -->
+    <div id="cameraPhotoModal" class="fixed inset-0 z-[2200] hidden items-start sm:items-center justify-center p-4 overflow-y-auto custom-scroll">
+        <div class="fixed inset-0 bg-black/85" onclick="closeModalEl('cameraPhotoModal')"></div>
+        <div class="relative z-10 flex flex-col lg:flex-row items-center lg:items-start gap-4 max-w-full my-auto">
+            <div class="flex flex-col items-center gap-3 max-w-full">
+                <div class="cam-print !p-3 !pb-3 !cursor-default hover:!transform-none w-fit">
+                    <div class="relative w-fit">
+                        <img id="camPhotoImg" alt="" class="block max-w-[88vw] lg:max-w-[60vw] max-h-[60vh] object-contain" style="filter: saturate(1.15) contrast(1.05) sepia(0.12);" />
+                        <div class="cam-stamp absolute right-3 bottom-2 text-sm" id="camPhotoStamp"></div>
+                    </div>
+                    <div id="camPhotoNote" class="cam-note !text-base mt-2 w-0 min-w-full break-words"></div>
+                    <div class="text-xs text-zinc-600 font-semibold mt-1 w-0 min-w-full truncate" id="camPhotoCaption"></div>
                 </div>
-                <div id="camPhotoNote" class="cam-note !text-base mt-2 w-0 min-w-full break-words"></div>
-                <div class="text-xs text-zinc-600 font-semibold mt-1 w-0 min-w-full truncate" id="camPhotoCaption"></div>
+                <div class="flex gap-2 flex-wrap justify-center">
+                    <button id="camPhotoDownload" class="night-btn-link text-white font-bold py-2 px-4 rounded-xl transition border-purple-400/30 text-sm flex items-center gap-2" onclick="downloadFramedPhoto()"><i data-lucide="download" class="w-4 h-4 text-amber-400"></i> Save</button>
+                    <button id="camPhotoDelete" class="hidden night-btn-link !border-rose-500/40 text-rose-300 font-bold py-2 px-4 rounded-xl transition text-sm items-center gap-2" onclick="deleteCameraPhoto()"><i data-lucide="trash-2" class="w-4 h-4"></i> Delete</button>
+                    <button class="night-btn-link text-white font-bold py-2 px-4 rounded-xl transition border-purple-400/30 text-sm" onclick="closeModalEl('cameraPhotoModal')">Close</button>
+                </div>
             </div>
-            <div class="flex gap-2">
-                <a id="camPhotoDownload" class="night-btn-link text-white font-bold py-2 px-4 rounded-xl transition border-purple-400/30 text-sm flex items-center gap-2"><i data-lucide="download" class="w-4 h-4 text-amber-400"></i> Save</a>
-                <button id="camPhotoDelete" class="hidden night-btn-link !border-rose-500/40 text-rose-300 font-bold py-2 px-4 rounded-xl transition text-sm items-center gap-2" onclick="deleteCameraPhoto()"><i data-lucide="trash-2" class="w-4 h-4"></i> Delete</button>
-                <button class="night-btn-link text-white font-bold py-2 px-4 rounded-xl transition border-purple-400/30 text-sm" onclick="closeModalEl('cameraPhotoModal')">Close</button>
+            <div id="camSocial" class="hidden w-[min(88vw,22rem)] night-glass-card rounded-2xl p-4 border-purple-400/40 flex-col gap-3 lg:max-h-[80vh]">
+                <div class="flex items-center gap-3">
+                    <button id="camLikeBtn" class="cam-like-btn" onclick="toggleCameraLike()" aria-pressed="false"><i data-lucide="heart" class="w-5 h-5"></i></button>
+                    <div class="min-w-0">
+                        <div class="text-sm font-bold text-white" id="camLikeCount"></div>
+                        <div class="text-[11px] text-purple-200/60 truncate" id="camLikeNames"></div>
+                    </div>
+                </div>
+                <div class="border-t border-purple-400/20"></div>
+                <div class="text-[10px] font-bold uppercase tracking-widest text-purple-200/70 flex items-center gap-1.5"><i data-lucide="message-circle" class="w-3.5 h-3.5 text-amber-400"></i> Comments</div>
+                <div id="camCommentList" class="flex flex-col gap-2 overflow-y-auto custom-scroll max-h-64 lg:max-h-none lg:flex-1 pr-1"></div>
+                <form class="flex gap-2" onsubmit="event.preventDefault(); postCameraComment()">
+                    <input id="camCommentInput" type="text" maxlength="300" autocomplete="off" placeholder="Add a comment..." class="control-input !mb-0 flex-1 min-w-0 py-2 px-3 rounded-xl text-sm" />
+                    <button id="camCommentSend" type="submit" class="night-btn-primary text-white font-bold px-3 rounded-xl transition text-sm flex items-center" aria-label="Post comment"><i data-lucide="send" class="w-4 h-4"></i></button>
+                </form>
             </div>
         </div>
     </div>
@@ -2115,7 +2142,7 @@
     // --- Disposable camera: each week's roll stays sealed until Monday 12:00 AM (AZ), or until an admin develops it early ---
     const CAMERA_SHOTS_PER_WEEK = 10;
     const CAMERA_BUCKET = 'camera';
-    const cam = { year: '', admin: false, photos: [], viewingId: null, pendingImage: null, sealed: [], fresh: [], pending: [], developingCount: 0 };
+    const cam = { year: '', admin: false, photos: [], viewingId: null, social: false, comments: [], pendingImage: null, sealed: [], fresh: [], pending: [], developingCount: 0 };
 
     // Developed photos this student hasn't opened the gallery to see yet. Photo ids only go up and
     // rolls develop oldest week first, so "new" is just every visible photo above the last id seen.
@@ -2309,8 +2336,13 @@
             // Students see past weeks, plus this week if it was developed early; admins see everything
             const early = admin || await isWeekDevelopedEarly(CURRENT_WEEK_ID_AZ);
             const weekFilter = admin ? '' : `&week_identifier=${early ? 'lte' : 'lt'}.${CURRENT_WEEK_ID_AZ}`;
+            const photoQuery = `academic_year=eq.${encodeURIComponent(year)}${weekFilter}&order=created_at.desc&select=id,student_id,student_name,team,note,image_path,week_identifier,created_at`;
             [cam.photos, cam.pending] = await Promise.all([
-                sb.select('camera_photos', `academic_year=eq.${encodeURIComponent(year)}${weekFilter}&select=id,student_id,student_name,team,note,image_path,week_identifier,created_at&order=created_at.desc`),
+                // Likes and comment counts come along with each photo. Until camera.sql has been
+                // re-run to add those tables, fall back to the plain photos and hide likes/comments.
+                sb.select('camera_photos', photoQuery + ',camera_likes(student_id,student_name),camera_comments(count)')
+                    .then(rows => { cam.social = true; return rows; })
+                    .catch(() => { cam.social = false; return sb.select('camera_photos', photoQuery); }),
                 // Everyone's still-sealed shots this week, shown as blank prints. No note or
                 // image_path is fetched, so nothing about the picture leaks before Monday.
                 early ? [] : sb.select('camera_photos', `academic_year=eq.${encodeURIComponent(year)}&week_identifier=eq.${CURRENT_WEEK_ID_AZ}&select=id,student_id,student_name,team,created_at&order=created_at.desc`).catch(() => [])
@@ -2389,11 +2421,31 @@
                     <div class="cam-print" style="transform: rotate(${((i++ * 37) % 7) - 3}deg)" onclick="openCameraPhoto(${p.id})">
                         <img class="cam-img" loading="lazy" alt="Photo by ${escapeHTML(p.student_name)}" src="${escapeHTML(cameraPhotoUrl(p))}" />
                         <div class="cam-stamp">${cameraStamp(p.created_at)}</div>
+                        ${cameraSocialPill(p)}
                         <div class="cam-caption">${p.note ? `<span class="cam-note">${escapeHTML(p.note)}</span>` : ''}<span>&mdash; ${escapeHTML(p.student_name)}</span></div>
                     </div>`).join('')}
                 </div>
             </div>`).join('');
         lucide.createIcons();
+    }
+
+    // Who is liking/commenting: the signed-in student, or "Admin" from the admin view
+    function cameraViewer() {
+        if (cam.admin) return { id: 'admin', name: 'Admin' };
+        return state.currentUser ? { id: state.currentUser.id, name: state.currentUser.name } : null;
+    }
+    function cameraLikes(p) { return p.camera_likes || []; }
+    function cameraCommentCount(p) { return p.camera_comments?.[0]?.count || 0; }
+    function cameraLikedByMe(p) { const v = cameraViewer(); return !!v && cameraLikes(p).some(l => l.student_id === v.id); }
+
+    function cameraSocialPill(p) {
+        if (!cam.social) return '';
+        const likes = cameraLikes(p).length, comments = cameraCommentCount(p);
+        if (!likes && !comments) return '';
+        return `<div class="cam-social-pill">`
+            + (likes ? `<span class="${cameraLikedByMe(p) ? 'liked' : ''}"><i data-lucide="heart" class="w-3 h-3"></i>${likes}</span>` : '')
+            + (comments ? `<span><i data-lucide="message-circle" class="w-3 h-3"></i>${comments}</span>` : '')
+            + `</div>`;
     }
 
     function cameraPhotoUrl(p) { return p.image_path ? sb.publicUrl(CAMERA_BUCKET, p.image_path) : ''; }
@@ -2404,8 +2456,6 @@
         cam.viewingId = id;
         const src = cameraPhotoUrl(p);
         document.getElementById('camPhotoImg').src = src;
-        // ?download= makes Supabase send it as a file (the download attribute is ignored cross-origin)
-        document.getElementById('camPhotoDownload').href = `${src}?download=${encodeURIComponent(`cab-${p.student_name.replace(/\s+/g, '-').toLowerCase()}-${p.id}.jpg`)}`;
         document.getElementById('camPhotoStamp').textContent = cameraStamp(p.created_at);
         const note = document.getElementById('camPhotoNote');
         note.textContent = p.note || '';
@@ -2415,7 +2465,237 @@
         const canDelete = canDeleteCameraPhoto(p);
         del.classList.toggle('hidden', !canDelete);
         del.classList.toggle('flex', canDelete);
+        const social = document.getElementById('camSocial');
+        social.classList.toggle('hidden', !cam.social);
+        social.classList.toggle('flex', cam.social);
+        if (cam.social) {
+            cam.comments = [];
+            document.getElementById('camCommentInput').value = '';
+            renderCameraLikes(p);
+            renderCameraComments(true);
+            loadCameraComments(id);
+        }
         openModalEl('cameraPhotoModal');
+    }
+
+    // --- Likes ---
+    function renderCameraLikes(p) {
+        const likes = cameraLikes(p);
+        const liked = cameraLikedByMe(p);
+        const btn = document.getElementById('camLikeBtn');
+        btn.classList.toggle('liked', liked);
+        btn.setAttribute('aria-pressed', liked);
+        btn.title = liked ? 'Unlike' : 'Like';
+        document.getElementById('camLikeCount').textContent = likes.length ? `${likes.length} like${likes.length === 1 ? '' : 's'}` : 'No likes yet';
+        // Newest likers first, yourself as "You"
+        const me = cameraViewer()?.id;
+        const names = likes.slice().reverse().map(l => l.student_id === me ? 'You' : l.student_name);
+        names.sort((a, b) => (b === 'You') - (a === 'You'));
+        document.getElementById('camLikeNames').textContent = !names.length ? 'Be the first to like it'
+            : names.length <= 3 ? names.join(', ')
+            : `${names.slice(0, 2).join(', ')} and ${names.length - 2} others`;
+        document.getElementById('camLikeNames').title = names.join(', ');
+    }
+
+    async function toggleCameraLike() {
+        const p = cam.photos.find(x => x.id === cam.viewingId);
+        const v = cameraViewer();
+        if (!p || !v) return;
+        const liked = cameraLikedByMe(p);
+        const before = cameraLikes(p);
+        // Show it right away, put it back if the save fails
+        p.camera_likes = liked ? before.filter(l => l.student_id !== v.id) : [...before, { student_id: v.id, student_name: v.name }];
+        renderCameraLikes(p);
+        renderCameraGallery();
+        try {
+            if (liked) await sb.delete('camera_likes', `photo_id=eq.${p.id}&student_id=eq.${encodeURIComponent(v.id)}`);
+            else await sb.upsert('camera_likes', [{ photo_id: p.id, student_id: v.id, student_name: v.name }], 'photo_id,student_id');
+        } catch (e) {
+            p.camera_likes = before;
+            if (cam.viewingId === p.id) renderCameraLikes(p);
+            renderCameraGallery();
+            showToast("Couldn't save that like.", true);
+        }
+    }
+
+    // --- Comments ---
+    async function loadCameraComments(id) {
+        try {
+            const rows = await sb.select('camera_comments', `photo_id=eq.${id}&select=id,student_id,student_name,body,created_at&order=created_at.asc`);
+            if (cam.viewingId !== id) return; // moved on to another photo
+            cam.comments = rows;
+            const p = cam.photos.find(x => x.id === id);
+            if (p) p.camera_comments = [{ count: rows.length }];
+            renderCameraComments();
+            renderCameraGallery();
+        } catch (e) {
+            if (cam.viewingId === id) document.getElementById('camCommentList').innerHTML = '<div class="text-xs text-rose-300 py-2">Couldn\'t load the comments.</div>';
+        }
+    }
+
+    function cameraTimeAgo(iso) {
+        const mins = Math.floor((Date.now() - new Date(iso)) / 60000);
+        if (mins < 1) return 'just now';
+        if (mins < 60) return `${mins}m`;
+        if (mins < 1440) return `${Math.floor(mins / 60)}h`;
+        if (mins < 10080) return `${Math.floor(mins / 1440)}d`;
+        return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/Phoenix' });
+    }
+
+    function renderCameraComments(loading = false) {
+        const list = document.getElementById('camCommentList');
+        const v = cameraViewer();
+        if (loading) { list.innerHTML = '<div class="text-xs text-purple-200/50 py-2">Loading...</div>'; return; }
+        if (!cam.comments.length) { list.innerHTML = '<div class="text-xs text-purple-200/50 py-2">No comments yet. Say something nice!</div>'; return; }
+        list.innerHTML = cam.comments.map(c => `
+            <div class="group bg-slate-900/40 border border-purple-400/15 rounded-xl px-3 py-2">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold ${c.student_id === 'admin' ? 'text-amber-300' : 'text-white'} truncate">${escapeHTML(c.student_name)}</span>
+                    <span class="text-[10px] text-purple-200/40 shrink-0" title="${escapeHTML(new Date(c.created_at).toLocaleString('en-US', { timeZone: 'America/Phoenix' }))}">${cameraTimeAgo(c.created_at)}</span>
+                    ${cam.admin || (v && c.student_id === v.id) ? `<button class="ml-auto shrink-0 text-purple-200/40 hover:text-rose-300 transition" title="Delete comment" onclick="deleteCameraComment(${c.id})"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>` : ''}
+                </div>
+                <div class="text-sm text-purple-100/90 break-words whitespace-pre-wrap">${escapeHTML(c.body)}</div>
+            </div>`).join('');
+        lucide.createIcons();
+        list.scrollTop = list.scrollHeight;
+    }
+
+    async function postCameraComment() {
+        const input = document.getElementById('camCommentInput');
+        const body = input.value.trim().slice(0, 300);
+        const v = cameraViewer();
+        const id = cam.viewingId;
+        if (!body || !v || !id) return;
+        const send = document.getElementById('camCommentSend');
+        send.disabled = true;
+        try {
+            await sb.insert('camera_comments', { photo_id: id, student_id: v.id, student_name: v.name, body });
+            input.value = '';
+            await loadCameraComments(id);
+        } catch (e) {
+            showToast("Couldn't post that comment.", true);
+        }
+        send.disabled = false;
+    }
+
+    async function deleteCameraComment(commentId) {
+        const v = cameraViewer();
+        if (!v || !confirm('Delete this comment?')) return;
+        try {
+            await sb.delete('camera_comments', `id=eq.${commentId}` + (cam.admin ? '' : `&student_id=eq.${encodeURIComponent(v.id)}`));
+            await loadCameraComments(cam.viewingId);
+        } catch (e) {
+            showToast("Couldn't delete that comment.", true);
+        }
+    }
+
+    // --- Save: the photo as a print, with its date stamp, note and name, like in the gallery ---
+    function wrapCanvasText(ctx, text, maxWidth) {
+        const lines = [];
+        text.split(/\n/).forEach(para => {
+            let line = '';
+            para.split(/\s+/).filter(Boolean).forEach(word => {
+                const test = line ? `${line} ${word}` : word;
+                if (ctx.measureText(test).width <= maxWidth || !line) line = test;
+                else { lines.push(line); line = word; }
+            });
+            if (line) lines.push(line);
+        });
+        return lines;
+    }
+
+    async function downloadFramedPhoto() {
+        const p = cam.photos.find(x => x.id === cam.viewingId);
+        if (!p) return;
+        const src = cameraPhotoUrl(p);
+        const fileBase = `cab-${p.student_name.replace(/\s+/g, '-').toLowerCase()}-${p.id}`;
+        const btn = document.getElementById('camPhotoDownload');
+        btn.disabled = true;
+        try {
+            // Fetched as a blob so the canvas isn't tainted by the cross-origin image
+            const res = await fetch(src);
+            if (!res.ok) throw new Error('fetch failed');
+            const img = await createImageBitmap(await res.blob());
+
+            const W = Math.min(img.width, 1400);              // photo width in the saved file
+            const H = Math.round(img.height * W / img.width);
+            const pad = Math.round(W * 0.045);
+            const textW = W;
+            const noteSize = Math.round(W * 0.042), capSize = Math.round(W * 0.028);
+            const noteFont = `${noteSize}px 'Segoe Print', 'Bradley Hand', 'Comic Sans MS', cursive`;
+            const capFont = `600 ${capSize}px Inter, system-ui, sans-serif`;
+
+            const measure = document.createElement('canvas').getContext('2d');
+            measure.font = noteFont;
+            const noteLines = p.note ? wrapCanvasText(measure, p.note, textW) : [];
+            const noteLineH = Math.round(noteSize * 1.35);
+            const bottom = Math.round(pad * 0.6) + noteLines.length * noteLineH + Math.round(capSize * 1.6) + pad * 1.4;
+
+            const canvas = document.createElement('canvas');
+            canvas.width = W + pad * 2;
+            canvas.height = pad + H + Math.max(bottom, pad * 4);
+            const ctx = canvas.getContext('2d');
+
+            // Paper
+            ctx.fillStyle = '#f8f5ee';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            const grain = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            grain.addColorStop(0, 'rgba(255,255,255,0.35)');
+            grain.addColorStop(1, 'rgba(120,100,60,0.08)');
+            ctx.fillStyle = grain;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Photo, with the same film look as on screen (skipped where canvas filters aren't supported)
+            ctx.fillStyle = '#2a2a2e';
+            ctx.fillRect(pad, pad, W, H);
+            ctx.filter = 'saturate(1.15) contrast(1.05) sepia(0.12)';
+            ctx.drawImage(img, pad, pad, W, H);
+            ctx.filter = 'none';
+            ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(pad + 0.5, pad + 0.5, W - 1, H - 1);
+
+            // Orange date stamp in the corner
+            const stampSize = Math.round(W * 0.04);
+            ctx.font = `700 ${stampSize}px 'Courier New', monospace`;
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'alphabetic';
+            ctx.fillStyle = '#ff8a1f';
+            ctx.shadowColor = 'rgba(255, 110, 0, 0.8)';
+            ctx.shadowBlur = stampSize * 0.25;
+            const stampX = pad + W - stampSize * 0.8, stampY = pad + H - stampSize * 0.7;
+            ctx.fillText(cameraStamp(p.created_at), stampX, stampY);        // the glow
+            ctx.shadowBlur = 0; ctx.shadowColor = 'transparent';
+            ctx.fillText(cameraStamp(p.created_at), stampX, stampY);        // crisp digits on top
+
+            // Note, then who took it
+            ctx.textAlign = 'left';
+            let y = pad + H + Math.round(pad * 0.6);
+            ctx.textBaseline = 'top';
+            ctx.font = noteFont;
+            ctx.fillStyle = '#1e3a8a';
+            noteLines.forEach(line => { ctx.fillText(line, pad, y); y += noteLineH; });
+            ctx.font = capFont;
+            ctx.fillStyle = '#52525b';
+            ctx.fillText(`— ${p.student_name}${p.team ? ', ' + p.team : ''}`, pad, y + Math.round(capSize * 0.3));
+            ctx.textAlign = 'right';
+            ctx.font = `700 ${Math.round(capSize * 0.8)}px Inter, system-ui, sans-serif`;
+            ctx.fillStyle = '#a1a1aa';
+            ctx.fillText('CAB DISPOSABLE', pad + W, canvas.height - pad * 0.9);
+
+            const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.92));
+            if (!blob) throw new Error('encode failed');
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `${fileBase}.jpg`;
+            document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 10000);
+        } catch (e) {
+            // Couldn't build the print: fall back to the plain photo
+            // (?download= makes Supabase send it as a file; the download attribute is ignored cross-origin)
+            window.open(`${src}?download=${encodeURIComponent(fileBase + '.jpg')}`, '_blank');
+        }
+        btn.disabled = false;
     }
 
     // Admins can delete any photo; everyone can delete their own

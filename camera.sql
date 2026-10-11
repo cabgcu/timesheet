@@ -2,6 +2,7 @@
 -- Run this once in the Supabase SQL editor. It is safe to re-run.
 --
 -- Until it's run, the app simply hides the camera; everything else works.
+-- If you ran an earlier version, run it again to add likes and comments.
 --
 -- camera_photos  One row per picture. Everyone gets 10 shots per week (Monday–Sunday, AZ time).
 --                Each week's roll stays sealed until the next Monday at 12:00 AM, when it
@@ -56,3 +57,27 @@ drop policy if exists "camera delete" on storage.objects;
 create policy "camera upload" on storage.objects for insert to anon, authenticated with check (bucket_id = 'camera');
 create policy "camera read"   on storage.objects for select to anon, authenticated using (bucket_id = 'camera');
 create policy "camera delete" on storage.objects for delete to anon, authenticated using (bucket_id = 'camera');
+
+-- Likes and comments on developed photos. Deleting a photo deletes its likes and comments too.
+-- student_id is 'admin' for likes/comments made from the admin view.
+create table if not exists camera_likes (
+  photo_id     bigint not null references camera_photos(id) on delete cascade,
+  student_id   text not null,
+  student_name text not null,
+  created_at   timestamptz default now(),
+  primary key (photo_id, student_id)
+);
+
+create table if not exists camera_comments (
+  id           bigserial primary key,
+  created_at   timestamptz default now(),
+  photo_id     bigint not null references camera_photos(id) on delete cascade,
+  student_id   text not null,
+  student_name text not null,
+  body         text not null check (char_length(body) between 1 and 300)
+);
+
+create index if not exists camera_comments_photo_idx on camera_comments (photo_id, created_at);
+
+alter table camera_likes    disable row level security;
+alter table camera_comments disable row level security;
