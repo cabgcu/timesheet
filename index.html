@@ -303,18 +303,18 @@
         .cam-print .cam-caption { position: absolute; left: 10px; right: 10px; bottom: 5px; font-size: 10px; color: #52525b; font-weight: 600; line-height: 1.3; }
         .cam-print .cam-caption > span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         /* Header shortcut: a camera button with a badge + tiny prints when new photos develop */
-        .cam-shortcut { position: relative; display: inline-flex; align-items: center; gap: 8px; min-height: 42px; padding: 4px 14px 4px 10px; border-radius: 9999px; text-align: left; background: rgba(15, 23, 42, 0.55); border: 1px solid rgba(251, 191, 36, 0.35); transition: background 0.2s, border-color 0.2s, transform 0.2s; }
-        .cam-shortcut:hover { background: rgba(251, 191, 36, 0.12); border-color: rgba(251, 191, 36, 0.6); }
+        .cam-shortcut { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 9999px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(251, 191, 36, 0.35); transition: background 0.2s, border-color 0.2s, transform 0.2s; }
+        .cam-shortcut:hover { background: rgba(245, 158, 11, 0.2); border-color: rgba(251, 191, 36, 0.6); }
         .cam-shortcut:active { transform: scale(0.96); }
-        .cam-shortcut.has-new { border-color: rgba(251, 191, 36, 0.7); box-shadow: 0 0 14px rgba(251, 191, 36, 0.3); }
-        .cam-mini-stack { display: flex; align-items: center; padding-left: 6px; }
-        .cam-mini { width: 24px; height: 28px; margin-left: -8px; background: #f8f5ee; padding: 2px 2px 6px; border-radius: 2px; box-shadow: 0 2px 6px rgba(0,0,0,0.5); }
+        .cam-shortcut.has-new { border-color: rgba(251, 191, 36, 0.7); box-shadow: 0 0 12px rgba(251, 191, 36, 0.25); }
+        .cam-mini-stack { display: flex; align-items: center; padding-left: 5px; margin-right: 1px; }
+        .cam-mini { width: 14px; height: 16px; margin-left: -5px; background: #f8f5ee; padding: 1px 1px 3px; border-radius: 1px; box-shadow: 0 1px 3px rgba(0,0,0,0.5); }
         .cam-mini img { width: 100%; height: 100%; object-fit: cover; display: block; background: #2a2a2e; filter: saturate(1.15) sepia(0.12); }
-        .cam-badge { position: absolute; top: -6px; right: -6px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 9999px; background: #e11d48; color: #fff; font-size: 11px; font-weight: 800; line-height: 20px; text-align: center; box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.9); }
-        .cam-shortcut-label { display: flex; flex-direction: column; line-height: 1.15; }
-        .cam-shortcut-title { font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #fff; white-space: nowrap; }
-        .cam-shortcut-sub { font-size: 10px; font-weight: 700; color: #fcd34d; white-space: nowrap; display: flex; align-items: center; gap: 4px; }
-        .cam-dev-dot { width: 6px; height: 6px; border-radius: 9999px; background: #f59e0b; animation: cam-blink 1.4s ease-in-out infinite; }
+        .cam-badge { position: absolute; top: -7px; right: -7px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 9999px; background: #e11d48; color: #fff; font-size: 9px; font-weight: 800; line-height: 16px; text-align: center; box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.9); }
+        .cam-shortcut-title { font-size: 10px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #fcd34d; white-space: nowrap; }
+        .cam-shortcut-sub { font-size: 10px; font-weight: 600; color: rgba(233, 213, 255, 0.75); white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; padding-left: 6px; border-left: 1px solid rgba(251, 191, 36, 0.3); }
+        .cam-shortcut.has-new .cam-shortcut-sub { color: #fde68a; }
+        .cam-dev-dot { width: 5px; height: 5px; border-radius: 9999px; background: #f59e0b; animation: cam-blink 1.4s ease-in-out infinite; }
         @keyframes cam-blink { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
         .cam-shortcut.hidden, .cam-mini-stack.hidden { display: none; }
         .cam-section-pulse { animation: cam-pulse 1.2s ease-out 1; }
@@ -372,21 +372,19 @@
 
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-purple-500/20 pb-6 mb-6 gap-4">
                         <div>
-                            <div class="flex items-center gap-3 flex-wrap">
-                                <h3 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white" id="ts-greeting">Hello Student,</h3>
+                            <h3 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white" id="ts-greeting">Hello Student,</h3>
+                            <p class="text-purple-300 font-medium text-sm mt-1"><span id="ts-position">Position</span> &bull; <span id="ts-team">Team Name</span></p>
+                            <div class="flex flex-wrap items-center gap-2 mt-2">
                                 <!-- Disposable camera shortcut (filled in by loadCamera) -->
                                 <button id="cameraShortcut" class="cam-shortcut hidden" onclick="cameraShortcutClick()" title="Disposable Camera" aria-label="Disposable Camera">
                                     <span id="cameraShortcutPreviews" class="cam-mini-stack hidden"></span>
-                                    <i data-lucide="camera" class="w-5 h-5 text-amber-400 shrink-0"></i>
-                                    <span class="cam-shortcut-label">
-                                        <span class="cam-shortcut-title">Disposable Camera</span>
-                                        <span id="cameraShortcutSub" class="cam-shortcut-sub">Take a picture</span>
-                                    </span>
+                                    <i data-lucide="camera" class="w-3.5 h-3.5 text-amber-400 shrink-0"></i>
+                                    <span class="cam-shortcut-title">Camera</span>
+                                    <span id="cameraShortcutSub" class="cam-shortcut-sub">Take a picture</span>
                                     <span id="cameraShortcutBadge" class="cam-badge hidden"></span>
                                 </button>
+                                <div id="ts-manOfCab" class="hidden items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-widest text-amber-300 bg-amber-500/15 border border-amber-400/40 px-2.5 py-1 rounded-full shadow-[0_0_12px_rgba(251,191,36,0.25)]"><i data-lucide="trophy" class="w-3.5 h-3.5 text-amber-400"></i> 2026 Man of CAB</div>
                             </div>
-                            <p class="text-purple-300 font-medium text-sm mt-1"><span id="ts-position">Position</span> &bull; <span id="ts-team">Team Name</span></p>
-                            <div id="ts-manOfCab" class="hidden mt-2 items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-widest text-amber-300 bg-amber-500/15 border border-amber-400/40 px-2.5 py-1 rounded-full shadow-[0_0_12px_rgba(251,191,36,0.25)]"><i data-lucide="trophy" class="w-3.5 h-3.5 text-amber-400"></i> 2026 Man of CAB</div>
                         </div>
                         <div class="sm:text-right">
                             <div class="text-purple-200/70 text-[10px] font-bold uppercase tracking-widest mb-1" id="ts-hoursLabel">This Week</div>
@@ -2145,8 +2143,8 @@
         const dev = cam.developingCount;
         const nText = n > 9 ? '9+' : n;
         document.getElementById('cameraShortcutSub').innerHTML = n
-            ? `${nText} new photo${n === 1 ? '' : 's'} developed!`
-            : dev ? `<span class="cam-dev-dot"></span>${dev} photo${dev === 1 ? '' : 's'} developing`
+            ? `${nText} new!`
+            : dev ? `<span class="cam-dev-dot"></span>${dev} developing`
             : 'Take a picture';
         btn.title = n ? `${nText} new photo${n === 1 ? '' : 's'} developed — tap to see them`
             : dev ? `${dev} photo${dev === 1 ? '' : 's'} developing this week — add yours`
