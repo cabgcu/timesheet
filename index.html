@@ -302,6 +302,23 @@
         .cam-print .cam-stamp { position: absolute; right: 14px; bottom: 46px; font-size: 11px; }
         .cam-print .cam-caption { position: absolute; left: 10px; right: 10px; bottom: 5px; font-size: 10px; color: #52525b; font-weight: 600; line-height: 1.3; }
         .cam-print .cam-caption > span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        /* Header shortcut: a camera button with a badge + tiny prints when new photos develop */
+        .cam-shortcut { position: relative; display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; border-radius: 9999px; background: rgba(15, 23, 42, 0.55); border: 1px solid rgba(251, 191, 36, 0.35); transition: background 0.2s, border-color 0.2s, transform 0.2s; }
+        .cam-shortcut:hover { background: rgba(251, 191, 36, 0.12); border-color: rgba(251, 191, 36, 0.6); }
+        .cam-shortcut:active { transform: scale(0.96); }
+        .cam-shortcut.has-new { border-color: rgba(251, 191, 36, 0.7); box-shadow: 0 0 14px rgba(251, 191, 36, 0.3); }
+        .cam-mini-stack { display: flex; align-items: center; padding-left: 6px; }
+        .cam-mini { width: 24px; height: 28px; margin-left: -8px; background: #f8f5ee; padding: 2px 2px 6px; border-radius: 2px; box-shadow: 0 2px 6px rgba(0,0,0,0.5); }
+        .cam-mini img { width: 100%; height: 100%; object-fit: cover; display: block; background: #2a2a2e; filter: saturate(1.15) sepia(0.12); }
+        .cam-badge { position: absolute; top: -6px; right: -6px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 9999px; background: #e11d48; color: #fff; font-size: 11px; font-weight: 800; line-height: 20px; text-align: center; box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.9); }
+        .cam-shortcut.hidden, .cam-mini-stack.hidden { display: none; }
+        .cam-section-pulse { animation: cam-pulse 1.2s ease-out 1; }
+        @keyframes cam-pulse { 0% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.55); } 100% { box-shadow: 0 0 0 18px rgba(251, 191, 36, 0); } }
+        /* An undeveloped print: the shot exists, but there's nothing to see until Monday */
+        .cam-print.cam-pending { cursor: default; }
+        .cam-print.cam-pending:hover { transform: none; }
+        .cam-unexposed { aspect-ratio: 1; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; background: radial-gradient(circle at 50% 40%, #3b2f1f, #1c1917 70%); color: rgba(251, 191, 36, 0.55); font-size: 9px; font-weight: 800; letter-spacing: 0.15em; text-transform: uppercase; animation: cam-develop 3s ease-in-out infinite; }
+        @keyframes cam-develop { 0%, 100% { filter: brightness(0.85); } 50% { filter: brightness(1.15); } }
         .cam-note { font-family: 'Segoe Print', 'Bradley Hand', 'Comic Sans MS', cursive; color: #1e3a8a; font-weight: 400; font-size: 11px; }
     </style>
 </head>
@@ -350,7 +367,15 @@
 
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-purple-500/20 pb-6 mb-6 gap-4">
                         <div>
-                            <h3 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white" id="ts-greeting">Hello Student,</h3>
+                            <div class="flex items-center gap-3 flex-wrap">
+                                <h3 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white" id="ts-greeting">Hello Student,</h3>
+                                <!-- Disposable camera shortcut (filled in by loadCamera) -->
+                                <button id="cameraShortcut" class="cam-shortcut hidden" onclick="cameraShortcutClick()" title="Disposable Camera" aria-label="Disposable Camera">
+                                    <span id="cameraShortcutPreviews" class="cam-mini-stack hidden"></span>
+                                    <i data-lucide="camera" class="w-4 h-4 text-amber-400"></i>
+                                    <span id="cameraShortcutBadge" class="cam-badge hidden"></span>
+                                </button>
+                            </div>
                             <p class="text-purple-300 font-medium text-sm mt-1"><span id="ts-position">Position</span> &bull; <span id="ts-team">Team Name</span></p>
                             <div id="ts-manOfCab" class="hidden mt-2 items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-widest text-amber-300 bg-amber-500/15 border border-amber-400/40 px-2.5 py-1 rounded-full shadow-[0_0_12px_rgba(251,191,36,0.25)]"><i data-lucide="trophy" class="w-3.5 h-3.5 text-amber-400"></i> 2026 Man of CAB</div>
                         </div>
@@ -2083,7 +2108,45 @@
     // --- Disposable camera: each week's roll stays sealed until Monday 12:00 AM (AZ), or until an admin develops it early ---
     const CAMERA_SHOTS_PER_WEEK = 10;
     const CAMERA_BUCKET = 'camera';
-    const cam = { year: '', admin: false, photos: [], viewingId: null, pendingImage: null, sealed: [] };
+    const cam = { year: '', admin: false, photos: [], viewingId: null, pendingImage: null, sealed: [], fresh: [], pending: [] };
+
+    // Developed photos this student hasn't opened the gallery to see yet. Photo ids only go up and
+    // rolls develop oldest week first, so "new" is just every visible photo above the last id seen.
+    function cameraSeenKey(user, year) { return `cam_seen_${user.id}_${year}`; }
+    function cameraSeenId(user, year) {
+        try { return Number(localStorage.getItem(cameraSeenKey(user, year))) || 0; } catch (e) { return 0; }
+    }
+    function markCameraSeen(user, year, photos) {
+        const maxId = Math.max(cameraSeenId(user, year), ...photos.map(p => p.id));
+        try { localStorage.setItem(cameraSeenKey(user, year), String(maxId)); } catch (e) {}
+        cam.fresh = [];
+        renderCameraShortcut();
+    }
+
+    function renderCameraShortcut() {
+        const btn = document.getElementById('cameraShortcut');
+        const previews = document.getElementById('cameraShortcutPreviews');
+        const badge = document.getElementById('cameraShortcutBadge');
+        const n = cam.fresh.length;
+        btn.classList.toggle('has-new', n > 0);
+        badge.classList.toggle('hidden', n === 0);
+        previews.classList.toggle('hidden', n === 0);
+        badge.textContent = n > 9 ? '9+' : String(n);
+        btn.title = n ? `${n > 9 ? '9+' : n} new photo${n === 1 ? '' : 's'} developed` : 'Disposable Camera';
+        btn.setAttribute('aria-label', btn.title);
+        previews.innerHTML = cam.fresh.slice(0, 3).map((p, i) =>
+            `<span class="cam-mini" style="transform: rotate(${[-8, 3, 10][i]}deg)"><img alt="" loading="lazy" src="${escapeHTML(cameraPhotoUrl(p))}" /></span>`).join('');
+    }
+
+    // New photos waiting: open them. Otherwise jump down to the camera.
+    function cameraShortcutClick() {
+        if (cam.fresh.length) return openCameraGallery(state.activeYear, false);
+        const section = document.getElementById('cameraSection');
+        section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        section.classList.remove('cam-section-pulse');
+        void section.offsetWidth; // restart the animation
+        section.classList.add('cam-section-pulse');
+    }
 
     function openModalEl(id) {
         const m = document.getElementById(id);
@@ -2105,6 +2168,7 @@
 
     async function loadCamera() {
         const section = document.getElementById('cameraSection');
+        const shortcut = document.getElementById('cameraShortcut');
         const user = state.currentUser, year = state.activeYear;
         if (!user) return;
         try {
@@ -2112,7 +2176,12 @@
                 isWeekDevelopedEarly(CURRENT_WEEK_ID_AZ),
                 sb.select('camera_photos', `academic_year=eq.${encodeURIComponent(year)}&student_id=eq.${encodeURIComponent(user.id)}&week_identifier=eq.${CURRENT_WEEK_ID_AZ}&select=id,note,image_path,created_at&order=created_at.asc`)
             ]);
+            // Only 10 are needed to fill the badge ("9+") and its three previews
+            const fresh = await sb.select('camera_photos', `academic_year=eq.${encodeURIComponent(year)}&week_identifier=${early ? 'lte' : 'lt'}.${CURRENT_WEEK_ID_AZ}&id=gt.${cameraSeenId(user, year)}&select=id,image_path&order=id.desc&limit=10`).catch(() => []);
             if (state.currentUser !== user) return;
+            cam.fresh = fresh;
+            renderCameraShortcut();
+            shortcut.classList.remove('hidden');
             cam.sealed = early ? [] : mine;
             const left = Math.max(0, CAMERA_SHOTS_PER_WEEK - mine.length);
             document.getElementById('cameraCount').textContent = String(left).padStart(2, '0');
@@ -2128,6 +2197,7 @@
         } catch (e) {
             // camera_photos table not created yet (camera.sql) — just leave the camera hidden
             section.classList.add('hidden');
+            shortcut.classList.add('hidden');
         }
     }
 
@@ -2211,20 +2281,27 @@
 
     // --- Gallery ---
     async function openCameraGallery(year, admin) {
-        cam.year = year; cam.admin = admin; cam.photos = [];
+        cam.year = year; cam.admin = admin; cam.photos = []; cam.pending = [];
         const grid = document.getElementById('camGalleryGrid');
         grid.innerHTML = '<div class="text-center text-purple-200/60 text-sm py-10">Developing...</div>';
         document.getElementById('camGalleryTitle').textContent = admin ? 'All Photos' : 'Developed Photos';
         openModalEl('cameraGalleryModal');
         try {
             // Students see past weeks, plus this week if it was developed early; admins see everything
-            const weekFilter = admin ? '' : `&week_identifier=${(await isWeekDevelopedEarly(CURRENT_WEEK_ID_AZ)) ? 'lte' : 'lt'}.${CURRENT_WEEK_ID_AZ}`;
-            cam.photos = await sb.select('camera_photos', `academic_year=eq.${encodeURIComponent(year)}${weekFilter}&select=id,student_id,student_name,team,note,image_path,week_identifier,created_at&order=created_at.desc`);
+            const early = admin || await isWeekDevelopedEarly(CURRENT_WEEK_ID_AZ);
+            const weekFilter = admin ? '' : `&week_identifier=${early ? 'lte' : 'lt'}.${CURRENT_WEEK_ID_AZ}`;
+            [cam.photos, cam.pending] = await Promise.all([
+                sb.select('camera_photos', `academic_year=eq.${encodeURIComponent(year)}${weekFilter}&select=id,student_id,student_name,team,note,image_path,week_identifier,created_at&order=created_at.desc`),
+                // Everyone's still-sealed shots this week, shown as blank prints. No note or
+                // image_path is fetched, so nothing about the picture leaks before Monday.
+                early ? [] : sb.select('camera_photos', `academic_year=eq.${encodeURIComponent(year)}&week_identifier=eq.${CURRENT_WEEK_ID_AZ}&select=id,student_id,student_name,team,created_at&order=created_at.desc`).catch(() => [])
+            ]);
+            if (!admin && state.currentUser) markCameraSeen(state.currentUser, year, cam.photos);
         } catch (e) {
             grid.innerHTML = '<div class="text-center text-rose-300 text-sm py-10">Couldn\'t load the photos.</div>';
             return;
         }
-        const teams = [...new Set(cam.photos.map(p => p.team).filter(Boolean))].sort();
+        const teams = [...new Set(cam.photos.concat(cam.pending).map(p => p.team).filter(Boolean))].sort();
         const filter = document.getElementById('camGalleryFilter');
         filter.innerHTML = '<option value="all">Everyone</option>'
             + (!admin && state.currentUser ? '<option value="mine">My Shots</option>' : '')
@@ -2239,13 +2316,38 @@
 
     function renderCameraGallery() {
         const f = document.getElementById('camGalleryFilter').value;
-        const list = cam.photos.filter(p => f === 'all' ? true
+        const matches = p => f === 'all' ? true
             : f === 'mine' ? p.student_id === state.currentUser?.id
-            : p.team === f.slice(5));
+            : p.team === f.slice(5);
+        const list = cam.photos.filter(matches);
+        const pending = (cam.pending || []).filter(matches);
         const people = new Set(list.map(p => p.student_id)).size;
         document.getElementById('camGallerySub').textContent = `${list.length} photo${list.length === 1 ? '' : 's'} by ${people} ${people === 1 ? 'person' : 'people'} • ${cam.year}`
+            + (pending.length ? ` • ${pending.length} developing` : '')
             + (cam.admin ? ' • Admin view: tap a photo to delete it' : '');
         const grid = document.getElementById('camGalleryGrid');
+        let i = 0;
+        const pendingHtml = !pending.length ? '' : `
+            <div class="mb-6">
+                <div class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-purple-200/70 mb-3 px-1 flex-wrap">
+                    <i data-lucide="hourglass" class="w-3.5 h-3.5 text-amber-400"></i> This week's roll
+                    <span class="text-purple-200/40">&bull; ${pending.length} shot${pending.length === 1 ? '' : 's'}</span>
+                    <span class="text-amber-300 bg-amber-500/15 border border-amber-400/30 px-1.5 py-0.5 rounded">All develop Monday 12:00 AM</span>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                    ${pending.map(p => `
+                    <div class="cam-print cam-pending" style="transform: rotate(${((i++ * 37) % 7) - 3}deg)">
+                        <div class="cam-unexposed"><i data-lucide="film" class="w-5 h-5"></i>Developing</div>
+                        <div class="cam-stamp">${cameraStamp(p.created_at)}</div>
+                        <div class="cam-caption"><span>&mdash; ${escapeHTML(p.student_name)}</span></div>
+                    </div>`).join('')}
+                </div>
+            </div>`;
+        if (!list.length && pendingHtml) {
+            grid.innerHTML = pendingHtml;
+            lucide.createIcons();
+            return;
+        }
         if (!list.length) {
             grid.innerHTML = `<div class="text-center text-purple-200/60 text-sm py-10">${cam.admin ? 'No photos yet.' : 'Nothing developed yet. Check back Monday!'}</div>`;
             return;
@@ -2256,8 +2358,7 @@
             const w = weeks.find(w => w.id === p.week_identifier);
             w ? w.photos.push(p) : weeks.push({ id: p.week_identifier, photos: [p] });
         });
-        let i = 0;
-        grid.innerHTML = weeks.map(w => `
+        grid.innerHTML = pendingHtml + weeks.map(w => `
             <div class="mb-6">
                 <div class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-purple-200/70 mb-3 px-1">
                     <i data-lucide="film" class="w-3.5 h-3.5 text-amber-400"></i> ${w.id ? escapeHTML(formatWeekRange(w.id)) : 'Undated'}
@@ -3101,6 +3202,8 @@
         state.isTeamLead = false; state.teamRoster = []; state.teamSubmissions = []; state.viewingTeamMemberId = null;
         const teamBtn = document.getElementById('teamHoursBtn');
         if (teamBtn) { teamBtn.classList.add('hidden'); teamBtn.classList.remove('flex'); }
+        document.getElementById('cameraShortcut').classList.add('hidden');
+        cam.fresh = [];
         localStorage.removeItem(REMEMBERED_STUDENT_KEY);
         switchView('login');
     }
