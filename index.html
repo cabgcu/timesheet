@@ -457,7 +457,7 @@
                             <label for="entryTask" class="form-label">Task Description</label>
                             <input type="text" id="entryTask" class="control-input" placeholder="What did you work on?" />
                             <div id="recentTasks" class="hidden">
-                                <div class="text-[10px] text-purple-300/60 font-bold uppercase tracking-widest mb-2">Recent tasks &mdash; tap to reuse</div>
+                                <div class="text-[10px] text-purple-300/60 font-bold uppercase tracking-widest mb-2">Common tasks &mdash; tap to reuse</div>
                                 <div id="recentTasksList" class="flex flex-wrap gap-2"></div>
                             </div>
                         </div>
@@ -3401,21 +3401,29 @@
         return streak;
     }
 
-    // Up to six distinct tasks the student has logged, most recent first.
+    // Up to six distinct tasks the student logs most often (ties go to the most recent),
+    // each paired with the hours they most often log for it.
     function renderRecentTasks() {
         const all = [];
         (state.studentSubmissions || []).forEach(s => (s.logs || []).forEach(l => all.push(l)));
         all.push(...state.currentWeekEntries);
         all.sort((a, b) => (b.date || '').localeCompare(a.date || '') || (Number(b.id) || 0) - (Number(a.id) || 0));
-        const seen = new Set();
-        state.recentTasks = [];
+        const byTask = new Map();
         for (const l of all) {
             const key = (l.task || '').trim().toLowerCase();
-            if (!key || seen.has(key)) continue;
-            seen.add(key);
-            state.recentTasks.push({ task: l.task.trim(), hours: l.hours });
-            if (state.recentTasks.length === 6) break;
+            if (!key) continue;
+            if (!byTask.has(key)) byTask.set(key, { task: l.task.trim(), count: 0, hourCounts: new Map() });
+            const t = byTask.get(key);
+            t.count++;
+            const h = String(l.hours);
+            t.hourCounts.set(h, (t.hourCounts.get(h) || 0) + 1);
         }
+        // Map keeps first-seen (most recent) order, and sort is stable, so ties stay recency-ordered.
+        const mostCommon = counts => [...counts].reduce((best, cur) => cur[1] > best[1] ? cur : best)[0];
+        state.recentTasks = [...byTask.values()]
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 6)
+            .map(t => ({ task: t.task, hours: mostCommon(t.hourCounts) }));
         const box = document.getElementById('recentTasks');
         box.classList.toggle('hidden', state.recentTasks.length === 0);
         document.getElementById('recentTasksList').innerHTML = state.recentTasks.map((t, i) =>
