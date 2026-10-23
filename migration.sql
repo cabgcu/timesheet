@@ -53,9 +53,10 @@ alter table roster      disable row level security;
 alter table submissions disable row level security;
 alter table drafts      disable row level security;
 
+-- The staff password lives in admin_password.sql (hashed, not readable with the app's key).
+
 -- Seed default settings (safe to re-run)
 insert into settings (key, value) values
-  ('AdminPassword', 'admin123'),
   ('ActiveYear',    '2025-2026'),
   ('Teams',         '["Arts Team","CAB Team","Media Team","Street Team"]'),
   ('AcademicYears', '["2024-2025","2025-2026"]')

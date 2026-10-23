@@ -1718,6 +1718,12 @@
             const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${query}`, { method: 'DELETE', headers: sb._h() });
             if (!res.ok) throw new Error(await res.text());
         },
+        // Calls a Postgres function (e.g. the admin password checks in admin_password.sql)
+        async rpc(fn, args = {}) {
+            const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, { method: 'POST', headers: sb._h(), body: JSON.stringify(args) });
+            if (!res.ok) { const err = new Error(await res.text()); err.status = res.status; throw err; }
+            return res.json();
+        },
         // Supabase Storage (file storage; used for camera photos)
         async upload(bucket, path, blob) {
             const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${bucket}/${path}`, { method: 'POST', headers: sb._h({ 'Content-Type': blob.type }), body: blob });
@@ -1893,7 +1899,8 @@
 
         // Fetch fresh config from Supabase
         try {
-            const rows = await sb.select('settings');
+            // Never pull the admin password down with the rest of the settings
+            const rows = await sb.select('settings', 'key=neq.AdminPassword');
             const map = {};
             rows.forEach(r => map[r.key] = r.value);
             const config = {
@@ -3693,6 +3700,19 @@
         }});
     }
 
+    // The password is checked inside Supabase (admin_password.sql) so it never reaches the
+    // browser. Until that script has been run the function doesn't exist (404), so fall back
+    // to the old plain-text settings row to avoid locking staff out.
+    async function checkAdminPassword(pass) {
+        try {
+            return await sb.rpc('verify_admin_password', { pass }) === true;
+        } catch (e) {
+            if (e.status !== 404) throw e;
+            const pwRows = await sb.select('settings', 'key=eq.AdminPassword');
+            return pwRows.length > 0 && pwRows[0].value === pass;
+        }
+    }
+
     async function verifyAdmin() {
         const pass = document.getElementById('adminPass').value;
         if(!pass) return showToast("Password Required", true);
@@ -3702,8 +3722,7 @@
         btn.disabled = true; loader.style.display = 'inline-block';
 
         try {
-            const pwRows = await sb.select('settings', 'key=eq.AdminPassword');
-            if (!pwRows.length || pwRows[0].value !== pass) { showToast('Incorrect Password', true); return; }
+            if (!(await checkAdminPassword(pass))) { showToast('Incorrect Password', true); return; }
 
             state.adminPassword = pass;
             const [subRows, rosterRows] = await Promise.all([
@@ -4754,7 +4773,16 @@
                 { key: 'AcademicYears', value: JSON.stringify(state.academicYears) },
                 { key: 'SubmissionThreshold', value: thresholdVal.toString() }
             ];
-            if (newPass) settingsRows.push({ key: 'AdminPassword', value: newPass });
+            if (newPass) {
+                let changed;
+                try {
+                    changed = await sb.rpc('set_admin_password', { current_pass: state.adminPassword, new_pass: newPass });
+                } catch (e) {
+                    if (e.status !== 404) throw e;
+                    throw new Error('run admin_password.sql in Supabase before changing the password');
+                }
+                if (changed !== true) throw new Error('current password no longer matches — log in again');
+            }
             await sb.upsert('settings', settingsRows, 'key');
             
             state.submissionThreshold = parseInt(thresholdVal) || 7;
