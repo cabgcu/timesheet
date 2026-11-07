@@ -64,10 +64,7 @@
         /* Palette — flat charcoal dashboard (matches the VIP Check In app) */
         :root {
             --app-bg: #131316;
-            --card-bg: rgba(15, 17, 26, 0.5);
             --solid-bg: #1e2028;
-            --modal-bg: rgba(15, 17, 26, 0.55);
-            --glass-blur: blur(24px) saturate(140%);
             --modal-backdrop: linear-gradient(rgba(9, 9, 11, 0.35), rgba(9, 9, 11, 0.35)), #131316 url('https://i.imgur.com/bgnGCzS.jpeg') center / cover no-repeat;
             --highlight-bg: rgba(255, 255, 255, 0.1);
             --inset-bg: rgba(30, 32, 40, 0.8);
@@ -148,20 +145,28 @@
         /* Pop-ups sit on the background photo itself (darker tint) rather than a flat black
            wash, so their see-through panels show it the same way the page cards do. */
         .modal-backdrop { background: var(--modal-backdrop); }
-        .modal-backdrop + .night-glass-card { background: var(--modal-bg); box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5); }
-
-        /* Frosted glass: the photo shows through, blurred, behind every card */
-        .night-glass-card {
-            -webkit-backdrop-filter: var(--glass-blur);
-            backdrop-filter: var(--glass-blur);
-        }
+        .modal-backdrop + .night-glass-card { --glass-tint: 0.55; --glass-shadow: 0.5; }
 
         /* CARDS */
+        /* Frosted glass. Everything is scaled by --glass-fade (0 → 1) so cards fade in by
+           tweening that variable rather than opacity: a card (or any parent of it) with
+           opacity below 1 can't blur what's behind it, so the frost used to snap in only
+           once the fade finished. */
         .night-glass-card {
-            background: var(--card-bg);
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.36);
+            --f: var(--glass-fade, 1);
+            --glass-tint: 0.42;
+            --glass-shadow: 0.36;
+            background:
+                linear-gradient(160deg, rgba(255, 255, 255, calc(0.09 * var(--f))), rgba(255, 255, 255, calc(0.02 * var(--f)))),
+                rgba(15, 17, 26, calc(var(--glass-tint) * var(--f)));
+            border: 1px solid rgba(255, 255, 255, calc(0.14 * var(--f))) !important;
+            box-shadow:
+                0 8px 32px 0 rgba(0, 0, 0, calc(var(--glass-shadow) * var(--f))),
+                inset 0 1px 0 0 rgba(255, 255, 255, calc(0.1 * var(--f)));
+            -webkit-backdrop-filter: blur(calc(44px * var(--f))) saturate(calc(100% + 70% * var(--f)));
+            backdrop-filter: blur(calc(44px * var(--f))) saturate(calc(100% + 70% * var(--f)));
         }
+        .night-glass-card > * { opacity: var(--f); }
 
         .night-glass-card-subtle {
             background: var(--inset-bg);
@@ -187,7 +192,7 @@
         .night-btn-primary:active { transform: scale(0.97); }
 
         .night-btn-link {
-            background: var(--card-bg);
+            background: rgba(30, 32, 40, 0.8);
             border: 1px solid rgba(255, 255, 255, 0.05);
             color: #d1d5db;
             transition: background 0.15s, color 0.15s, transform 0.1s;
@@ -200,8 +205,8 @@
         button.night-btn-link.h-\[80px\] { border-radius: 14px; }
 
         /* VIEW SWITCHING LOGIC */
-        .view { display: none; opacity: 0; transform: translateY(12px); transition: 0.4s ease; width: 100%; }
-        .view.active { display: block; opacity: 1; transform: translateY(0); }
+        .view { display: none; width: 100%; }
+        .view.active { display: block; }
 
         /* INPUT STYLES */
         .control-input {
@@ -1806,12 +1811,12 @@
         const modal = document.getElementById(id);
         modal.style.display = 'flex';
         modal.classList.remove('hidden');
-        gsap.fromTo(modal.querySelector('.night-glass-card'), { scale: 0.9, opacity: 0, y: 20 }, { scale: 1, opacity: 1, y: 0, duration: 0.35, ease: "back.out(1.2)" });
+        gsap.fromTo(modal.querySelector('.night-glass-card'), { scale: 0.9, '--glass-fade': 0, y: 20 }, { scale: 1, '--glass-fade': 1, y: 0, duration: 0.35, ease: "back.out(1.2)" });
         lucide.createIcons();
     }
     function closeModal(id) {
         const modal = document.getElementById(id);
-        gsap.to(modal.querySelector('.night-glass-card'), { scale: 0.9, opacity: 0, y: 20, duration: 0.2, onComplete: () => {
+        gsap.to(modal.querySelector('.night-glass-card'), { scale: 0.9, '--glass-fade': 0, y: 20, duration: 0.2, onComplete: () => {
             modal.style.display = 'none';
             modal.classList.add('hidden');
         }});
@@ -1870,9 +1875,9 @@
         
         // GSAP Entrance Animations with Elastic Logo Reveal
         const tl = gsap.timeline();
-        tl.fromTo(".night-glass-card", 
-            { opacity: 0, y: 60 }, 
-            { opacity: 1, y: 0, duration: 1.1, ease: "power4.out" }
+        tl.fromTo("#loginView .night-glass-card",
+            { '--glass-fade': 0, y: 60 },
+            { '--glass-fade': 1, y: 0, duration: 1.1, ease: "power4.out" }
         )
         .fromTo(".logo-box img", {
             scale: 0,
@@ -1954,7 +1959,8 @@
         if (target) {
             target.style.display = 'block';
             setTimeout(() => target.classList.add('active'), 10);
-            gsap.fromTo(target, { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.4 });
+            gsap.fromTo(target, { y: 15 }, { y: 0, duration: 0.4, clearProps: 'transform' });
+            gsap.fromTo(target.querySelectorAll('.night-glass-card'), { '--glass-fade': 0 }, { '--glass-fade': 1, duration: 0.4 });
         }
         document.getElementById('pageScroll').scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -3632,7 +3638,7 @@
         const modal = document.getElementById('teamMemberModal');
         modal.style.display = 'flex';
         modal.classList.remove('hidden');
-        gsap.fromTo(modal.querySelector('.night-glass-card'), { scale: 0.9, opacity: 0, y: 20 }, { scale: 1, opacity: 1, y: 0, duration: 0.4, ease: "back.out(1.2)" });
+        gsap.fromTo(modal.querySelector('.night-glass-card'), { scale: 0.9, '--glass-fade': 0, y: 20 }, { scale: 1, '--glass-fade': 1, y: 0, duration: 0.4, ease: "back.out(1.2)" });
         renderTeamMemberDetails();
     }
 
@@ -3690,7 +3696,7 @@
 
     function closeTeamMemberModal() {
         const modal = document.getElementById('teamMemberModal');
-        gsap.to(modal.querySelector('.night-glass-card'), { scale: 0.9, opacity: 0, y: 20, duration: 0.3, onComplete: () => {
+        gsap.to(modal.querySelector('.night-glass-card'), { scale: 0.9, '--glass-fade': 0, y: 20, duration: 0.3, onComplete: () => {
             modal.style.display = 'none';
             modal.classList.add('hidden');
             state.viewingTeamMemberId = null;
@@ -3702,15 +3708,15 @@
         modal.style.display = 'flex'; 
         modal.classList.remove('hidden');
         gsap.fromTo("#gateBackdrop", { opacity: 0 }, { opacity: 1, duration: 0.3 });
-        gsap.fromTo("#gateCard", { scale: 0.8, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.35, ease: "back.out(1.5)" });
+        gsap.fromTo("#gateCard", { scale: 0.8, '--glass-fade': 0 }, { scale: 1, '--glass-fade': 1, duration: 0.35, ease: "back.out(1.5)" });
     }
     
     function hideGate() { 
-        gsap.to("#gateModal", {opacity: 0, duration: 0.2, onComplete: () => {
+        gsap.to("#gateBackdrop", { opacity: 0, duration: 0.2 });
+        gsap.to("#gateCard", { '--glass-fade': 0, scale: 0.95, duration: 0.2, onComplete: () => {
             const modal = document.getElementById('gateModal');
             modal.style.display = 'none'; 
             modal.classList.add('hidden');
-            modal.style.opacity = '1';
             document.getElementById('adminPass').value = ""; 
         }});
     }
@@ -4133,7 +4139,7 @@
         const modal = document.getElementById('studentDetailModal');
         modal.style.display = 'flex';
         modal.classList.remove('hidden');
-        gsap.fromTo(modal.querySelector('.night-glass-card'), { scale: 0.9, opacity: 0, y: 20 }, { scale: 1, opacity: 1, y: 0, duration: 0.4, ease: "back.out(1.2)" });
+        gsap.fromTo(modal.querySelector('.night-glass-card'), { scale: 0.9, '--glass-fade': 0, y: 20 }, { scale: 1, '--glass-fade': 1, y: 0, duration: 0.4, ease: "back.out(1.2)" });
         renderStudentDetails();
     }
 
@@ -4238,7 +4244,7 @@
 
     function closeStudentDetails() {
         const modal = document.getElementById('studentDetailModal');
-        gsap.to(modal.querySelector('.night-glass-card'), { scale: 0.9, opacity: 0, y: 20, duration: 0.3, onComplete: () => {
+        gsap.to(modal.querySelector('.night-glass-card'), { scale: 0.9, '--glass-fade': 0, y: 20, duration: 0.3, onComplete: () => {
             modal.style.display = 'none';
             modal.classList.add('hidden');
             state.viewingStudentId = null;
@@ -4273,12 +4279,12 @@
         const modal = document.getElementById('confirmModal');
         modal.style.display = 'flex';
         modal.classList.remove('hidden');
-        gsap.fromTo(modal.querySelector('.night-glass-card'), { scale: 0.8, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.35, ease: "back.out(1.5)" });
+        gsap.fromTo(modal.querySelector('.night-glass-card'), { scale: 0.8, '--glass-fade': 0 }, { scale: 1, '--glass-fade': 1, duration: 0.35, ease: "back.out(1.5)" });
     }
     
     function closeConfirmModal() {
         const modal = document.getElementById('confirmModal');
-        gsap.to(modal.querySelector('.night-glass-card'), { scale: 0.8, opacity: 0, duration: 0.2, onComplete: () => {
+        gsap.to(modal.querySelector('.night-glass-card'), { scale: 0.8, '--glass-fade': 0, duration: 0.2, onComplete: () => {
             modal.style.display = 'none';
             modal.classList.add('hidden');
             confirmActionCallback = null;
