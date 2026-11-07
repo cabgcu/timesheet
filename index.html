@@ -67,7 +67,7 @@
             --solid-bg: #1e2028;
             --modal-backdrop: linear-gradient(rgba(9, 9, 11, 0.35), rgba(9, 9, 11, 0.35)), #131316 url('https://i.imgur.com/bgnGCzS.jpeg') center / cover no-repeat;
             --highlight-bg: rgba(255, 255, 255, 0.1);
-            --inset-bg: rgba(30, 32, 40, 0.8);
+            --inset-bg: rgba(255, 255, 255, 0.06);
             --accent-blue: #4c75ff;
             --accent-blue-hover: #3d66f0;
             --accent-link: #729cff;
@@ -145,7 +145,7 @@
         /* Pop-ups sit on the background photo itself (darker tint) rather than a flat black
            wash, so their see-through panels show it the same way the page cards do. */
         .modal-backdrop { background: var(--modal-backdrop); }
-        .modal-backdrop + .night-glass-card { --glass-tint: 0.55; --glass-shadow: 0.5; }
+        .modal-backdrop + .night-glass-card { --glass-tint: 0.3; --glass-shadow: 0.5; }
 
         /* CARDS */
         /* Frosted glass. Everything is scaled by --glass-fade (0 → 1) so cards fade in by
@@ -154,17 +154,13 @@
            once the fade finished. */
         .night-glass-card {
             --f: var(--glass-fade, 1);
-            --glass-tint: 0.42;
+            --glass-tint: 0.22;
             --glass-shadow: 0.36;
-            background:
-                linear-gradient(160deg, rgba(255, 255, 255, calc(0.09 * var(--f))), rgba(255, 255, 255, calc(0.02 * var(--f)))),
-                rgba(15, 17, 26, calc(var(--glass-tint) * var(--f)));
-            border: 1px solid rgba(255, 255, 255, calc(0.14 * var(--f))) !important;
-            box-shadow:
-                0 8px 32px 0 rgba(0, 0, 0, calc(var(--glass-shadow) * var(--f))),
-                inset 0 1px 0 0 rgba(255, 255, 255, calc(0.1 * var(--f)));
-            -webkit-backdrop-filter: blur(calc(44px * var(--f))) saturate(calc(100% + 70% * var(--f)));
-            backdrop-filter: blur(calc(44px * var(--f))) saturate(calc(100% + 70% * var(--f)));
+            background: rgba(15, 17, 26, calc(var(--glass-tint) * var(--f)));
+            border: 1px solid rgba(255, 255, 255, calc(0.12 * var(--f))) !important;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, calc(var(--glass-shadow) * var(--f)));
+            -webkit-backdrop-filter: blur(calc(16px * var(--f))) saturate(calc(100% + 20% * var(--f)));
+            backdrop-filter: blur(calc(16px * var(--f))) saturate(calc(100% + 20% * var(--f)));
         }
         .night-glass-card > * { opacity: var(--f); }
 
@@ -192,7 +188,7 @@
         .night-btn-primary:active { transform: scale(0.97); }
 
         .night-btn-link {
-            background: rgba(30, 32, 40, 0.8);
+            background: rgba(255, 255, 255, 0.07);
             border: 1px solid rgba(255, 255, 255, 0.05);
             color: #d1d5db;
             transition: background 0.15s, color 0.15s, transform 0.1s;
@@ -225,7 +221,7 @@
         .control-input::placeholder { color: var(--text-dim); }
 
         .control-input { box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05); transition: border-color 0.15s, background-color 0.15s; }
-        .control-input:focus { border-color: rgba(114, 156, 255, 0.5); background-color: #1e2028; }
+        .control-input:focus { border-color: rgba(114, 156, 255, 0.5); background-color: rgba(255, 255, 255, 0.1); }
 
         select.control-input {
             appearance: none;
@@ -817,7 +813,7 @@
         <div id="gateBackdrop" class="absolute inset-0 modal-backdrop" onclick="hideGate()"></div>
         <div id="gateCard" class="relative w-full max-w-sm night-glass-card rounded-[2rem] p-8 sm:p-10 flex flex-col items-center text-center shadow-2xl border-purple-400/40 z-10 transition-all duration-300">
             <div class="logo-box mb-5">
-                <div class="w-16 h-16 rounded-2xl bg-slate-900/50 border border-purple-400/30 flex items-center justify-center relative z-10 shadow-lg">
+                <div class="w-16 h-16 rounded-2xl bg-white/[0.07] border border-white/10 flex items-center justify-center relative z-10 shadow-lg">
                     <i data-lucide="lock" class="w-7 h-7 text-purple-300"></i>
                 </div>
             </div>
