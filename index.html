@@ -810,18 +810,18 @@
     <!-- Admin Login Modal -->
     <div id="gateModal" class="fixed inset-0 z-[1000] hidden items-center justify-center p-4">
         <div id="gateBackdrop" class="absolute inset-0 modal-backdrop" onclick="hideGate()"></div>
-        <div id="gateCard" class="relative w-full max-w-sm night-glass-card rounded-3xl p-8 flex flex-col items-center text-center shadow-2xl border-purple-400/40 z-10 transition-all duration-300">
+        <div id="gateCard" class="relative w-full max-w-sm night-glass-card rounded-[2rem] p-8 sm:p-10 flex flex-col items-center text-center shadow-2xl border-purple-400/40 z-10 transition-all duration-300">
             <div class="logo-box mb-5">
                 <div class="w-16 h-16 rounded-2xl bg-slate-900/50 border border-purple-400/30 flex items-center justify-center relative z-10 shadow-lg">
                     <i data-lucide="lock" class="w-7 h-7 text-purple-300"></i>
                 </div>
             </div>
             <h3 class="text-2xl font-bold mb-1 text-white tracking-tight">Staff Login</h3>
-            <p class="text-purple-200/70 text-xs mb-6">Enter admin password to access system settings and master hours.</p>
+            <p class="text-[#9ca3af] text-sm mb-8">Enter admin password to access system settings and master hours.</p>
             
-            <input type="password" id="adminPass" class="control-input text-center mb-6 no-save-pass" placeholder="Password" autocomplete="off" spellcheck="false" onkeyup="if(event.key==='Enter') verifyAdmin()"/>
+            <input type="password" id="adminPass" class="control-input !rounded-xl !px-4 !py-3.5 text-center !mb-4 no-save-pass" placeholder="Password" autocomplete="off" spellcheck="false" onkeyup="if(event.key==='Enter') verifyAdmin()"/>
             
-            <button class="w-full night-btn-primary font-bold py-3.5 rounded-2xl flex justify-center items-center gap-2 text-sm shadow-lg" id="gateBtn" onclick="verifyAdmin()">
+            <button class="w-full night-btn-primary font-medium !rounded-xl px-4 py-3.5 flex justify-center items-center gap-2 text-sm" id="gateBtn" onclick="verifyAdmin()">
                 <span>Authorize</span> <div class="loader" id="gateLoader"></div>
             </button>
         </div>
