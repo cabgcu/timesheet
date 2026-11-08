@@ -64,18 +64,19 @@
         /* Palette — flat charcoal dashboard (matches the VIP Check In app) */
         :root {
             --app-bg: #131316;
-            --solid-bg: #1e2028;
-            --modal-backdrop: linear-gradient(rgba(9, 9, 11, 0.35), rgba(9, 9, 11, 0.35)), #131316 url('https://i.imgur.com/bgnGCzS.jpeg') center / cover no-repeat;
+            --card-bg: rgba(28, 28, 34, 0.68);
+            --solid-bg: #1c1c22;
+            --modal-bg: rgba(28, 28, 34, 0.62);
+            --modal-backdrop: linear-gradient(rgba(9, 9, 11, 0.4), rgba(9, 9, 11, 0.4)), #131316 url('https://i.imgur.com/APGH0Wv.png') center / cover no-repeat;
             --highlight-bg: rgba(255, 255, 255, 0.1);
-            --inset-bg: rgba(255, 255, 255, 0.06);
-            --accent-blue: #4c75ff;
-            --accent-blue-hover: #3d66f0;
-            --accent-link: #729cff;
+            --inset-bg: rgba(12, 12, 16, 0.45);
+            --accent-blue: #2563eb;
+            --accent-blue-hover: #1d4ed8;
             --accent-purple: #8b5cf6;
             --text-main: #ffffff;
             --text-muted: #9ca3af;
             --text-dim: #71717a;
-            --line: rgba(255, 255, 255, 0.08);
+            --line: rgba(39, 39, 42, 0.8);
             --line-strong: #3f3f46;
             --font-stack: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
@@ -127,9 +128,9 @@
         .night-bg {
             position: fixed; top: 0; left: 0; right: 0; height: 100vh; height: 100lvh;
             z-index: -1; pointer-events: none;
-            background: #131316 url('https://i.imgur.com/bgnGCzS.jpeg') center / cover no-repeat;
+            background: #131316 url('https://i.imgur.com/APGH0Wv.png') center / cover no-repeat;
         }
-        .night-bg::after { content: ''; position: absolute; inset: 0; background: rgba(19, 19, 22, 0.15); }
+        .night-bg::after { content: ''; position: absolute; inset: 0; background: rgba(19, 19, 22, 0.25); }
         .night-overlay { display: none; }
 
         /* Scroll inside a fixed layer instead of scrolling the page (same as the VIP Check In
@@ -145,24 +146,14 @@
         /* Pop-ups sit on the background photo itself (darker tint) rather than a flat black
            wash, so their see-through panels show it the same way the page cards do. */
         .modal-backdrop { background: var(--modal-backdrop); }
-        .modal-backdrop + .night-glass-card { --glass-tint: 0.3; --glass-shadow: 0.5; }
+        .modal-backdrop + .night-glass-card { background: var(--modal-bg); box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5); }
 
         /* CARDS */
-        /* Frosted glass. Everything is scaled by --glass-fade (0 → 1) so cards fade in by
-           tweening that variable rather than opacity: a card (or any parent of it) with
-           opacity below 1 can't blur what's behind it, so the frost used to snap in only
-           once the fade finished. */
         .night-glass-card {
-            --f: var(--glass-fade, 1);
-            --glass-tint: 0.22;
-            --glass-shadow: 0.36;
-            background: rgba(15, 17, 26, calc(var(--glass-tint) * var(--f)));
-            border: 1px solid rgba(255, 255, 255, calc(0.12 * var(--f))) !important;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, calc(var(--glass-shadow) * var(--f)));
-            -webkit-backdrop-filter: blur(calc(16px * var(--f))) saturate(calc(100% + 20% * var(--f)));
-            backdrop-filter: blur(calc(16px * var(--f))) saturate(calc(100% + 20% * var(--f)));
+            background: var(--card-bg);
+            border: 1px solid var(--line);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
         }
-        .night-glass-card > * { opacity: var(--f); }
 
         .night-glass-card-subtle {
             background: var(--inset-bg);
@@ -178,19 +169,18 @@
 
         /* BUTTONS */
         .night-btn-primary {
-            background: linear-gradient(to right, #6b8fff, #4c75ff);
+            background: var(--accent-blue);
             color: #fff;
             border: none;
-            box-shadow: 0 4px 14px 0 rgba(76, 117, 255, 0.39);
-            transition: opacity 0.15s, transform 0.1s;
+            transition: background 0.15s, transform 0.1s;
         }
-        .night-btn-primary:hover { opacity: 0.9; }
+        .night-btn-primary:hover { background: var(--accent-blue-hover); }
         .night-btn-primary:active { transform: scale(0.97); }
 
         .night-btn-link {
-            background: rgba(255, 255, 255, 0.07);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            color: #d1d5db;
+            background: var(--card-bg);
+            border: 1px solid var(--line-strong);
+            color: #e4e4e7;
             transition: background 0.15s, color 0.15s, transform 0.1s;
         }
         .night-btn-link:hover { background: var(--highlight-bg); color: #fff; }
@@ -201,8 +191,8 @@
         button.night-btn-link.h-\[80px\] { border-radius: 14px; }
 
         /* VIEW SWITCHING LOGIC */
-        .view { display: none; width: 100%; }
-        .view.active { display: block; }
+        .view { display: none; opacity: 0; transform: translateY(12px); transition: 0.4s ease; width: 100%; }
+        .view.active { display: block; opacity: 1; transform: translateY(0); }
 
         /* INPUT STYLES */
         .control-input {
@@ -220,8 +210,7 @@
 
         .control-input::placeholder { color: var(--text-dim); }
 
-        .control-input { box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05); transition: border-color 0.15s, background-color 0.15s; }
-        .control-input:focus { border-color: rgba(114, 156, 255, 0.5); background-color: rgba(255, 255, 255, 0.1); }
+        .control-input:focus { border-color: #52525b; }
 
         select.control-input {
             appearance: none;
@@ -361,32 +350,27 @@
         <div class="flex-1 w-full flex flex-col items-center justify-center py-8 sm:py-10">
 
             <!-- LOGIN VIEW -->
-            <div id="loginView" class="view active mx-auto w-full" style="max-width: min(440px, calc(100% - 1rem));">
-                <div class="night-glass-card rounded-[2rem] p-8 sm:p-10 flex flex-col items-center text-center">
-                    <div class="logo-box mb-6">
-                        <img src="https://i.imgur.com/p2qZOL5.png" alt="CAB Logo" class="w-16 h-16 object-contain drop-shadow-lg card-logo" />
+            <div id="loginView" class="view active mx-auto w-full" style="max-width: min(24rem, calc(100% - 2.5rem));">
+                <div class="night-glass-card rounded-3xl px-6 py-8 sm:p-10 text-center border-purple-400/40">
+                    <div class="logo-box mb-5">
+                        <img src="https://i.imgur.com/p2qZOL5.png" alt="CAB Logo" class="h-[60px] w-auto mx-auto object-contain card-logo" />
                     </div>
-                    <h3 class="login-anim text-3xl font-bold mb-2 text-white tracking-tight">Welcome back</h3>
-                    <p class="login-anim text-[#9ca3af] text-sm mb-8">Enter your Student ID for <span id="loginActiveYear" class="text-[#729cff] font-medium">...</span>.</p>
+                    <h3 class="text-[22px] font-bold mb-2 text-white">Timesheet</h3>
+                    <p class="text-purple-200/80 mb-8 font-medium text-sm leading-relaxed max-w-lg mx-auto">Enter your Student ID for <span id="loginActiveYear" class="text-purple-300 font-bold">...</span>.</p>
 
-                    <div class="login-anim mb-6 w-full flex flex-col text-left">
-                        <label for="loginStudentID" class="text-sm text-[#9ca3af] mb-2 font-medium">Student ID</label>
-                        <input type="number" id="loginStudentID" class="control-input !mb-4 !rounded-xl !px-4 !py-3.5 text-sm" placeholder="e.g. 123456" autocomplete="off" onkeyup="if(event.key==='Enter') studentLogin()"/>
-
-                        <button class="w-full night-btn-primary font-medium text-sm !rounded-xl px-4 py-3.5 flex justify-center items-center" id="loginBtn" onclick="studentLogin()">
-                            <span class="text-white">Access Timesheet</span>
-                            <div class="loader" id="loginLoader"></div>
-                        </button>
+                    <div class="mb-6 text-center">
+                        <label for="loginStudentID" class="form-label">Student ID</label>
+                        <input type="number" id="loginStudentID" class="control-input text-center text-xl tracking-widest !py-4" placeholder="e.g. 123456" autocomplete="off" onkeyup="if(event.key==='Enter') studentLogin()"/>
                     </div>
 
-                    <div class="login-anim w-full flex flex-col items-center">
-                        <div class="flex items-center w-full mb-6">
-                            <div class="h-px bg-white/5 flex-1"></div>
-                            <span class="px-4 text-[#6b7280] text-sm">or</span>
-                            <div class="h-px bg-white/5 flex-1"></div>
-                        </div>
-                        <button class="w-full night-btn-link font-medium text-sm !rounded-xl px-4 py-3.5 mb-8 shadow-sm" onclick="showGate()">Staff access</button>
-                        <p class="text-[12px] text-[#6b7280] leading-relaxed">© <span id="year"></span> Canyon Activities Board</p>
+                    <button class="w-full night-btn-primary font-bold py-4 rounded-2xl flex justify-center items-center gap-2 text-base tracking-wide uppercase" id="loginBtn" onclick="studentLogin()">
+                        <span class="text-white">Access Timesheet</span>
+                        <div class="loader" id="loginLoader"></div>
+                    </button>
+
+                    <div class="mt-8 pt-6 border-t border-purple-500/20 flex flex-col items-center gap-2">
+                        <span class="text-purple-300/50 text-[11px] tracking-wide">© <span id="year"></span> Canyon Activities Board</span>
+                        <button class="opacity-60 hover:opacity-100 transition-all uppercase tracking-widest bg-transparent border-none text-[10px] cursor-pointer text-purple-400 hover:text-purple-300 p-1" onclick="showGate()">Staff Access</button>
                     </div>
                 </div>
             </div>
@@ -811,18 +795,18 @@
     <!-- Admin Login Modal -->
     <div id="gateModal" class="fixed inset-0 z-[1000] hidden items-center justify-center p-4">
         <div id="gateBackdrop" class="absolute inset-0 modal-backdrop" onclick="hideGate()"></div>
-        <div id="gateCard" class="relative w-full max-w-sm night-glass-card rounded-[2rem] p-8 sm:p-10 flex flex-col items-center text-center shadow-2xl border-purple-400/40 z-10 transition-all duration-300">
+        <div id="gateCard" class="relative w-full max-w-sm night-glass-card rounded-3xl p-8 flex flex-col items-center text-center shadow-2xl border-purple-400/40 z-10 transition-all duration-300">
             <div class="logo-box mb-5">
-                <div class="w-16 h-16 rounded-2xl bg-white/[0.07] border border-white/10 flex items-center justify-center relative z-10 shadow-lg">
+                <div class="w-16 h-16 rounded-2xl bg-slate-900/50 border border-purple-400/30 flex items-center justify-center relative z-10 shadow-lg">
                     <i data-lucide="lock" class="w-7 h-7 text-purple-300"></i>
                 </div>
             </div>
             <h3 class="text-2xl font-bold mb-1 text-white tracking-tight">Staff Login</h3>
-            <p class="text-[#9ca3af] text-sm mb-8">Enter admin password to access system settings and master hours.</p>
+            <p class="text-purple-200/70 text-xs mb-6">Enter admin password to access system settings and master hours.</p>
             
-            <input type="password" id="adminPass" class="control-input !rounded-xl !px-4 !py-3.5 text-center !mb-4 no-save-pass" placeholder="Password" autocomplete="off" spellcheck="false" onkeyup="if(event.key==='Enter') verifyAdmin()"/>
+            <input type="password" id="adminPass" class="control-input text-center mb-6 no-save-pass" placeholder="Password" autocomplete="off" spellcheck="false" onkeyup="if(event.key==='Enter') verifyAdmin()"/>
             
-            <button class="w-full night-btn-primary font-medium !rounded-xl px-4 py-3.5 flex justify-center items-center gap-2 text-sm" id="gateBtn" onclick="verifyAdmin()">
+            <button class="w-full night-btn-primary font-bold py-3.5 rounded-2xl flex justify-center items-center gap-2 text-sm shadow-lg" id="gateBtn" onclick="verifyAdmin()">
                 <span>Authorize</span> <div class="loader" id="gateLoader"></div>
             </button>
         </div>
@@ -1807,12 +1791,12 @@
         const modal = document.getElementById(id);
         modal.style.display = 'flex';
         modal.classList.remove('hidden');
-        gsap.fromTo(modal.querySelector('.night-glass-card'), { scale: 0.9, '--glass-fade': 0, y: 20 }, { scale: 1, '--glass-fade': 1, y: 0, duration: 0.35, ease: "back.out(1.2)" });
+        gsap.fromTo(modal.querySelector('.night-glass-card'), { scale: 0.9, opacity: 0, y: 20 }, { scale: 1, opacity: 1, y: 0, duration: 0.35, ease: "back.out(1.2)" });
         lucide.createIcons();
     }
     function closeModal(id) {
         const modal = document.getElementById(id);
-        gsap.to(modal.querySelector('.night-glass-card'), { scale: 0.9, '--glass-fade': 0, y: 20, duration: 0.2, onComplete: () => {
+        gsap.to(modal.querySelector('.night-glass-card'), { scale: 0.9, opacity: 0, y: 20, duration: 0.2, onComplete: () => {
             modal.style.display = 'none';
             modal.classList.add('hidden');
         }});
@@ -1871,9 +1855,9 @@
         
         // GSAP Entrance Animations with Elastic Logo Reveal
         const tl = gsap.timeline();
-        tl.fromTo("#loginView .night-glass-card",
-            { '--glass-fade': 0, y: 60 },
-            { '--glass-fade': 1, y: 0, duration: 1.1, ease: "power4.out" }
+        tl.fromTo(".night-glass-card", 
+            { opacity: 0, y: 60 }, 
+            { opacity: 1, y: 0, duration: 1.1, ease: "power4.out" }
         )
         .fromTo(".logo-box img", {
             scale: 0,
@@ -1884,7 +1868,7 @@
             duration: 0.9,
             ease: "elastic.out(1, 0.5)"
         }, "-=0.6")
-        .fromTo("#loginView .login-anim", {
+        .fromTo(["#loginView h3", "#loginView p", "#loginView .mb-6", "#loginBtn", "#loginView .mt-8"], {
             opacity: 0,
             y: 20
         }, {
@@ -1955,8 +1939,7 @@
         if (target) {
             target.style.display = 'block';
             setTimeout(() => target.classList.add('active'), 10);
-            gsap.fromTo(target, { y: 15 }, { y: 0, duration: 0.4, clearProps: 'transform' });
-            gsap.fromTo(target.querySelectorAll('.night-glass-card'), { '--glass-fade': 0 }, { '--glass-fade': 1, duration: 0.4 });
+            gsap.fromTo(target, { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.4 });
         }
         document.getElementById('pageScroll').scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -3634,7 +3617,7 @@
         const modal = document.getElementById('teamMemberModal');
         modal.style.display = 'flex';
         modal.classList.remove('hidden');
-        gsap.fromTo(modal.querySelector('.night-glass-card'), { scale: 0.9, '--glass-fade': 0, y: 20 }, { scale: 1, '--glass-fade': 1, y: 0, duration: 0.4, ease: "back.out(1.2)" });
+        gsap.fromTo(modal.querySelector('.night-glass-card'), { scale: 0.9, opacity: 0, y: 20 }, { scale: 1, opacity: 1, y: 0, duration: 0.4, ease: "back.out(1.2)" });
         renderTeamMemberDetails();
     }
 
@@ -3692,7 +3675,7 @@
 
     function closeTeamMemberModal() {
         const modal = document.getElementById('teamMemberModal');
-        gsap.to(modal.querySelector('.night-glass-card'), { scale: 0.9, '--glass-fade': 0, y: 20, duration: 0.3, onComplete: () => {
+        gsap.to(modal.querySelector('.night-glass-card'), { scale: 0.9, opacity: 0, y: 20, duration: 0.3, onComplete: () => {
             modal.style.display = 'none';
             modal.classList.add('hidden');
             state.viewingTeamMemberId = null;
@@ -3704,15 +3687,15 @@
         modal.style.display = 'flex'; 
         modal.classList.remove('hidden');
         gsap.fromTo("#gateBackdrop", { opacity: 0 }, { opacity: 1, duration: 0.3 });
-        gsap.fromTo("#gateCard", { scale: 0.8, '--glass-fade': 0 }, { scale: 1, '--glass-fade': 1, duration: 0.35, ease: "back.out(1.5)" });
+        gsap.fromTo("#gateCard", { scale: 0.8, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.35, ease: "back.out(1.5)" });
     }
     
     function hideGate() { 
-        gsap.to("#gateBackdrop", { opacity: 0, duration: 0.2 });
-        gsap.to("#gateCard", { '--glass-fade': 0, scale: 0.95, duration: 0.2, onComplete: () => {
+        gsap.to("#gateModal", {opacity: 0, duration: 0.2, onComplete: () => {
             const modal = document.getElementById('gateModal');
             modal.style.display = 'none'; 
             modal.classList.add('hidden');
+            modal.style.opacity = '1';
             document.getElementById('adminPass').value = ""; 
         }});
     }
@@ -4135,7 +4118,7 @@
         const modal = document.getElementById('studentDetailModal');
         modal.style.display = 'flex';
         modal.classList.remove('hidden');
-        gsap.fromTo(modal.querySelector('.night-glass-card'), { scale: 0.9, '--glass-fade': 0, y: 20 }, { scale: 1, '--glass-fade': 1, y: 0, duration: 0.4, ease: "back.out(1.2)" });
+        gsap.fromTo(modal.querySelector('.night-glass-card'), { scale: 0.9, opacity: 0, y: 20 }, { scale: 1, opacity: 1, y: 0, duration: 0.4, ease: "back.out(1.2)" });
         renderStudentDetails();
     }
 
@@ -4240,7 +4223,7 @@
 
     function closeStudentDetails() {
         const modal = document.getElementById('studentDetailModal');
-        gsap.to(modal.querySelector('.night-glass-card'), { scale: 0.9, '--glass-fade': 0, y: 20, duration: 0.3, onComplete: () => {
+        gsap.to(modal.querySelector('.night-glass-card'), { scale: 0.9, opacity: 0, y: 20, duration: 0.3, onComplete: () => {
             modal.style.display = 'none';
             modal.classList.add('hidden');
             state.viewingStudentId = null;
@@ -4275,12 +4258,12 @@
         const modal = document.getElementById('confirmModal');
         modal.style.display = 'flex';
         modal.classList.remove('hidden');
-        gsap.fromTo(modal.querySelector('.night-glass-card'), { scale: 0.8, '--glass-fade': 0 }, { scale: 1, '--glass-fade': 1, duration: 0.35, ease: "back.out(1.5)" });
+        gsap.fromTo(modal.querySelector('.night-glass-card'), { scale: 0.8, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.35, ease: "back.out(1.5)" });
     }
     
     function closeConfirmModal() {
         const modal = document.getElementById('confirmModal');
-        gsap.to(modal.querySelector('.night-glass-card'), { scale: 0.8, '--glass-fade': 0, duration: 0.2, onComplete: () => {
+        gsap.to(modal.querySelector('.night-glass-card'), { scale: 0.8, opacity: 0, duration: 0.2, onComplete: () => {
             modal.style.display = 'none';
             modal.classList.add('hidden');
             confirmActionCallback = null;
