@@ -2965,18 +2965,6 @@
         const row = c4OpenRow(col);
         if (row === -1) return; // column full
 
-        // Outside a lucky game Drew never gets the winning spot: the AI snatches it and he goes again.
-        if (!c4.lucky) {
-            c4.board[row][col] = C4_PLAYER;
-            const wouldWin = c4WinsAt(row, col, C4_PLAYER);
-            c4.board[row][col] = 0;
-            if (wouldWin) {
-                c4SetActive(false);
-                c4SetStatus('Nope. The timesheet AI saw that coming.', 'text-rose-400');
-                c4.timer = setTimeout(() => c4AIPlay(row, col, 'It took your spot. Your move again.'), 900);
-                return;
-            }
-        }
         c4Place(row, col, C4_PLAYER);
 
         const win = c4CheckWin(C4_PLAYER);
@@ -3100,7 +3088,7 @@
         return score;
     }
 
-    function c4AIPlay(r, c, yourMoveMsg) {
+    function c4AIPlay(r, c) {
         c4Place(r, c, C4_AI);
         const win = c4CheckWin(C4_AI);
         if (win) {
@@ -3114,7 +3102,7 @@
             c4.timer = setTimeout(c4NewGame, 2000);
             return;
         }
-        c4SetStatus(yourMoveMsg || 'Your move.', yourMoveMsg ? 'text-amber-400' : 'text-emerald-400');
+        c4SetStatus('Your move.', 'text-emerald-400');
         c4SetActive(true);
     }
 
