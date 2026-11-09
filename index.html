@@ -49,6 +49,7 @@
                             50: '#fafafa', 100: '#f4f4f5', 200: '#e4e4e7', 300: '#d4d4d8', 400: '#9ca3af',
                             500: '#71717a', 600: '#52525b', 700: '#3f3f46', 800: '#27272a', 900: '#18181b', 950: '#131316'
                         },
+                        amber: { 400: '#ffb020', 500: '#ffb020' },
                         night: {
                             950: '#020617',
                             900: '#0f172a',
@@ -61,23 +62,22 @@
     </script>
 
     <style>
-        /* Palette — flat charcoal dashboard (matches the VIP Check In app) */
+        /* Palette — frosted glass on a night photo */
         :root {
-            --app-bg: #131316;
-            --card-bg: rgba(28, 28, 34, 0.68);
-            --solid-bg: #1c1c22;
-            --modal-bg: rgba(28, 28, 34, 0.62);
-            --modal-backdrop: linear-gradient(rgba(9, 9, 11, 0.4), rgba(9, 9, 11, 0.4)), #131316 url('https://i.imgur.com/APGH0Wv.png') center / cover no-repeat;
+            --app-bg: #12092b;
+            --card-bg: rgba(0, 0, 0, 0.45);
+            --solid-bg: #1a1430;
+            --modal-bg: rgba(0, 0, 0, 0.5);
+            --modal-backdrop: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)), #12092b url('https://i.imgur.com/J3ZEdiB.png') center / cover no-repeat;
             --highlight-bg: rgba(255, 255, 255, 0.1);
-            --inset-bg: rgba(12, 12, 16, 0.45);
-            --accent-blue: #2563eb;
-            --accent-blue-hover: #1d4ed8;
-            --accent-purple: #8b5cf6;
+            --inset-bg: rgba(0, 0, 0, 0.3);
+            --accent-amber: #ffb020;
+            --accent-purple: #a855f7;
             --text-main: #ffffff;
             --text-muted: #9ca3af;
-            --text-dim: #71717a;
-            --line: rgba(39, 39, 42, 0.8);
-            --line-strong: #3f3f46;
+            --text-dim: #6b7280;
+            --line: rgba(255, 255, 255, 0.1);
+            --line-strong: rgba(255, 255, 255, 0.12);
             --font-stack: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
@@ -92,10 +92,10 @@
         }
 
         /* Custom scrollbar */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #52525b; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
 
         .custom-scroll {
             -webkit-overflow-scrolling: touch;
@@ -120,22 +120,20 @@
         /* Security Input Masking */
         .no-save-pass { -webkit-text-security: disc !important; text-security: disc !important; }
 
-        /* Page background photo (same as the VIP Check In app). A fixed layer (not
-           background-attachment: fixed) so it also stays put on iPhone; the tint keeps
-           text on top readable. Sized to the large viewport (100lvh) so it already reaches
-           under the browser's top and bottom bars when they shrink away while scrolling,
-           instead of leaving a grey strip until the scroll stops. */
+        /* Page background photo. A fixed layer (not background-attachment: fixed) so it
+           also stays put on iPhone. Sized to the large viewport (100lvh) so it already
+           reaches under the browser's top and bottom bars when they shrink away while
+           scrolling, instead of leaving a strip until the scroll stops. */
         .night-bg {
             position: fixed; top: 0; left: 0; right: 0; height: 100vh; height: 100lvh;
             z-index: -1; pointer-events: none;
-            background: #131316 url('https://i.imgur.com/APGH0Wv.png') center / cover no-repeat;
+            background: #12092b url('https://i.imgur.com/J3ZEdiB.png') center / cover no-repeat;
         }
-        .night-bg::after { content: ''; position: absolute; inset: 0; background: rgba(19, 19, 22, 0.25); }
         .night-overlay { display: none; }
 
-        /* Scroll inside a fixed layer instead of scrolling the page (same as the VIP Check In
-           app). When the page itself scrolls, iPhone Safari slides its bars away and fades
-           a grey gradient over the top and bottom edges; this keeps the photo edge to edge. */
+        /* Scroll inside a fixed layer instead of scrolling the page. When the page itself
+           scrolls, iPhone Safari slides its bars away and fades a grey gradient over the
+           top and bottom edges; this keeps the photo edge to edge. */
         html, body { height: 100%; overflow: hidden; }
         #pageScroll {
             position: fixed; inset: 0; z-index: 10;
@@ -143,21 +141,25 @@
             overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
         }
 
-        /* Pop-ups sit on the background photo itself (darker tint) rather than a flat black
-           wash, so their see-through panels show it the same way the page cards do. */
+        /* Pop-ups sit on the background photo itself rather than a flat black wash. */
         .modal-backdrop { background: var(--modal-backdrop); }
-        .modal-backdrop + .night-glass-card { background: var(--modal-bg); box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5); }
+        .modal-backdrop + .night-glass-card { background: var(--modal-bg); }
 
-        /* CARDS */
+        /* CARDS — night-mode frosted glass */
         .night-glass-card {
             background: var(--card-bg);
-            border: 1px solid var(--line);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            -webkit-backdrop-filter: blur(24px);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            border-top-color: rgba(255, 255, 255, 0.12) !important;
+            border-left-color: rgba(255, 255, 255, 0.12) !important;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5), 0 0 40px rgba(124, 58, 237, 0.15) !important;
         }
 
         .night-glass-card-subtle {
             background: var(--inset-bg);
             border: 1px solid var(--line);
+            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
         }
 
         .logo-box {
@@ -169,26 +171,52 @@
 
         /* BUTTONS */
         .night-btn-primary {
-            background: var(--accent-blue);
+            background: linear-gradient(to right, #9333ea, #2563eb);
             color: #fff;
             border: none;
-            transition: background 0.15s, transform 0.1s;
+            box-shadow: 0 10px 15px -3px rgba(88, 28, 135, 0.5);
+            transition: background 0.3s, transform 0.3s, box-shadow 0.3s;
         }
-        .night-btn-primary:hover { background: var(--accent-blue-hover); }
-        .night-btn-primary:active { transform: scale(0.97); }
+        .night-btn-primary:hover { background: linear-gradient(to right, #a855f7, #3b82f6); transform: translateY(-2px); }
+        .night-btn-primary:active { transform: scale(0.98); }
+        .night-btn-primary:disabled { opacity: 0.7; transform: none; }
+
+        /* The big "Log Hours" button */
+        .btn-log {
+            background: linear-gradient(to right, #9333ea, #4f46e5);
+            color: #fff;
+            border: none;
+            box-shadow: 0 0 20px rgba(124, 58, 237, 0.3);
+            transition: background 0.3s, transform 0.3s;
+        }
+        .btn-log:hover { background: linear-gradient(to right, #a855f7, #6366f1); transform: translateY(-2px); }
+        .btn-log:active { transform: scale(0.98); }
 
         .night-btn-link {
-            background: var(--card-bg);
-            border: 1px solid var(--line-strong);
-            color: #e4e4e7;
-            transition: background 0.15s, color 0.15s, transform 0.1s;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #d1d5db;
+            transition: background 0.3s, color 0.3s, border-color 0.3s, transform 0.3s;
         }
-        .night-btn-link:hover { background: var(--highlight-bg); color: #fff; }
+        .night-btn-link:hover { background: var(--highlight-bg); border-color: rgba(255, 255, 255, 0.3); color: #fff; transform: translateY(-2px); }
         .night-btn-link:active { transform: scale(0.97); }
 
-        button.night-btn-primary, button.night-btn-link { border-radius: 9999px; }
-        /* Tall buttons (e.g. staff Add beside a multi-select) would become ovals as pills */
-        button.night-btn-link.h-\[80px\] { border-radius: 14px; }
+        /* Default corner radius; any rounded-* class on the button still wins */
+        :where(button.night-btn-primary, button.night-btn-link) { border-radius: 0.75rem; }
+
+        /* Task chips */
+        .task-chip {
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.4);
+            color: #d1d5db;
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-align: left;
+            transition: background 0.3s, border-color 0.3s, transform 0.3s;
+        }
+        .task-chip:hover { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.3); transform: translateY(-2px); }
 
         /* VIEW SWITCHING LOGIC */
         .view { display: none; opacity: 0; transform: translateY(12px); transition: 0.4s ease; width: 100%; }
@@ -197,20 +225,32 @@
         /* INPUT STYLES */
         .control-input {
             width: 100%;
-            background: var(--inset-bg);
+            background: rgba(0, 0, 0, 0.5);
             border: 1px solid var(--line);
             color: var(--text-main);
-            border-radius: 12px;
-            padding: 0.7rem 1rem;
+            border-radius: 0.75rem;
+            padding: 0.875rem 1rem;
             margin-bottom: 0.85rem;
             outline: none;
-            transition: border-color 0.15s;
-            font: 14px var(--font-stack);
+            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
+            transition: border-color 0.3s, background-color 0.3s;
+            font: 500 15px var(--font-stack);
         }
 
-        .control-input::placeholder { color: var(--text-dim); }
+        .control-input::placeholder { color: #4b5563; }
 
-        .control-input:focus { border-color: #52525b; }
+        .control-input:focus { border-color: var(--accent-amber); background-color: rgba(0, 0, 0, 0.7); }
+        #loginView .control-input:focus, #gateModal .control-input:focus { border-color: var(--accent-purple); }
+
+        /* Keep autofilled fields see-through */
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover,
+        input:-webkit-autofill:focus,
+        input:-webkit-autofill:active {
+            -webkit-box-shadow: 0 0 0 30px rgba(255, 255, 255, 0.1) inset !important;
+            -webkit-text-fill-color: white !important;
+            transition: background-color 5000s ease-in-out 0s;
+        }
 
         select.control-input {
             appearance: none;
@@ -249,10 +289,10 @@
             color-scheme: dark;
         }
         input[type="date"].control-input::-webkit-date-and-time-value { text-align: left; }
-        input[type="date"].control-input::-webkit-calendar-picker-indicator { filter: invert(0.6); cursor: pointer; margin-left: auto; }
+        input[type="date"].control-input::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.5; cursor: pointer; margin-left: auto; }
 
         /* Form Labels */
-        .form-label { display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 12px; font-weight: 500; line-height: 1.4; }
+        .form-label { display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px; font-weight: 500; line-height: 1.4; }
         .form-group { margin-bottom: 1.5rem; }
 
         /* Loaders & Toasts */
@@ -303,18 +343,18 @@
         .cam-print .cam-caption { position: absolute; left: 10px; right: 10px; bottom: 5px; font-size: 10px; color: #52525b; font-weight: 600; line-height: 1.3; }
         .cam-print .cam-caption > span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         /* Header shortcut: a camera button with a badge + tiny prints when new photos develop */
-        .cam-shortcut { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 9999px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(251, 191, 36, 0.35); transition: background 0.2s, border-color 0.2s, transform 0.2s; }
-        .cam-shortcut:hover { background: rgba(245, 158, 11, 0.2); border-color: rgba(251, 191, 36, 0.6); }
+        .cam-shortcut { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 9999px; background: rgba(255, 176, 32, 0.1); border: 1px solid #ffb020; transition: background 0.2s, border-color 0.2s, transform 0.2s; }
+        .cam-shortcut:hover { background: rgba(255, 176, 32, 0.2); }
         .cam-shortcut:active { transform: scale(0.96); }
         .cam-shortcut.has-new { border-color: rgba(251, 191, 36, 0.7); box-shadow: 0 0 12px rgba(251, 191, 36, 0.25); }
         .cam-mini-stack { display: flex; align-items: center; padding-left: 5px; margin-right: 1px; }
         .cam-mini { width: 14px; height: 16px; margin-left: -5px; background: #f8f5ee; padding: 1px 1px 3px; border-radius: 1px; box-shadow: 0 1px 3px rgba(0,0,0,0.5); }
         .cam-mini img { width: 100%; height: 100%; object-fit: cover; display: block; background: #2a2a2e; filter: saturate(1.15) sepia(0.12); }
         .cam-badge { position: absolute; top: -7px; right: -7px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 9999px; background: #e11d48; color: #fff; font-size: 9px; font-weight: 800; line-height: 16px; text-align: center; box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.9); }
-        .cam-shortcut-title { font-size: 10px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #fcd34d; white-space: nowrap; }
-        .cam-shortcut-sub { font-size: 10px; font-weight: 600; color: rgba(233, 213, 255, 0.75); white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; padding-left: 6px; border-left: 1px solid rgba(251, 191, 36, 0.3); }
+        .cam-shortcut-title { font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #ffb020; white-space: nowrap; }
+        .cam-shortcut-sub { font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #d1d5db; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; padding-left: 8px; border-left: 1px solid rgba(255, 176, 32, 0.35); }
         .cam-shortcut.has-new .cam-shortcut-sub { color: #fde68a; }
-        .cam-dev-dot { width: 5px; height: 5px; border-radius: 9999px; background: #f59e0b; animation: cam-blink 1.4s ease-in-out infinite; }
+        .cam-dev-dot { width: 6px; height: 6px; border-radius: 9999px; background: #ffb020; animation: cam-blink 1.4s ease-in-out infinite; }
         @keyframes cam-blink { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
         .cam-shortcut.hidden, .cam-mini-stack.hidden { display: none; }
         .cam-section-pulse { animation: cam-pulse 1.2s ease-out 1; }
@@ -350,40 +390,49 @@
         <div class="flex-1 w-full flex flex-col items-center justify-center py-8 sm:py-10">
 
             <!-- LOGIN VIEW -->
-            <div id="loginView" class="view active mx-auto w-full" style="max-width: min(24rem, calc(100% - 2.5rem));">
-                <div class="night-glass-card rounded-3xl px-6 py-8 sm:p-10 text-center border-purple-400/40">
-                    <div class="logo-box mb-5">
-                        <img src="https://i.imgur.com/p2qZOL5.png" alt="CAB Logo" class="h-[60px] w-auto mx-auto object-contain card-logo" />
+            <div id="loginView" class="view active mx-auto w-full" style="max-width: min(28rem, calc(100% - 1rem));">
+                <div class="night-glass-card rounded-3xl px-6 py-10 sm:p-10">
+                    <div class="text-center mb-10">
+                        <div class="logo-box mb-4">
+                            <div class="inline-flex items-center justify-center w-24 h-24 rounded-full bg-black/40 border border-white/10 shadow-inner">
+                                <img src="https://i.imgur.com/p2qZOL5.png" alt="CAB Logo" class="w-16 h-16 object-contain card-logo" />
+                            </div>
+                        </div>
+                        <h3 class="text-3xl font-bold tracking-tight mb-2 text-white">Welcome Back</h3>
+                        <p class="text-sm text-gray-400 font-light">Enter your Student ID for <span id="loginActiveYear" class="text-[#c084fc] font-medium">...</span>.</p>
                     </div>
-                    <h3 class="text-[22px] font-bold mb-2 text-white">Timesheet</h3>
-                    <p class="text-purple-200/80 mb-8 font-medium text-sm leading-relaxed max-w-lg mx-auto">Enter your Student ID for <span id="loginActiveYear" class="text-purple-300 font-bold">...</span>.</p>
 
-                    <div class="mb-6 text-center">
-                        <label for="loginStudentID" class="form-label">Student ID</label>
-                        <input type="number" id="loginStudentID" class="control-input text-center text-xl tracking-widest !py-4" placeholder="e.g. 123456" autocomplete="off" onkeyup="if(event.key==='Enter') studentLogin()"/>
+                    <div class="mb-6 space-y-2">
+                        <label for="loginStudentID" class="text-sm font-medium text-gray-200 ml-1 block">Student ID</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><circle cx="8" cy="12" r="2"></circle><path d="M14 10h4"></path><path d="M14 14h4"></path></svg>
+                            </div>
+                            <input type="number" id="loginStudentID" class="control-input !mb-0 !pl-11 !bg-black/30 focus:!bg-black/50" placeholder="e.g. 123456" autocomplete="off" onkeyup="if(event.key==='Enter') studentLogin()"/>
+                        </div>
                     </div>
 
-                    <button class="w-full night-btn-primary font-bold py-4 rounded-2xl flex justify-center items-center gap-2 text-base tracking-wide uppercase" id="loginBtn" onclick="studentLogin()">
-                        <span class="text-white">Access Timesheet</span>
+                    <button class="w-full night-btn-primary font-semibold py-3.5 rounded-xl flex justify-center items-center gap-2 text-base" id="loginBtn" onclick="studentLogin()">
+                        <span class="text-white">Sign In</span>
                         <div class="loader" id="loginLoader"></div>
                     </button>
 
-                    <div class="mt-8 pt-6 border-t border-purple-500/20 flex flex-col items-center gap-2">
-                        <span class="text-purple-300/50 text-[11px] tracking-wide">© <span id="year"></span> Canyon Activities Board</span>
-                        <button class="opacity-60 hover:opacity-100 transition-all uppercase tracking-widest bg-transparent border-none text-[10px] cursor-pointer text-purple-400 hover:text-purple-300 p-1" onclick="showGate()">Staff Access</button>
+                    <div class="mt-8 pt-6 border-t border-white/10 flex flex-col items-center gap-2">
+                        <span class="text-gray-500 text-[11px] tracking-wide">© <span id="year"></span> Canyon Activities Board</span>
+                        <button class="transition-colors bg-transparent border-none text-sm cursor-pointer text-[#c084fc] hover:text-[#d8b4fe] p-1" onclick="showGate()">Staff Access</button>
                     </div>
                 </div>
             </div>
 
             <!-- TIMESHEET VIEW -->
-            <div id="timesheetView" class="view max-w-2xl w-full mx-auto">
-                <div class="night-glass-card rounded-3xl p-6 sm:p-10 border-purple-400/40">
+            <div id="timesheetView" class="view max-w-3xl w-full mx-auto">
+                <div class="night-glass-card rounded-[2rem] p-6 sm:p-10">
 
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-purple-500/20 pb-6 mb-6 gap-4">
+                    <div class="flex flex-col sm:flex-row justify-between items-start mb-10 gap-6">
                         <div>
-                            <h3 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white" id="ts-greeting">Hello Student,</h3>
-                            <p class="text-purple-300 font-medium text-sm mt-1"><span id="ts-position">Position</span> &bull; <span id="ts-team">Team Name</span></p>
-                            <div class="flex flex-wrap items-center gap-2 mt-2">
+                            <h3 class="text-4xl sm:text-5xl font-bold tracking-tight text-white mb-2" id="ts-greeting">Hello Student,</h3>
+                            <p class="text-gray-400 font-medium mb-5"><span id="ts-position">Position</span> &bull; <span id="ts-team">Team Name</span></p>
+                            <div class="flex flex-wrap items-center gap-2">
                                 <!-- Disposable camera shortcut (filled in by loadCamera) -->
                                 <button id="cameraShortcut" class="cam-shortcut hidden" onclick="cameraShortcutClick()" title="Disposable Camera" aria-label="Disposable Camera">
                                     <span id="cameraShortcutPreviews" class="cam-mini-stack hidden"></span>
@@ -395,74 +444,76 @@
                                 <div id="ts-manOfCab" class="hidden items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-widest text-amber-300 bg-amber-500/15 border border-amber-400/40 px-2.5 py-1 rounded-full shadow-[0_0_12px_rgba(251,191,36,0.25)]"><i data-lucide="trophy" class="w-3.5 h-3.5 text-amber-400"></i> 2026 Man of CAB</div>
                             </div>
                         </div>
-                        <div class="sm:text-right">
-                            <div class="text-purple-200/70 text-[10px] font-bold uppercase tracking-widest mb-1" id="ts-hoursLabel">This Week</div>
-                            <div class="text-4xl font-black text-white flex items-baseline gap-1 justify-start sm:justify-end">
-                                <span id="ts-totalHours">0.0</span>
-                                <span class="text-xs font-semibold text-purple-300/70" id="ts-reqHours">/ 0.0 required</span>
+                        <div class="text-left sm:text-right sm:mt-2">
+                            <div class="text-[11px] font-bold text-gray-400 tracking-widest mb-1 uppercase" id="ts-hoursLabel">This Week</div>
+                            <div class="flex items-baseline gap-1.5 justify-start sm:justify-end whitespace-nowrap">
+                                <span id="ts-totalHours" class="text-5xl font-bold">0.0</span>
+                                <span class="text-gray-400 font-medium" id="ts-reqHours">/ 0.0 required</span>
                             </div>
                         </div>
                     </div>
 
                     <!-- Progress toward this week's minimum -->
-                    <div id="ts-progress" class="hidden mb-5">
-                        <div class="h-2.5 w-full rounded-full bg-slate-900/70 border border-purple-500/20 overflow-hidden">
+                    <div id="ts-progress" class="hidden mb-10">
+                        <div class="h-2.5 w-full rounded-full bg-black/40 border border-white/5 overflow-hidden mb-3">
                             <div id="ts-progressFill" class="h-full rounded-full transition-all duration-500" style="width:0%"></div>
                         </div>
-                        <div id="ts-progressText" class="text-[11px] font-semibold text-purple-200/70 mt-2"></div>
+                        <div id="ts-progressText" class="text-sm font-medium text-gray-400"></div>
                     </div>
 
                     <!-- Year total + streak -->
-                    <div class="grid grid-cols-2 gap-3 mb-8">
-                        <div class="night-glass-card-subtle rounded-2xl border-purple-400/20 p-3.5">
-                            <div class="text-purple-200/60 text-[10px] font-bold uppercase tracking-widest mb-1">This Year</div>
-                            <div class="text-xl font-black text-white"><span id="ts-yearTotal">0.0</span> <span class="text-xs font-semibold text-purple-300/70">hrs</span></div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-12">
+                        <div class="night-glass-card-subtle rounded-2xl p-6 hover:bg-black/40 transition-colors">
+                            <div class="text-[11px] font-bold text-gray-400 tracking-widest mb-3 uppercase">This Year</div>
+                            <div class="text-4xl font-bold text-white"><span id="ts-yearTotal">0.0</span> <span class="text-base font-normal text-gray-500">hrs</span></div>
                         </div>
-                        <div class="night-glass-card-subtle rounded-2xl border-purple-400/20 p-3.5">
-                            <div class="text-purple-200/60 text-[10px] font-bold uppercase tracking-widest mb-1" id="ts-streakLabel">Weeks On Target</div>
-                            <div class="text-xl font-black text-white flex items-center gap-1.5"><i data-lucide="flame" class="w-4 h-4 text-amber-400" id="ts-streakIcon"></i><span id="ts-streak">0</span> <span class="text-xs font-semibold text-purple-300/70" id="ts-streakUnit">in a row</span></div>
+                        <div class="night-glass-card-subtle rounded-2xl p-6 hover:bg-black/40 transition-colors">
+                            <div class="text-[11px] font-bold text-gray-400 tracking-widest mb-3 uppercase" id="ts-streakLabel">Weeks On Target</div>
+                            <div class="text-4xl font-bold text-white flex items-center gap-2"><i data-lucide="flame" class="w-8 h-8 text-amber-400" id="ts-streakIcon"></i><span id="ts-streak">0</span> <span class="text-base font-normal text-gray-500" id="ts-streakUnit">in a row</span></div>
                         </div>
                     </div>
 
-                    <div class="mb-8">
-                        <div class="text-purple-300 text-xs font-bold tracking-wider uppercase mb-4 flex justify-between items-center">
+                    <div class="mb-12">
+                        <div class="text-gray-400 text-xs font-bold tracking-widest uppercase mb-5 flex justify-between items-center">
                             <span>Logged Hours</span>
                             <div class="flex items-center gap-2">
                                 <span id="autosaveIndicator" class="hidden text-emerald-400 text-[10px] font-bold flex items-center gap-1 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
                                     <i data-lucide="check" class="w-3 h-3"></i> Saved
                                 </span>
-                                <span id="ts-weekLabel" class="text-purple-200/60 bg-slate-900/50 px-2 py-0.5 rounded border border-purple-400/20 text-[10px] uppercase font-bold tracking-wider">Current Week</span>
+                                <span id="ts-weekLabel" class="bg-black/30 border border-white/10 text-gray-300 text-[11px] font-bold tracking-widest uppercase px-4 py-2 rounded-lg">Current Week</span>
                             </div>
                         </div>
-                        <div id="ts-entriesList" class="flex flex-col gap-3 max-h-[250px] sm:max-h-[350px] overflow-y-auto pr-2 custom-scroll"></div>
+                        <div id="ts-entriesList" class="flex flex-col gap-3 max-h-[320px] sm:max-h-[420px] overflow-y-auto pr-2 pt-1 custom-scroll"></div>
                     </div>
 
-                    <div id="entryFormBox" class="night-glass-card-subtle rounded-2xl sm:rounded-2xl p-4 sm:p-6 border-purple-400/30 mb-6 sm:mb-8 transition-all duration-300 overflow-hidden relative">
-                        <div class="flex justify-between items-center mb-5">
-                            <h4 id="formModeTitle" class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2"><i data-lucide="clock" class="w-4 h-4 text-purple-400"></i> Log New Hours</h4>
+                    <div id="entryFormBox" class="bg-black/40 border border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl mb-6 sm:mb-8 transition-all duration-300 overflow-hidden relative">
+                        <!-- Soft purple glow in the corner -->
+                        <div class="absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl pointer-events-none" style="background: rgba(168, 85, 247, 0.1);"></div>
+                        <div class="relative flex justify-between items-center mb-8">
+                            <h4 id="formModeTitle" class="text-sm font-bold text-white uppercase tracking-widest flex items-center gap-2.5"><i data-lucide="clock" class="w-[18px] h-[18px] text-gray-400"></i> Log New Hours</h4>
                             <button id="cancelEditBtn" class="hidden text-xs text-rose-400 hover:text-rose-300 transition font-semibold flex items-center gap-1 bg-slate-900/50 px-2 py-1 rounded" onclick="cancelEdit()"><i data-lucide="x" class="w-3 h-3"></i> Cancel</button>
                         </div>
                         
-                        <div class="flex flex-col sm:flex-row gap-4 mb-4">
-                            <div class="form-group !mb-0 flex-1">
+                        <div class="relative grid grid-cols-1 sm:grid-cols-2 gap-x-6 mb-2">
+                            <div class="form-group !mb-4">
                                 <label for="entryDate" class="form-label">Date</label>
-                                <input type="date" id="entryDate" class="control-input" />
+                                <input type="date" id="entryDate" class="control-input !mb-0" />
                             </div>
-                            <div class="form-group !mb-0 sm:w-1/3">
+                            <div class="form-group !mb-4">
                                 <label for="entryHours" class="form-label">Hours</label>
-                                <input type="number" id="entryHours" class="control-input" step="0.25" min="0" placeholder="e.g. 2.5" />
+                                <input type="number" id="entryHours" class="control-input !mb-0" step="0.25" min="0" placeholder="e.g. 2.5" />
                             </div>
                         </div>
-                        <div class="form-group">
+                        <div class="relative form-group !mb-8">
                             <label for="entryTask" class="form-label">Task Description</label>
-                            <input type="text" id="entryTask" class="control-input" placeholder="What did you work on?" />
-                            <div id="recentTasks" class="hidden">
-                                <div class="text-[10px] text-purple-300/60 font-bold uppercase tracking-widest mb-2">Common tasks &mdash; tap to reuse</div>
-                                <div id="recentTasksList" class="flex flex-wrap gap-2"></div>
+                            <input type="text" id="entryTask" class="control-input !mb-0" placeholder="What did you work on?" />
+                            <div id="recentTasks" class="hidden mt-8">
+                                <div class="text-[11px] text-gray-500 font-bold uppercase tracking-widest mb-4">Common tasks &mdash; tap to reuse</div>
+                                <div id="recentTasksList" class="flex flex-wrap gap-2.5"></div>
                             </div>
                         </div>
-                        <button id="saveEntryBtn" class="w-full night-btn-link text-white font-bold py-3.5 rounded-xl transition-all flex justify-center items-center gap-2 hover:bg-white/10 border-purple-400/50 shadow-md" onclick="saveTimeEntry()">
-                            <i data-lucide="plus" class="w-4 h-4 text-purple-400" id="saveEntryIcon"></i> <span id="saveEntryText">Add to Week</span>
+                        <button id="saveEntryBtn" class="relative w-full btn-log text-white font-bold tracking-wide py-4 rounded-xl flex justify-center items-center gap-2" onclick="saveTimeEntry()">
+                            <i data-lucide="arrow-right" class="w-[18px] h-[18px] text-white" id="saveEntryIcon"></i> <span id="saveEntryText">Log Hours</span>
                         </button>
                     </div>
 
@@ -797,16 +848,16 @@
         <div id="gateBackdrop" class="absolute inset-0 modal-backdrop" onclick="hideGate()"></div>
         <div id="gateCard" class="relative w-full max-w-sm night-glass-card rounded-3xl p-8 flex flex-col items-center text-center shadow-2xl border-purple-400/40 z-10 transition-all duration-300">
             <div class="logo-box mb-5">
-                <div class="w-16 h-16 rounded-2xl bg-slate-900/50 border border-purple-400/30 flex items-center justify-center relative z-10 shadow-lg">
-                    <i data-lucide="lock" class="w-7 h-7 text-purple-300"></i>
+                <div class="w-20 h-20 rounded-full bg-black/40 border border-white/10 flex items-center justify-center relative z-10 shadow-inner">
+                    <i data-lucide="lock" class="w-8 h-8 text-gray-300"></i>
                 </div>
             </div>
-            <h3 class="text-2xl font-bold mb-1 text-white tracking-tight">Staff Login</h3>
-            <p class="text-purple-200/70 text-xs mb-6">Enter admin password to access system settings and master hours.</p>
+            <h3 class="text-3xl font-bold mb-2 text-white tracking-tight">Staff Login</h3>
+            <p class="text-gray-400 font-light text-sm mb-8">Enter admin password to access system settings and master hours.</p>
             
             <input type="password" id="adminPass" class="control-input text-center mb-6 no-save-pass" placeholder="Password" autocomplete="off" spellcheck="false" onkeyup="if(event.key==='Enter') verifyAdmin()"/>
             
-            <button class="w-full night-btn-primary font-bold py-3.5 rounded-2xl flex justify-center items-center gap-2 text-sm shadow-lg" id="gateBtn" onclick="verifyAdmin()">
+            <button class="w-full night-btn-primary font-semibold py-3.5 rounded-xl flex justify-center items-center gap-2 text-base" id="gateBtn" onclick="verifyAdmin()">
                 <span>Authorize</span> <div class="loader" id="gateLoader"></div>
             </button>
         </div>
@@ -3109,11 +3160,10 @@
         document.getElementById('entryFormBox').classList.add('border-amber-500/50', '!bg-amber-900/10');
         
         const saveBtn = document.getElementById('saveEntryBtn');
-        saveBtn.classList.remove('night-btn-link');
-        saveBtn.classList.add('bg-gradient-to-r', 'from-amber-600', 'to-orange-600', 'border-amber-500/50');
+        saveBtn.classList.remove('btn-log');
+        saveBtn.classList.add('bg-gradient-to-r', 'from-amber-600', 'to-orange-600');
         document.getElementById('saveEntryText').textContent = "Update Entry";
         document.getElementById('saveEntryIcon').setAttribute('data-lucide', 'save');
-        document.getElementById('saveEntryIcon').classList.replace('text-purple-400', 'text-white');
         
         document.getElementById('cancelEditBtn').classList.remove('hidden');
         document.getElementById('cancelEditBtn').classList.add('flex');
@@ -3126,16 +3176,15 @@
         document.getElementById('entryDate').value = getAZDateStr();
         document.getElementById('entryHours').value = "";
         document.getElementById('entryTask').value = "";
-        document.getElementById('formModeTitle').innerHTML = '<i data-lucide="clock" class="w-4 h-4 text-purple-400"></i> Log New Hours';
+        document.getElementById('formModeTitle').innerHTML = '<i data-lucide="clock" class="w-[18px] h-[18px] text-gray-400"></i> Log New Hours';
         document.getElementById('formModeTitle').classList.remove('text-amber-400');
         document.getElementById('entryFormBox').classList.remove('border-amber-500/50', '!bg-amber-900/10');
         
         const saveBtn = document.getElementById('saveEntryBtn');
-        saveBtn.classList.add('night-btn-link');
-        saveBtn.classList.remove('bg-gradient-to-r', 'from-amber-600', 'to-orange-600', 'border-amber-500/50');
-        document.getElementById('saveEntryText').textContent = "Add to Week";
-        document.getElementById('saveEntryIcon').setAttribute('data-lucide', 'plus');
-        document.getElementById('saveEntryIcon').classList.replace('text-white', 'text-purple-400');
+        saveBtn.classList.add('btn-log');
+        saveBtn.classList.remove('bg-gradient-to-r', 'from-amber-600', 'to-orange-600');
+        document.getElementById('saveEntryText').textContent = "Log Hours";
+        document.getElementById('saveEntryIcon').setAttribute('data-lucide', 'arrow-right');
 
         document.getElementById('cancelEditBtn').classList.add('hidden');
         document.getElementById('cancelEditBtn').classList.remove('flex');
@@ -3306,7 +3355,7 @@
         const totalEl = document.getElementById('ts-totalHours');
         
         if(state.currentWeekEntries.length === 0) {
-            list.innerHTML = `<div class="text-purple-200/50 text-xs italic py-6 text-center night-glass-card-subtle rounded-2xl border-dashed border-purple-400/20">No hours logged yet this week.</div>`;
+            list.innerHTML = `<div class="text-gray-500 text-sm py-8 text-center bg-black/30 rounded-2xl border border-dashed border-white/10">No hours logged yet this week.</div>`;
             totalEl.textContent = "0.0";
             checkStudentProgress(0);
             return;
@@ -3317,17 +3366,17 @@
             total += Number(entry.hours);
             const dateStr = new Date(entry.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
             return `
-            <div class="flex items-center justify-between night-glass-card-subtle p-3 rounded-2xl border-purple-400/20 gap-3 transition-all hover:border-purple-400/50 group">
-                <div class="flex items-center gap-4 overflow-hidden flex-1 pl-1">
-                    <div class="bg-slate-900/60 text-purple-300 font-bold px-3 py-2 rounded-xl text-center min-w-[3.5rem] shrink-0 border border-purple-500/20 shadow-inner">${entry.hours}</div>
+            <div class="flex items-center justify-between bg-black/30 border border-white/10 rounded-2xl p-4 gap-3 shadow-inner hover:bg-black/40 hover:-translate-y-0.5 hover:border-white/20 transition-all duration-300 group">
+                <div class="flex items-center gap-5 overflow-hidden flex-1">
+                    <div class="w-14 h-14 shrink-0 rounded-xl bg-black/50 flex items-center justify-center text-xl font-bold text-gray-200 border border-white/5">${entry.hours}</div>
                     <div class="flex flex-col overflow-hidden">
-                        <div class="text-white font-medium text-sm break-words [overflow-wrap:anywhere] mb-0.5">${escapeHTML(entry.task)}</div>
-                        <div class="text-purple-300/60 text-[10px] uppercase font-bold tracking-wider">${dateStr}</div>
+                        <div class="font-semibold text-gray-100 text-base sm:text-lg break-words [overflow-wrap:anywhere]">${escapeHTML(entry.task)}</div>
+                        <div class="text-xs font-medium text-gray-500 mt-1 uppercase tracking-wider">${dateStr}</div>
                     </div>
                 </div>
-                <div class="flex shrink-0 gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity pr-1">
-                    <button class="text-blue-400 hover:text-white p-2.5 bg-slate-900/50 hover:bg-blue-600/40 rounded-xl transition border border-transparent hover:border-blue-500/30" onclick="editEntry('${escapeHTML(String(entry.id))}')" title="Edit"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
-                    <button class="text-rose-400 hover:text-white p-2.5 bg-slate-900/50 hover:bg-rose-600/40 rounded-xl transition border border-transparent hover:border-rose-500/30" onclick="removeEntry('${escapeHTML(String(entry.id))}')" title="Remove"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                <div class="flex shrink-0 gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button class="text-blue-400 hover:text-white p-2.5 bg-black/40 hover:bg-blue-600/40 rounded-xl transition border border-transparent hover:border-blue-500/30" onclick="editEntry('${escapeHTML(String(entry.id))}')" title="Edit"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                    <button class="text-rose-400 hover:text-white p-2.5 bg-black/40 hover:bg-rose-600/40 rounded-xl transition border border-transparent hover:border-rose-500/30" onclick="removeEntry('${escapeHTML(String(entry.id))}')" title="Remove"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                 </div>
             </div>`;
         }).join('');
@@ -3361,7 +3410,7 @@
             const met = totalHours >= reqHours;
             const fill = document.getElementById('ts-progressFill');
             fill.style.width = Math.min(100, (totalHours / reqHours) * 100) + '%';
-            fill.className = 'h-full rounded-full transition-all duration-500 ' + (met ? 'bg-emerald-500' : 'bg-amber-500');
+            fill.className = 'h-full rounded-full transition-all duration-500 ' + (met ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : 'bg-amber-500 shadow-[0_0_10px_rgba(255,176,32,0.5)]');
             // Days left in the Mon–Sun week, counting today (Sunday = 1)
             const azDay = new Date(getAZDateStr() + 'T00:00:00').getDay();
             const daysLeft = azDay === 0 ? 1 : 8 - azDay;
@@ -3434,7 +3483,7 @@
         const box = document.getElementById('recentTasks');
         box.classList.toggle('hidden', state.recentTasks.length === 0);
         document.getElementById('recentTasksList').innerHTML = state.recentTasks.map((t, i) =>
-            `<button type="button" onclick="useRecentTask(${i})" class="text-left text-xs font-medium text-purple-100 bg-slate-900/60 hover:bg-white/10 border border-purple-500/30 hover:border-purple-400/60 rounded-xl px-3 py-1.5 transition max-w-full break-words [overflow-wrap:anywhere]">${escapeHTML(t.task)}</button>`
+            `<button type="button" onclick="useRecentTask(${i})" class="task-chip max-w-full break-words [overflow-wrap:anywhere]">${escapeHTML(t.task)}</button>`
         ).join('');
     }
 
