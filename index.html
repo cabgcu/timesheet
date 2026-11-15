@@ -86,8 +86,8 @@
         /* Zoom the whole UI out a bit. Tailwind's text, spacing, padding and
            max-widths are all in rem, so a smaller root size scales everything
            down together (16px is the browser default). */
-        html { font-size: 15px; }
-        @media (max-width: 640px) { html { font-size: 14px; } }
+        html { font-size: 14px; }
+        @media (max-width: 640px) { html { font-size: 12.5px; } }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body {
@@ -240,7 +240,7 @@
             outline: none;
             box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
             transition: border-color 0.3s, background-color 0.3s;
-            font: 500 15px var(--font-stack);
+            font: 500 0.9375rem var(--font-stack);
         }
 
         .control-input::placeholder { color: #4b5563; }
@@ -298,7 +298,7 @@
         input[type="date"].control-input::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.5; cursor: pointer; margin-left: auto; }
 
         /* Form Labels */
-        .form-label { display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 13px; font-weight: 500; line-height: 1.4; }
+        .form-label { display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.8125rem; font-weight: 500; line-height: 1.4; }
         .form-group { margin-bottom: 1.5rem; }
 
         /* Loaders & Toasts */
@@ -314,14 +314,14 @@
             left: 50%;
             transform: translateX(-50%);
             width: 90%; max-width: 400px;
-            padding: 14px 24px;
+            padding: 0.875rem 1.5rem;
             border-radius: 9999px;
             z-index: 2000;
             display: none;
             text-align: center;
             background: #fff;
             color: #18181b;
-            font-size: 14px;
+            font-size: 0.875rem;
             font-weight: 600;
             box-shadow: 0 20px 40px rgba(0,0,0,0.4);
         }
@@ -345,8 +345,8 @@
         .cam-print:hover { transform: rotate(-1deg) scale(1.02); }
         .cam-print .cam-img { aspect-ratio: 1; width: 100%; object-fit: cover; background: #2a2a2e; display: block; filter: saturate(1.15) contrast(1.05) sepia(0.12); }
         .cam-stamp { font-family: 'Courier New', monospace; font-weight: 700; color: #ff8a1f; text-shadow: 0 0 4px rgba(255, 110, 0, 0.8); letter-spacing: 0.05em; }
-        .cam-print .cam-stamp { position: absolute; right: 14px; bottom: 46px; font-size: 11px; }
-        .cam-print .cam-caption { position: absolute; left: 10px; right: 10px; bottom: 5px; font-size: 10px; color: #52525b; font-weight: 600; line-height: 1.3; }
+        .cam-print .cam-stamp { position: absolute; right: 14px; bottom: 46px; font-size: 0.6875rem; }
+        .cam-print .cam-caption { position: absolute; left: 10px; right: 10px; bottom: 5px; font-size: 0.625rem; color: #52525b; font-weight: 600; line-height: 1.3; }
         .cam-print .cam-caption > span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         /* Header shortcut: a camera button with a badge + tiny prints when new photos develop */
         .cam-shortcut { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 9999px; background: rgba(255, 176, 32, 0.1); border: 1px solid #ffb020; transition: background 0.2s, border-color 0.2s, transform 0.2s; }
@@ -356,9 +356,9 @@
         .cam-mini-stack { display: flex; align-items: center; padding-left: 5px; margin-right: 1px; }
         .cam-mini { width: 14px; height: 16px; margin-left: -5px; background: #f8f5ee; padding: 1px 1px 3px; border-radius: 1px; box-shadow: 0 1px 3px rgba(0,0,0,0.5); }
         .cam-mini img { width: 100%; height: 100%; object-fit: cover; display: block; background: #2a2a2e; filter: saturate(1.15) sepia(0.12); }
-        .cam-badge { position: absolute; top: -7px; right: -7px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 9999px; background: #e11d48; color: #fff; font-size: 9px; font-weight: 800; line-height: 16px; text-align: center; box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.9); }
-        .cam-shortcut-title { font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #ffb020; white-space: nowrap; }
-        .cam-shortcut-sub { font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #d1d5db; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; padding-left: 8px; border-left: 1px solid rgba(255, 176, 32, 0.35); }
+        .cam-badge { position: absolute; top: -7px; right: -7px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 9999px; background: #e11d48; color: #fff; font-size: 0.5625rem; font-weight: 800; line-height: 16px; text-align: center; box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.9); }
+        .cam-shortcut-title { font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #ffb020; white-space: nowrap; }
+        .cam-shortcut-sub { font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #d1d5db; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; padding-left: 8px; border-left: 1px solid rgba(255, 176, 32, 0.35); }
         .cam-shortcut.has-new .cam-shortcut-sub { color: #fde68a; }
         .cam-dev-dot { width: 6px; height: 6px; border-radius: 9999px; background: #ffb020; animation: cam-blink 1.4s ease-in-out infinite; }
         @keyframes cam-blink { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
@@ -368,11 +368,11 @@
         /* An undeveloped print: the shot exists, but there's nothing to see until Monday */
         .cam-print.cam-pending { cursor: default; }
         .cam-print.cam-pending:hover { transform: none; }
-        .cam-unexposed { aspect-ratio: 1; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; background: radial-gradient(circle at 50% 40%, #3b2f1f, #1c1917 70%); color: rgba(251, 191, 36, 0.55); font-size: 9px; font-weight: 800; letter-spacing: 0.15em; text-transform: uppercase; animation: cam-develop 3s ease-in-out infinite; }
+        .cam-unexposed { aspect-ratio: 1; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; background: radial-gradient(circle at 50% 40%, #3b2f1f, #1c1917 70%); color: rgba(251, 191, 36, 0.55); font-size: 0.5625rem; font-weight: 800; letter-spacing: 0.15em; text-transform: uppercase; animation: cam-develop 3s ease-in-out infinite; }
         @keyframes cam-develop { 0%, 100% { filter: brightness(0.85); } 50% { filter: brightness(1.15); } }
-        .cam-note { font-family: 'Segoe Print', 'Bradley Hand', 'Comic Sans MS', cursive; color: #1e3a8a; font-weight: 400; font-size: 11px; }
+        .cam-note { font-family: 'Segoe Print', 'Bradley Hand', 'Comic Sans MS', cursive; color: #1e3a8a; font-weight: 400; font-size: 0.6875rem; }
         /* Likes and comments on developed photos */
-        .cam-social-pill { position: absolute; top: 12px; right: 12px; display: flex; gap: 6px; padding: 2px 7px; border-radius: 9999px; background: rgba(15, 23, 42, 0.72); color: #fff; font-size: 10px; font-weight: 700; line-height: 16px; }
+        .cam-social-pill { position: absolute; top: 12px; right: 12px; display: flex; gap: 6px; padding: 2px 7px; border-radius: 9999px; background: rgba(15, 23, 42, 0.72); color: #fff; font-size: 0.625rem; font-weight: 700; line-height: 16px; }
         .cam-social-pill > span { display: inline-flex; align-items: center; gap: 3px; }
         .cam-social-pill .liked { color: #fb7185; }
         .cam-like-btn { width: 42px; height: 42px; flex-shrink: 0; border-radius: 9999px; display: flex; align-items: center; justify-content: center; color: #e9d5ff; background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(192, 132, 252, 0.3); transition: transform 0.15s, background 0.2s, color 0.2s; }
@@ -424,7 +424,7 @@
                     </button>
 
                     <div class="mt-8 pt-6 border-t border-white/10 flex flex-col items-center gap-2">
-                        <span class="text-gray-500 text-[11px] tracking-wide">© <span id="year"></span> Canyon Activities Board</span>
+                        <span class="text-gray-500 text-[0.6875rem] tracking-wide">© <span id="year"></span> Canyon Activities Board</span>
                         <button class="transition-colors bg-transparent border-none text-sm cursor-pointer text-[#c084fc] hover:text-[#d8b4fe] p-1" onclick="showGate()">Staff Access</button>
                     </div>
                 </div>
@@ -447,11 +447,11 @@
                                     <span id="cameraShortcutSub" class="cam-shortcut-sub">Take a picture</span>
                                     <span id="cameraShortcutBadge" class="cam-badge hidden"></span>
                                 </button>
-                                <div id="ts-manOfCab" class="hidden items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-widest text-amber-300 bg-amber-500/15 border border-amber-400/40 px-2.5 py-1 rounded-full shadow-[0_0_12px_rgba(251,191,36,0.25)]"><i data-lucide="trophy" class="w-3.5 h-3.5 text-amber-400"></i> 2026 Man of CAB</div>
+                                <div id="ts-manOfCab" class="hidden items-center gap-1.5 text-[0.625rem] font-extrabold uppercase tracking-widest text-amber-300 bg-amber-500/15 border border-amber-400/40 px-2.5 py-1 rounded-full shadow-[0_0_12px_rgba(251,191,36,0.25)]"><i data-lucide="trophy" class="w-3.5 h-3.5 text-amber-400"></i> 2026 Man of CAB</div>
                             </div>
                         </div>
                         <div class="text-left sm:text-right sm:mt-2">
-                            <div class="text-[11px] font-bold text-gray-400 tracking-widest mb-1 uppercase" id="ts-hoursLabel">This Week</div>
+                            <div class="text-[0.6875rem] font-bold text-gray-400 tracking-widest mb-1 uppercase" id="ts-hoursLabel">This Week</div>
                             <div class="flex items-baseline gap-1.5 justify-start sm:justify-end whitespace-nowrap">
                                 <span id="ts-totalHours" class="text-3xl sm:text-5xl font-bold">0.0</span>
                                 <span class="text-gray-400 font-medium text-sm sm:text-base" id="ts-reqHours">/ 0.0 required</span>
@@ -470,11 +470,11 @@
                     <!-- Year total + streak -->
                     <div class="grid grid-cols-2 gap-3 sm:gap-4 mb-8 sm:mb-12">
                         <div class="night-glass-card-subtle rounded-2xl p-4 sm:p-6 hover:bg-black/40 transition-colors">
-                            <div class="text-[10px] sm:text-[11px] font-bold text-gray-400 tracking-widest mb-2 sm:mb-3 uppercase">This Year</div>
+                            <div class="text-[0.625rem] sm:text-[0.6875rem] font-bold text-gray-400 tracking-widest mb-2 sm:mb-3 uppercase">This Year</div>
                             <div class="text-2xl sm:text-4xl font-bold text-white"><span id="ts-yearTotal">0.0</span> <span class="text-xs sm:text-base font-normal text-gray-500">hrs</span></div>
                         </div>
                         <div class="night-glass-card-subtle rounded-2xl p-4 sm:p-6 hover:bg-black/40 transition-colors">
-                            <div class="text-[10px] sm:text-[11px] font-bold text-gray-400 tracking-widest mb-2 sm:mb-3 uppercase" id="ts-streakLabel">Weeks On Target</div>
+                            <div class="text-[0.625rem] sm:text-[0.6875rem] font-bold text-gray-400 tracking-widest mb-2 sm:mb-3 uppercase" id="ts-streakLabel">Weeks On Target</div>
                             <div class="text-2xl sm:text-4xl font-bold text-white flex items-center gap-1.5 sm:gap-2"><i data-lucide="flame" class="w-5 h-5 sm:w-8 sm:h-8 text-amber-400 shrink-0" id="ts-streakIcon"></i><span id="ts-streak">0</span> <span class="text-xs sm:text-base font-normal text-gray-500 whitespace-nowrap" id="ts-streakUnit">in a row</span></div>
                         </div>
                     </div>
@@ -483,10 +483,10 @@
                         <div class="text-gray-400 text-xs font-bold tracking-widest uppercase mb-4 sm:mb-5 flex justify-between items-center">
                             <span>Logged Hours</span>
                             <div class="flex items-center gap-2">
-                                <span id="autosaveIndicator" class="hidden text-emerald-400 text-[10px] font-bold flex items-center gap-1 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                                <span id="autosaveIndicator" class="hidden text-emerald-400 text-[0.625rem] font-bold flex items-center gap-1 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
                                     <i data-lucide="check" class="w-3 h-3"></i> Saved
                                 </span>
-                                <span id="ts-weekLabel" class="bg-black/30 border border-white/10 text-gray-300 text-[10px] sm:text-[11px] font-bold tracking-widest uppercase px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg">Current Week</span>
+                                <span id="ts-weekLabel" class="bg-black/30 border border-white/10 text-gray-300 text-[0.625rem] sm:text-[0.6875rem] font-bold tracking-widest uppercase px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg">Current Week</span>
                             </div>
                         </div>
                         <div id="ts-entriesList" class="flex flex-col gap-3 max-h-[320px] sm:max-h-[420px] overflow-y-auto pr-2 pt-1 custom-scroll"></div>
@@ -496,7 +496,7 @@
                         <!-- Soft purple glow in the corner -->
                         <div class="absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl pointer-events-none" style="background: rgba(168, 85, 247, 0.1);"></div>
                         <div class="relative flex justify-between items-center mb-6 sm:mb-8">
-                            <h4 id="formModeTitle" class="text-sm font-bold text-white uppercase tracking-widest flex items-center gap-2.5"><i data-lucide="clock" class="w-[18px] h-[18px] text-gray-400"></i> Log New Hours</h4>
+                            <h4 id="formModeTitle" class="text-sm font-bold text-white uppercase tracking-widest flex items-center gap-2.5"><i data-lucide="clock" class="w-[1.125rem] h-[1.125rem] text-gray-400"></i> Log New Hours</h4>
                             <button id="cancelEditBtn" class="hidden text-xs text-rose-400 hover:text-rose-300 transition font-semibold flex items-center gap-1 bg-slate-900/50 px-2 py-1 rounded" onclick="cancelEdit()"><i data-lucide="x" class="w-3 h-3"></i> Cancel</button>
                         </div>
                         
@@ -514,12 +514,12 @@
                             <label for="entryTask" class="form-label">Task Description</label>
                             <input type="text" id="entryTask" class="control-input !mb-0" placeholder="What did you work on?" />
                             <div id="recentTasks" class="hidden mt-8">
-                                <div class="text-[11px] text-gray-500 font-bold uppercase tracking-widest mb-4">Common tasks &mdash; tap to reuse</div>
+                                <div class="text-[0.6875rem] text-gray-500 font-bold uppercase tracking-widest mb-4">Common tasks &mdash; tap to reuse</div>
                                 <div id="recentTasksList" class="flex flex-wrap gap-2.5"></div>
                             </div>
                         </div>
                         <button id="saveEntryBtn" class="relative w-full btn-log text-white font-bold tracking-wide py-3.5 sm:py-4 rounded-xl flex justify-center items-center gap-2" onclick="saveTimeEntry()">
-                            <i data-lucide="arrow-right" class="w-[18px] h-[18px] text-white" id="saveEntryIcon"></i> <span id="saveEntryText">Log Hours</span>
+                            <i data-lucide="arrow-right" class="w-[1.125rem] h-[1.125rem] text-white" id="saveEntryIcon"></i> <span id="saveEntryText">Log Hours</span>
                         </button>
                     </div>
 
@@ -541,14 +541,14 @@
                         <div class="flex items-start justify-between gap-3 mb-4">
                             <div>
                                 <h4 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2"><i data-lucide="camera" class="w-4 h-4 text-amber-400"></i> Disposable Camera</h4>
-                                <p id="cameraBlurb" class="text-[11px] text-purple-200/60 mt-1 leading-relaxed"></p>
+                                <p id="cameraBlurb" class="text-[0.6875rem] text-purple-200/60 mt-1 leading-relaxed"></p>
                             </div>
                             <div class="text-right shrink-0">
                                 <div class="cam-stamp text-2xl leading-none" id="cameraCount">10</div>
-                                <div class="text-[9px] text-purple-200/50 font-bold uppercase tracking-widest mt-1">Shots left<br>this week</div>
+                                <div class="text-[0.5625rem] text-purple-200/50 font-bold uppercase tracking-widest mt-1">Shots left<br>this week</div>
                             </div>
                         </div>
-                        <p class="text-[11px] text-amber-200/80 bg-amber-500/10 border border-amber-400/20 rounded-lg px-3 py-2 mb-4 flex items-start gap-2"><i data-lucide="eye" class="w-3.5 h-3.5 mt-px shrink-0 text-amber-400"></i> <span>Heads up: once they develop, <span class="font-semibold text-amber-200">everyone</span> can see your photos and notes. Use good judgment.</span></p>
+                        <p class="text-[0.6875rem] text-amber-200/80 bg-amber-500/10 border border-amber-400/20 rounded-lg px-3 py-2 mb-4 flex items-start gap-2"><i data-lucide="eye" class="w-3.5 h-3.5 mt-px shrink-0 text-amber-400"></i> <span>Heads up: once they develop, <span class="font-semibold text-amber-200">everyone</span> can see your photos and notes. Use good judgment.</span></p>
                         <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden" onchange="snapPhoto(this)" />
                         <div class="grid grid-cols-2 gap-3" id="cameraButtons">
                             <button id="cameraSnapBtn" class="night-btn-link text-white font-bold py-3.5 rounded-xl transition flex justify-center items-center gap-2 border-amber-400/30 text-sm" onclick="document.getElementById('cameraInput').click()">
@@ -561,7 +561,7 @@
                     </div>
 
                     <div class="border-t border-purple-500/20 pt-6 text-center">
-                        <p class="text-[11px] text-purple-200/60 leading-relaxed px-4"><span class="text-emerald-400 font-semibold">Hours are recorded as soon as you add them</span> &mdash; there's nothing else to submit. Each week runs Monday&ndash;Sunday (AZ time) and a fresh week starts automatically every Monday at 12:00 AM.</p>
+                        <p class="text-[0.6875rem] text-purple-200/60 leading-relaxed px-4"><span class="text-emerald-400 font-semibold">Hours are recorded as soon as you add them</span> &mdash; there's nothing else to submit. Each week runs Monday&ndash;Sunday (AZ time) and a fresh week starts automatically every Monday at 12:00 AM.</p>
                     </div>
                     
                     <div class="flex justify-between items-center mt-8 px-2 gap-3 flex-wrap">
@@ -606,7 +606,7 @@
                         </button>
                     </div>
                     <div class="flex justify-between items-center night-glass-card-subtle p-4 rounded-2xl border-purple-400/30 mb-8 shadow-inner">
-                        <span class="text-purple-200/80 text-[10px] font-bold uppercase tracking-widest">All-Time Total</span>
+                        <span class="text-purple-200/80 text-[0.625rem] font-bold uppercase tracking-widest">All-Time Total</span>
                         <span class="text-3xl font-black text-white" id="history-total">0.0</span>
                     </div>
                     <div id="history-list" class="flex flex-col gap-4 max-h-[60vh] overflow-y-auto pr-2 custom-scroll"></div>
@@ -721,7 +721,7 @@
                                     <div class="flex items-center justify-between night-glass-card-subtle p-4 rounded-2xl border-purple-400/30" title="If fewer students than this submit hours, the system assumes it is a break week and pauses missing hour emails.">
                                         <div class="flex flex-col pr-4">
                                             <span class="text-sm font-bold text-white mb-1">Active Week Threshold</span>
-                                            <span class="text-[10px] text-purple-200/60 leading-tight">Min. students submitting to trigger emails</span>
+                                            <span class="text-[0.625rem] text-purple-200/60 leading-tight">Min. students submitting to trigger emails</span>
                                         </div>
                                         <input type="number" id="setSubmitThreshold" class="control-input !mb-0 !w-20 !py-2 !text-center !px-2 font-bold" min="1" value="7" />
                                     </div>
@@ -781,7 +781,7 @@
                                     </div>
                                     <div class="flex gap-3 items-start">
                                         <div class="flex-1">
-                                            <label class="text-[9px] text-purple-300 uppercase font-bold tracking-widest pl-1 mb-1 block">Select Teams (Hold Ctrl/Cmd)</label>
+                                            <label class="text-[0.5625rem] text-purple-300 uppercase font-bold tracking-widest pl-1 mb-1 block">Select Teams (Hold Ctrl/Cmd)</label>
                                             <select id="newStaffTeams" class="control-input !mb-0 w-full text-sm custom-scroll" multiple size="3">
                                                 <!-- populated dynamically -->
                                             </select>
@@ -818,7 +818,7 @@
                                 </div>
                                 
                                 <div class="bg-slate-900/40 p-4 rounded-2xl border border-purple-400/20 mb-6">
-                                    <div class="text-[10px] text-purple-300 uppercase font-bold tracking-widest mb-3 flex justify-between items-center">
+                                    <div class="text-[0.625rem] text-purple-300 uppercase font-bold tracking-widest mb-3 flex justify-between items-center">
                                         <span id="addStudFormTitle">Add New Student</span>
                                         <button id="cancelStudEditBtn" class="hidden text-rose-400 hover:text-white transition flex items-center gap-1" onclick="cancelRosterEdit()"><i data-lucide="x" class="w-3 h-3"></i> Cancel Edit</button>
                                     </div>
@@ -836,7 +836,7 @@
                                     </button>
                                 </div>
 
-                                <div class="text-[10px] text-purple-300/50 uppercase font-bold tracking-widest mb-2 px-1">Current Roster</div>
+                                <div class="text-[0.625rem] text-purple-300/50 uppercase font-bold tracking-widest mb-2 px-1">Current Roster</div>
                                 <div id="admin-rosterList" class="flex flex-col gap-2 flex-1 min-h-[400px] overflow-y-auto pr-2 custom-scroll"></div>
                             </div>
                         </div>
@@ -878,7 +878,7 @@
                 <div>
                     <h3 class="text-2xl font-extrabold text-white tracking-tight" id="detailModalName">Student Name</h3>
                     <p class="text-purple-300 text-sm font-semibold mt-1 bg-slate-900/50 px-2 py-0.5 rounded inline-block border border-purple-500/20" id="detailModalTeam">Team Name</p>
-                    <div><div id="detailModalManOfCab" class="hidden mt-2 items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-widest text-amber-300 bg-amber-500/15 border border-amber-400/40 px-2.5 py-1 rounded-full shadow-[0_0_12px_rgba(251,191,36,0.25)]"><i data-lucide="trophy" class="w-3.5 h-3.5 text-amber-400"></i> 2026 Man of CAB</div></div>
+                    <div><div id="detailModalManOfCab" class="hidden mt-2 items-center gap-1.5 text-[0.625rem] font-extrabold uppercase tracking-widest text-amber-300 bg-amber-500/15 border border-amber-400/40 px-2.5 py-1 rounded-full shadow-[0_0_12px_rgba(251,191,36,0.25)]"><i data-lucide="trophy" class="w-3.5 h-3.5 text-amber-400"></i> 2026 Man of CAB</div></div>
                 </div>
                 <div class="flex items-center gap-2">
                     <button id="deleteStudentBtn" class="text-rose-400 hover:text-white bg-slate-900/50 hover:bg-rose-500/80 p-2.5 rounded-xl transition flex items-center justify-center gap-1.5 border border-rose-500/20 shadow-md" onclick="promptDeleteStudent()" title="Permanently Delete Student">
@@ -891,14 +891,14 @@
             </div>
 
             <div class="flex justify-between items-center night-glass-card-subtle p-5 rounded-2xl border-purple-400/30 mb-5 shadow-inner">
-                <span class="text-purple-200/80 text-[10px] font-bold uppercase tracking-widest">All-Time Total Hours</span>
+                <span class="text-purple-200/80 text-[0.625rem] font-bold uppercase tracking-widest">All-Time Total Hours</span>
                 <span class="text-3xl font-black text-white" id="detailModalTotal">0.0</span>
             </div>
 
             <!-- Admin inline edit/add panel -->
             <div id="adminLogEditPanel" class="hidden night-glass-card-subtle border-purple-400/50 rounded-2xl p-5 mb-5 shadow-lg relative">
                 <div class="absolute top-0 left-0 w-1 h-full bg-purple-500"></div>
-                <div class="text-[10px] font-bold text-purple-300 uppercase tracking-widest mb-4 pl-2" id="adminEditPanelTitle">Edit Entry</div>
+                <div class="text-[0.625rem] font-bold text-purple-300 uppercase tracking-widest mb-4 pl-2" id="adminEditPanelTitle">Edit Entry</div>
                 <div class="flex flex-col sm:flex-row gap-3 mb-3">
                     <input type="date" id="adminEditDate" class="control-input !mb-0 flex-1 text-sm" />
                     <input type="number" id="adminEditHours" class="control-input !mb-0 sm:w-1/3 text-sm" step="0.25" min="0" placeholder="Hours" />
@@ -912,7 +912,7 @@
                 </div>
             </div>
 
-            <div class="text-purple-300/50 text-[10px] font-bold tracking-widest uppercase mb-3 px-2">Weekly Breakdown</div>
+            <div class="text-purple-300/50 text-[0.625rem] font-bold tracking-widest uppercase mb-3 px-2">Weekly Breakdown</div>
             <div id="detailModalLogs" class="flex flex-col gap-3 pr-2"></div>
 
             <button id="detailHistoryBtn" class="mt-2 w-full night-btn-link text-white text-xs font-bold py-3 rounded-xl flex items-center justify-center gap-2" onclick="toggleChangeHistory()">
@@ -931,7 +931,7 @@
                 <div>
                     <h3 class="text-2xl font-extrabold text-white tracking-tight" id="teamMemberModalName">Student Name</h3>
                     <p class="text-purple-300 text-sm font-semibold mt-1 bg-slate-900/50 px-2 py-0.5 rounded inline-block border border-purple-500/20" id="teamMemberModalPosition">Position</p>
-                    <div><div id="teamMemberModalManOfCab" class="hidden mt-2 items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-widest text-amber-300 bg-amber-500/15 border border-amber-400/40 px-2.5 py-1 rounded-full shadow-[0_0_12px_rgba(251,191,36,0.25)]"><i data-lucide="trophy" class="w-3.5 h-3.5 text-amber-400"></i> 2026 Man of CAB</div></div>
+                    <div><div id="teamMemberModalManOfCab" class="hidden mt-2 items-center gap-1.5 text-[0.625rem] font-extrabold uppercase tracking-widest text-amber-300 bg-amber-500/15 border border-amber-400/40 px-2.5 py-1 rounded-full shadow-[0_0_12px_rgba(251,191,36,0.25)]"><i data-lucide="trophy" class="w-3.5 h-3.5 text-amber-400"></i> 2026 Man of CAB</div></div>
                 </div>
                 <button class="text-purple-200 hover:text-white bg-slate-900/50 hover:bg-white/10 border border-purple-400/30 p-2.5 rounded-xl transition shadow-md" onclick="closeTeamMemberModal()">
                     <i data-lucide="x" class="w-4 h-4"></i>
@@ -939,11 +939,11 @@
             </div>
 
             <div class="flex justify-between items-center night-glass-card-subtle p-5 rounded-2xl border-purple-400/30 mb-5 shadow-inner">
-                <span class="text-purple-200/80 text-[10px] font-bold uppercase tracking-widest">All-Time Total Hours</span>
+                <span class="text-purple-200/80 text-[0.625rem] font-bold uppercase tracking-widest">All-Time Total Hours</span>
                 <span class="text-3xl font-black text-white" id="teamMemberModalTotal">0.0</span>
             </div>
 
-            <div class="text-purple-300/50 text-[10px] font-bold tracking-widest uppercase mb-3 px-2">Weekly Breakdown</div>
+            <div class="text-purple-300/50 text-[0.625rem] font-bold tracking-widest uppercase mb-3 px-2">Weekly Breakdown</div>
             <div id="teamMemberModalLogs" class="flex flex-col gap-3 pr-2"></div>
         </div>
     </div>
@@ -1033,11 +1033,11 @@
             <div class="grid grid-cols-2 gap-3 mb-5">
                 <div class="night-glass-card-subtle rounded-2xl p-4 border-purple-400/20 text-center">
                     <div class="text-3xl font-black text-white" id="camAdminPhotos">0</div>
-                    <div class="text-[10px] text-purple-200/60 font-bold uppercase tracking-widest mt-1">Shots this week</div>
+                    <div class="text-[0.625rem] text-purple-200/60 font-bold uppercase tracking-widest mt-1">Shots this week</div>
                 </div>
                 <div class="night-glass-card-subtle rounded-2xl p-4 border-purple-400/20 text-center">
                     <div class="text-3xl font-black text-white" id="camAdminPeople">0</div>
-                    <div class="text-[10px] text-purple-200/60 font-bold uppercase tracking-widest mt-1">Photographers</div>
+                    <div class="text-[0.625rem] text-purple-200/60 font-bold uppercase tracking-widest mt-1">Photographers</div>
                 </div>
             </div>
             <div id="camAdminStatus" class="text-center text-sm font-semibold mb-5"></div>
@@ -1122,11 +1122,11 @@
                     <button id="camLikeBtn" class="cam-like-btn" onclick="toggleCameraLike()" aria-pressed="false"><i data-lucide="heart" class="w-5 h-5"></i></button>
                     <div class="min-w-0">
                         <div class="text-sm font-bold text-white" id="camLikeCount"></div>
-                        <div class="text-[11px] text-purple-200/60 truncate" id="camLikeNames"></div>
+                        <div class="text-[0.6875rem] text-purple-200/60 truncate" id="camLikeNames"></div>
                     </div>
                 </div>
                 <div class="border-t border-purple-400/20"></div>
-                <div class="text-[10px] font-bold uppercase tracking-widest text-purple-200/70 flex items-center gap-1.5"><i data-lucide="message-circle" class="w-3.5 h-3.5 text-amber-400"></i> Comments</div>
+                <div class="text-[0.625rem] font-bold uppercase tracking-widest text-purple-200/70 flex items-center gap-1.5"><i data-lucide="message-circle" class="w-3.5 h-3.5 text-amber-400"></i> Comments</div>
                 <div id="camCommentList" class="flex flex-col gap-2 overflow-y-auto custom-scroll max-h-64 lg:max-h-none lg:flex-1 pr-1"></div>
                 <form class="flex gap-2" onsubmit="event.preventDefault(); postCameraComment()">
                     <input id="camCommentInput" type="text" maxlength="300" autocomplete="off" placeholder="Add a comment..." class="control-input !mb-0 flex-1 min-w-0 py-2 px-3 rounded-xl text-sm" />
@@ -2444,7 +2444,7 @@
         let i = 0;
         const pendingHtml = !pending.length ? '' : `
             <div class="mb-6">
-                <div class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-purple-200/70 mb-3 px-1 flex-wrap">
+                <div class="flex items-center gap-2 text-[0.625rem] font-bold uppercase tracking-widest text-purple-200/70 mb-3 px-1 flex-wrap">
                     <i data-lucide="hourglass" class="w-3.5 h-3.5 text-amber-400"></i> This week's roll
                     <span class="text-purple-200/40">&bull; ${pending.length} shot${pending.length === 1 ? '' : 's'}</span>
                     <span class="text-amber-300 bg-amber-500/15 border border-amber-400/30 px-1.5 py-0.5 rounded">All develop Monday 12:00 AM</span>
@@ -2475,7 +2475,7 @@
         });
         grid.innerHTML = pendingHtml + weeks.map(w => `
             <div class="mb-6">
-                <div class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-purple-200/70 mb-3 px-1">
+                <div class="flex items-center gap-2 text-[0.625rem] font-bold uppercase tracking-widest text-purple-200/70 mb-3 px-1">
                     <i data-lucide="film" class="w-3.5 h-3.5 text-amber-400"></i> ${w.id ? escapeHTML(formatWeekRange(w.id)) : 'Undated'}
                     <span class="text-purple-200/40">&bull; ${w.photos.length} shot${w.photos.length === 1 ? '' : 's'}</span>
                     ${cam.admin && w.id === CURRENT_WEEK_ID_AZ ? '<span class="text-amber-300 bg-amber-500/15 border border-amber-400/30 px-1.5 py-0.5 rounded">This week</span>' : ''}
@@ -2615,7 +2615,7 @@
             <div class="group bg-slate-900/40 border border-purple-400/15 rounded-xl px-3 py-2">
                 <div class="flex items-center gap-2">
                     <span class="text-xs font-bold ${c.student_id === 'admin' ? 'text-amber-300' : 'text-white'} truncate">${escapeHTML(c.student_name)}</span>
-                    <span class="text-[10px] text-purple-200/40 shrink-0" title="${escapeHTML(new Date(c.created_at).toLocaleString('en-US', { timeZone: 'America/Phoenix' }))}">${cameraTimeAgo(c.created_at)}</span>
+                    <span class="text-[0.625rem] text-purple-200/40 shrink-0" title="${escapeHTML(new Date(c.created_at).toLocaleString('en-US', { timeZone: 'America/Phoenix' }))}">${cameraTimeAgo(c.created_at)}</span>
                     ${cam.admin || (v && c.student_id === v.id) ? `<button class="ml-auto shrink-0 text-purple-200/40 hover:text-rose-300 transition" title="Delete comment" onclick="deleteCameraComment(${c.id})"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>` : ''}
                 </div>
                 <div class="text-sm text-purple-100/90 break-words whitespace-pre-wrap">${escapeHTML(c.body)}</div>
@@ -3170,7 +3170,7 @@
         document.getElementById('entryDate').value = getAZDateStr();
         document.getElementById('entryHours').value = "";
         document.getElementById('entryTask').value = "";
-        document.getElementById('formModeTitle').innerHTML = '<i data-lucide="clock" class="w-[18px] h-[18px] text-gray-400"></i> Log New Hours';
+        document.getElementById('formModeTitle').innerHTML = '<i data-lucide="clock" class="w-[1.125rem] h-[1.125rem] text-gray-400"></i> Log New Hours';
         document.getElementById('formModeTitle').classList.remove('text-amber-400');
         document.getElementById('entryFormBox').classList.remove('border-amber-500/50', '!bg-amber-900/10');
         
@@ -3334,7 +3334,7 @@
             box.innerHTML = rows.length ? rows.map(r => `
                 <div class="py-2.5 border-b border-purple-500/10 last:border-0">
                     <div class="text-xs text-purple-100 leading-relaxed break-words">${describeChange(r)}</div>
-                    <div class="text-[10px] text-purple-300/50 font-semibold mt-0.5">${escapeHTML(r.actor || 'Unknown')} &bull; ${new Date(r.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</div>
+                    <div class="text-[0.625rem] text-purple-300/50 font-semibold mt-0.5">${escapeHTML(r.actor || 'Unknown')} &bull; ${new Date(r.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</div>
                 </div>`).join('')
                 : '<div class="text-purple-200/50 text-xs py-4 text-center">No changes recorded yet.</div>';
         } catch (e) {
@@ -3365,7 +3365,7 @@
                     <div class="w-11 h-11 sm:w-14 sm:h-14 shrink-0 rounded-xl bg-black/50 flex items-center justify-center text-base sm:text-xl font-bold text-gray-200 border border-white/5">${entry.hours}</div>
                     <div class="flex flex-col overflow-hidden">
                         <div class="font-semibold text-gray-100 text-sm sm:text-lg break-words [overflow-wrap:anywhere]">${escapeHTML(entry.task)}</div>
-                        <div class="text-[10px] sm:text-xs font-medium text-gray-500 mt-0.5 sm:mt-1 uppercase tracking-wider">${dateStr}</div>
+                        <div class="text-[0.625rem] sm:text-xs font-medium text-gray-500 mt-0.5 sm:mt-1 uppercase tracking-wider">${dateStr}</div>
                     </div>
                 </div>
                 <div class="flex shrink-0 gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
@@ -3533,7 +3533,7 @@
                         <div class="bg-slate-900/80 text-purple-300 font-bold px-2 py-1.5 rounded-lg text-xs min-w-[2.5rem] text-center shrink-0 border border-purple-400/20 shadow-inner">${log.hours}</div>
                         <div class="flex flex-col overflow-hidden">
                             <div class="text-white font-medium text-xs break-words [overflow-wrap:anywhere] mb-0.5">${escapeHTML(log.task)}</div>
-                            <div class="text-purple-300/50 text-[10px] uppercase font-bold tracking-wider">${dateStr}</div>
+                            <div class="text-purple-300/50 text-[0.625rem] uppercase font-bold tracking-wider">${dateStr}</div>
                         </div>
                     </div>`;
             }).join('');
@@ -3644,7 +3644,7 @@
                 <div class="flex justify-between items-center py-3 border-b border-purple-500/10 last:border-0 cursor-pointer hover:bg-slate-900/40 rounded-xl px-3 -mx-3 transition gap-3 group" onclick="viewTeamMemberDetails('${student.id}')">
                     <div class="flex flex-col flex-1 min-w-0">
                         <span class="text-sm font-semibold break-words group-hover:text-white transition-colors ${weekHours === 0 ? 'text-purple-200/60' : 'text-purple-100'}">${escapeHTML(student.name)}</span>
-                        <span class="text-[10px] text-purple-300/50 uppercase font-bold tracking-wider break-words mt-0.5">${escapeHTML(student.position || 'Student')} &bull; ID: ${escapeHTML(student.id)}</span>
+                        <span class="text-[0.625rem] text-purple-300/50 uppercase font-bold tracking-wider break-words mt-0.5">${escapeHTML(student.position || 'Student')} &bull; ID: ${escapeHTML(student.id)}</span>
                     </div>
                     <div class="flex flex-col items-end gap-1 shrink-0">
                         <span class="text-xs font-bold px-2.5 py-1 rounded-lg shrink-0 ${statusClass}" title="${reqHours} required">${weekHours.toFixed(1)} hrs</span>
@@ -3698,7 +3698,7 @@
                         <div class="bg-slate-900/80 text-purple-300 font-bold px-2.5 py-1.5 rounded-lg text-xs min-w-[2.5rem] text-center shrink-0 border border-purple-500/20">${log.hours}</div>
                         <div class="flex flex-col overflow-hidden flex-1">
                             <div class="text-white font-medium text-xs break-words [overflow-wrap:anywhere] mb-0.5">${escapeHTML(log.task)}</div>
-                            <div class="text-purple-300/50 text-[9px] uppercase font-bold tracking-widest">${dateStr}</div>
+                            <div class="text-purple-300/50 text-[0.5625rem] uppercase font-bold tracking-widest">${dateStr}</div>
                         </div>
                     </div>`;
             }).join('');
@@ -3863,7 +3863,7 @@
                         <div class="flex justify-between items-center py-2.5 border-b border-purple-500/10 last:border-0 cursor-pointer hover:bg-slate-900/40 rounded-xl px-3 -mx-3 transition gap-3 group" onclick="viewStudentDetails('${student.id}')">
                             <div class="flex flex-col flex-1 min-w-0">
                                 <span class="text-sm font-semibold truncate group-hover:text-white transition-colors ${weekHours === 0 ? 'text-purple-200/60' : 'text-purple-100'}">${escapeHTML(student.name)}</span>
-                                <span class="text-[10px] text-purple-300/50 uppercase font-bold tracking-wider truncate mt-0.5">${escapeHTML(student.position || 'Student')} &bull; ID: ${escapeHTML(student.id)}</span>
+                                <span class="text-[0.625rem] text-purple-300/50 uppercase font-bold tracking-wider truncate mt-0.5">${escapeHTML(student.position || 'Student')} &bull; ID: ${escapeHTML(student.id)}</span>
                             </div>
                             <div class="flex flex-col items-end gap-1 shrink-0">
                                 <span class="text-xs font-bold px-2.5 py-1 rounded-lg shrink-0 ${statusClass}" title="${reqHours} required">${weekHours.toFixed(1)} hrs</span>
@@ -3872,7 +3872,7 @@
                     `;
                 }).join('');
             } else {
-                studentListHTML = `<div class="text-[11px] text-purple-300/40 uppercase font-bold tracking-widest py-3 text-center">No students on roster</div>`;
+                studentListHTML = `<div class="text-[0.6875rem] text-purple-300/40 uppercase font-bold tracking-widest py-3 text-center">No students on roster</div>`;
             }
 
             const card = document.createElement('div');
@@ -3884,7 +3884,7 @@
                         <span class="font-extrabold text-white break-words leading-tight tracking-wide">${escapeHTML(teamName)}</span>
                     </div>
                     <div class="text-right shrink-0">
-                        <div class="text-[9px] text-purple-300 uppercase font-bold tracking-widest mb-0.5">Week Total</div>
+                        <div class="text-[0.5625rem] text-purple-300 uppercase font-bold tracking-widest mb-0.5">Week Total</div>
                         <div class="text-2xl font-black text-white leading-none">${teamTotal.toFixed(1)}</div>
                     </div>
                 </div>
@@ -3896,9 +3896,9 @@
         // Update Week Status Indicator based on threshold
         const indicator = document.getElementById('weekStatusIndicator');
         if (totalActiveStudentsThisWeek >= state.submissionThreshold) {
-            indicator.innerHTML = `<span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-lg text-[10px] uppercase font-bold tracking-widest flex items-center gap-1.5 shadow-inner"><i data-lucide="activity" class="w-3.5 h-3.5"></i> Active Week (${totalActiveStudentsThisWeek}/${state.submissionThreshold})</span>`;
+            indicator.innerHTML = `<span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-lg text-[0.625rem] uppercase font-bold tracking-widest flex items-center gap-1.5 shadow-inner"><i data-lucide="activity" class="w-3.5 h-3.5"></i> Active Week (${totalActiveStudentsThisWeek}/${state.submissionThreshold})</span>`;
         } else {
-            indicator.innerHTML = `<span class="bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2.5 py-1 rounded-lg text-[10px] uppercase font-bold tracking-widest flex items-center gap-1.5 shadow-inner" title="Fewer than ${state.submissionThreshold} students submitted hours. System treats this as a break and pauses automated emails."><i data-lucide="moon" class="w-3.5 h-3.5"></i> Break Week (${totalActiveStudentsThisWeek}/${state.submissionThreshold})</span>`;
+            indicator.innerHTML = `<span class="bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2.5 py-1 rounded-lg text-[0.625rem] uppercase font-bold tracking-widest flex items-center gap-1.5 shadow-inner" title="Fewer than ${state.submissionThreshold} students submitted hours. System treats this as a break and pauses automated emails."><i data-lucide="moon" class="w-3.5 h-3.5"></i> Break Week (${totalActiveStudentsThisWeek}/${state.submissionThreshold})</span>`;
         }
 
         renderBehindPanel();
@@ -3962,12 +3962,12 @@
                     <button onclick="viewStudentDetails('${escapeHTML(s.id)}')" class="text-left flex justify-between items-center gap-3 bg-slate-900/40 hover:bg-slate-800/60 border border-purple-500/20 rounded-xl px-3 py-2.5 transition">
                         <span class="flex flex-col min-w-0">
                             <span class="text-sm font-semibold text-white break-words">${escapeHTML(s.name)}</span>
-                            <span class="text-[10px] text-purple-300/60 uppercase font-bold tracking-wider break-words">${escapeHTML(s.team)} &bull; ${escapeHTML(s.position)}</span>
+                            <span class="text-[0.625rem] text-purple-300/60 uppercase font-bold tracking-wider break-words">${escapeHTML(s.team)} &bull; ${escapeHTML(s.position)}</span>
                         </span>
                         <span class="text-xs font-bold px-2.5 py-1 rounded-lg shrink-0 ${s.logged > 0 ? 'text-amber-400 bg-amber-500/10 border border-amber-500/20' : 'text-rose-400 bg-rose-500/10 border border-rose-500/20'}">${formatHours(s.logged)} / ${formatHours(s.req)}</span>
                     </button>`).join('')}
             </div>
-            ${noEmail ? `<p class="text-[11px] text-amber-400/80 mt-3">${noEmail} of them ${noEmail === 1 ? 'has' : 'have'} no email on the roster and won't be included.</p>` : ''}`;
+            ${noEmail ? `<p class="text-[0.6875rem] text-amber-400/80 mt-3">${noEmail} of them ${noEmail === 1 ? 'has' : 'have'} no email on the roster and won't be included.</p>` : ''}`;
     }
 
     function appUrl() { return /^https?:/.test(location.href) ? location.href.split('#')[0] : ''; }
@@ -4126,7 +4126,7 @@
         // Table view of the same numbers
         document.getElementById('teamChartTable').innerHTML = `
             <table class="w-full text-xs text-left border-collapse">
-                <thead><tr class="text-purple-300 uppercase tracking-wider text-[10px]">
+                <thead><tr class="text-purple-300 uppercase tracking-wider text-[0.625rem]">
                     <th class="py-2 pr-4 font-bold">Week of</th>
                     ${series.map(s => `<th class="py-2 px-3 font-bold text-right whitespace-nowrap">${escapeHTML(s.name)}</th>`).join('')}
                     <th class="py-2 pl-3 font-bold text-right">Total</th>
@@ -4213,10 +4213,10 @@
             const weekData = grouped[weekId];
 
             let statusBadge = '';
-            if (i === 0) statusBadge = '<span class="text-[9px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-500/30 uppercase font-bold tracking-widest ml-2">Current</span>';
-            else if (i === 1) statusBadge = '<span class="text-[9px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded border border-blue-500/30 uppercase font-bold tracking-widest ml-2">Prev</span>';
+            if (i === 0) statusBadge = '<span class="text-[0.5625rem] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-500/30 uppercase font-bold tracking-widest ml-2">Current</span>';
+            else if (i === 1) statusBadge = '<span class="text-[0.5625rem] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded border border-blue-500/30 uppercase font-bold tracking-widest ml-2">Prev</span>';
 
-            const addBtn = `<button onclick="adminStartAdd('${sid}','${weekId}')" class="w-full mt-3 text-[10px] font-bold tracking-widest uppercase text-purple-300/60 hover:text-purple-300 py-2 bg-slate-900/40 hover:bg-white/10 border border-dashed border-purple-500/30 hover:border-purple-400/60 rounded-xl transition flex items-center justify-center gap-1.5"><i data-lucide="plus" class="w-3 h-3"></i> Add Entry</button>`;
+            const addBtn = `<button onclick="adminStartAdd('${sid}','${weekId}')" class="w-full mt-3 text-[0.625rem] font-bold tracking-widest uppercase text-purple-300/60 hover:text-purple-300 py-2 bg-slate-900/40 hover:bg-white/10 border border-dashed border-purple-500/30 hover:border-purple-400/60 rounded-xl transition flex items-center justify-center gap-1.5"><i data-lucide="plus" class="w-3 h-3"></i> Add Entry</button>`;
 
             if (weekData && weekData.logs.length > 0) {
                 const sortedLogs = [...weekData.logs].sort((a,b) => new Date(b.date) - new Date(a.date));
@@ -4232,7 +4232,7 @@
                             <div class="bg-slate-900/80 text-purple-300 font-bold px-2.5 py-1.5 rounded-lg text-xs min-w-[2.5rem] text-center shrink-0 border border-purple-500/20">${log.hours}</div>
                             <div class="flex flex-col overflow-hidden flex-1">
                                 <div class="text-white font-medium text-xs break-words [overflow-wrap:anywhere] mb-0.5">${escapeHTML(log.task)}</div>
-                                <div class="text-purple-300/50 text-[9px] uppercase font-bold tracking-widest">${dateStr}</div>
+                                <div class="text-purple-300/50 text-[0.5625rem] uppercase font-bold tracking-widest">${dateStr}</div>
                             </div>
                             <div class="flex gap-1 shrink-0 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button onclick="adminStartEdit('${sid}','${weekId}',${logIdx})" class="text-blue-400 hover:text-white p-2 bg-slate-900/80 hover:bg-blue-600/40 rounded-lg transition border border-transparent hover:border-blue-500/30" title="Edit"><i data-lucide="edit-2" class="w-3.5 h-3.5"></i></button>
@@ -4254,7 +4254,7 @@
                     <div class="mb-4 bg-slate-900/40 p-4 rounded-2xl border border-purple-500/10">
                         <div class="flex justify-between items-center mb-2">
                             <span class="text-sm font-bold text-purple-200/50 flex items-center flex-wrap gap-y-1"><i data-lucide="calendar" class="w-4 h-4 text-purple-400/30 mr-2 shrink-0"></i> ${weekTitle} ${statusBadge}</span>
-                            <span class="text-[10px] font-bold px-2 py-1 bg-slate-900/60 text-purple-300/40 rounded-md border border-purple-500/10 shrink-0 uppercase tracking-widest">0.0 hrs</span>
+                            <span class="text-[0.625rem] font-bold px-2 py-1 bg-slate-900/60 text-purple-300/40 rounded-md border border-purple-500/10 shrink-0 uppercase tracking-widest">0.0 hrs</span>
                         </div>
                         ${addBtn}
                     </div>`;
@@ -4583,7 +4583,7 @@
         const posList = document.getElementById('settings-positionList'); document.getElementById('positionCount').textContent = state.positions.length;
         posList.innerHTML = state.positions.map((p, idx) => `
             <div class="flex items-center justify-between night-glass-card-subtle p-2.5 rounded-xl border-purple-400/20 transition-all hover:border-purple-400/50">
-                <span class="text-sm font-bold text-white flex items-center gap-2 px-1">${escapeHTML(p.name)} <span class="text-[10px] text-purple-300 bg-purple-500/20 px-2 py-0.5 rounded border border-purple-400/30 uppercase tracking-widest">${p.minHours} hrs req.</span></span>
+                <span class="text-sm font-bold text-white flex items-center gap-2 px-1">${escapeHTML(p.name)} <span class="text-[0.625rem] text-purple-300 bg-purple-500/20 px-2 py-0.5 rounded border border-purple-400/30 uppercase tracking-widest">${p.minHours} hrs req.</span></span>
                 <button class="text-rose-400 hover:text-white bg-slate-900/50 hover:bg-rose-600/40 p-2 rounded-lg transition" onclick="removePosition(${idx})"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
             </div>`).join('');
             
@@ -4594,16 +4594,16 @@
                     <span class="text-sm text-white font-bold">${escapeHTML(s.name)}</span>
                     <button class="text-rose-400 hover:text-white bg-slate-900/50 hover:bg-rose-600/40 p-2 rounded-lg transition" onclick="removeStaff(${idx})"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
                 </div>
-                <div class="text-[11px] text-purple-200/70 font-medium">${escapeHTML(s.email)}</div>
-                <div class="text-[9px] text-purple-300 mt-1 uppercase font-bold tracking-widest bg-slate-900/50 px-2 py-1 rounded border border-purple-500/20 w-fit">${s.teams.join(', ')}</div>
+                <div class="text-[0.6875rem] text-purple-200/70 font-medium">${escapeHTML(s.email)}</div>
+                <div class="text-[0.5625rem] text-purple-300 mt-1 uppercase font-bold tracking-widest bg-slate-900/50 px-2 py-1 rounded border border-purple-500/20 w-fit">${s.teams.join(', ')}</div>
             </div>`).join('');
 
         const yearList = document.getElementById('settings-yearList'); document.getElementById('yearCount').textContent = state.academicYears.length;
         yearList.innerHTML = state.academicYears.map(y => `
             <div class="flex items-center justify-between p-2.5 rounded-xl transition-all ${state.activeYear === y ? 'night-glass-card border-purple-400' : 'night-glass-card-subtle border-purple-400/20 hover:border-purple-400/50'}">
                 <div class="flex items-center gap-3 px-1"><span class="text-sm font-bold text-white">${escapeHTML(y)}</span>
-                ${state.activeYear === y ? '<span class="text-[9px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/30 uppercase font-bold tracking-widest">Active</span>' : ''}</div>
-                <div class="flex gap-2">${state.activeYear !== y ? `<button class="text-[10px] text-white font-bold tracking-widest uppercase bg-purple-600/30 hover:bg-purple-500/50 px-2.5 py-1.5 rounded transition border border-purple-400/40" onclick="setActiveYear('${y}')">Set Active</button>` : ''}
+                ${state.activeYear === y ? '<span class="text-[0.5625rem] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/30 uppercase font-bold tracking-widest">Active</span>' : ''}</div>
+                <div class="flex gap-2">${state.activeYear !== y ? `<button class="text-[0.625rem] text-white font-bold tracking-widest uppercase bg-purple-600/30 hover:bg-purple-500/50 px-2.5 py-1.5 rounded transition border border-purple-400/40" onclick="setActiveYear('${y}')">Set Active</button>` : ''}
                 <button class="text-rose-400 hover:text-white bg-slate-900/50 hover:bg-rose-600/40 p-1.5 rounded-lg transition" onclick="removeYear('${y}')" title="Remove Year"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>
             </div>`).join('');
 
@@ -4707,13 +4707,13 @@
 
     function renderRoster() {
         const list = document.getElementById('admin-rosterList'); const currentRoster = state.rosters[state.adminViewingYear] || [];
-        if(currentRoster.length === 0) { list.innerHTML = `<div class="text-purple-200/50 text-[11px] font-bold tracking-widest uppercase italic py-8 text-center night-glass-card-subtle rounded-2xl border-dashed border-purple-400/20 mt-2">No students found for this year.</div>`; return; }
+        if(currentRoster.length === 0) { list.innerHTML = `<div class="text-purple-200/50 text-[0.6875rem] font-bold tracking-widest uppercase italic py-8 text-center night-glass-card-subtle rounded-2xl border-dashed border-purple-400/20 mt-2">No students found for this year.</div>`; return; }
         list.innerHTML = currentRoster.map((s, idx) => `
             <div class="flex items-center justify-between bg-slate-900/40 p-3 rounded-2xl border border-purple-500/20 gap-3 hover:bg-slate-800/50 transition">
                 <div class="flex flex-col overflow-hidden pl-1">
                     <span class="text-white font-bold text-sm truncate mb-0.5">${escapeHTML(s.name)}</span>
-                    <span class="text-purple-200/60 text-[10px] font-medium truncate mb-1">${escapeHTML(s.email || 'No email provided')}</span>
-                    <span class="text-purple-300 text-[9px] flex flex-wrap gap-2 uppercase font-bold tracking-widest items-center">
+                    <span class="text-purple-200/60 text-[0.625rem] font-medium truncate mb-1">${escapeHTML(s.email || 'No email provided')}</span>
+                    <span class="text-purple-300 text-[0.5625rem] flex flex-wrap gap-2 uppercase font-bold tracking-widest items-center">
                         <span class="bg-slate-900 px-1.5 py-0.5 rounded border border-purple-500/20">ID: ${escapeHTML(s.id)}</span>
                         <span class="bg-purple-900/30 px-1.5 py-0.5 rounded border border-purple-500/30 text-purple-200 truncate">${escapeHTML(s.position || 'Student')}</span>
                         <span class="bg-blue-900/30 px-1.5 py-0.5 rounded border border-blue-500/30 text-blue-200 truncate">${escapeHTML(s.team)}</span>
