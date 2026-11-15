@@ -82,6 +82,12 @@
         }
 
         html { background-color: var(--app-bg); color-scheme: dark; }
+
+        /* Zoom the whole UI out a bit. Tailwind's text, spacing, padding and
+           max-widths are all in rem, so a smaller root size scales everything
+           down together (16px is the browser default). */
+        html { font-size: 15px; }
+        @media (max-width: 640px) { html { font-size: 14px; } }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body {
